@@ -1,8 +1,8 @@
 package com.eVolGreen.eVolGreen.Controllers;
 
-import com.eVolGreen.eVolGreen.DTOS.CompanyDTO;
-import com.eVolGreen.eVolGreen.Models.Company;
-import com.eVolGreen.eVolGreen.Repositories.CompanyRepository;
+import com.eVolGreen.eVolGreen.DTOS.DeviceIdentifierDTO;
+import com.eVolGreen.eVolGreen.Models.DeviceIdentifier;
+import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,16 +13,15 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
-public class CompanyController {
+public class DeviceIdentifierController {
     @Autowired
-    private CompanyRepository companyRepository;
+    private DeviceIdentifierRepository deviceIdentifierRepository;
 
-    @GetMapping("/companies")
-    public List<CompanyDTO> getCompanies() {
-        return companyRepository.findAll()
+    @GetMapping("/deviceidentifiers")
+    public List<DeviceIdentifierDTO> getDeviceIdentifiers() {
+        return deviceIdentifierRepository.findAll()
                 .stream()
-                .map(CompanyDTO::new)
+                .map(DeviceIdentifierDTO::new)
                 .collect(Collectors.toList());
     }
-
 }

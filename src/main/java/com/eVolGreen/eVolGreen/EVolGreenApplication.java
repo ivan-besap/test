@@ -19,17 +19,13 @@ public class EVolGreenApplication {
 		SpringApplication.run(EVolGreenApplication.class, args);
 	}
 	@Bean
-	public CommandLineRunner initData(LocationRepository locationRepository, CarRepository carRepository, DeviceIdentifierRepository deviceIdentifierRepository, TransactionRepository transactionRepository, PlanRepository planRepository, AccountRepository accountRepository, ClientRepository clientRepository, CompanyRepository companyRepository, EmployeeRepository employeeRepository, ChargerRepository chargerRepository, ChargingStationRepository chargingStationRepository ,ConnectorRepository connectorRepository, ChargingStationStatusRepository chargingStationStatusRepository) {
+	public CommandLineRunner initData(LocationRepository locationRepository, CarRepository carRepository, DeviceIdentifierRepository deviceIdentifierRepository,
+									  TransactionRepository transactionRepository, PlanRepository planRepository, AccountRepository accountRepository, ClientRepository clientRepository,
+									  CompanyRepository companyRepository, EmployeeRepository employeeRepository, ChargerRepository chargerRepository, ChargingStationRepository chargingStationRepository,
+									  ConnectorRepository connectorRepository, ChargingStationStatusRepository chargingStationStatusRepository,ChargingUnitRepository chargingUnitRepository) {
 		return args -> {
 
-			Location clinicaVitacura = new Location(
-					"-33.3978",
-					"-70.5685",
-					"Av. Vitacura 5951",
-					"Vitacura",
-					"Santiago",
-					"Chile");
-			locationRepository.save(clinicaVitacura);
+
 
 			Location casaCliente = new Location(
 					"-33.3978",
@@ -53,10 +49,10 @@ public class EVolGreenApplication {
 			DeviceIdentifier cardIdentifier = new DeviceIdentifier(
 					"Tarjeta1-VIN123456789",
 					987654,
-					"Tarjeta", car);
+					"Tarjeta",
+					car);
 			deviceIdentifierRepository.save(cardIdentifier);
-			car.addDeviceIdentifier(cardIdentifier);
-			carRepository.save(car);
+
 
 			LocalDate currentDate = LocalDate.now();
 
@@ -64,16 +60,7 @@ public class EVolGreenApplication {
 			LocalDateTime startDateTime = currentDate.atTime(9, 0);
 			LocalDateTime endDateTime = currentDate.atTime(11, 0);
 
-			Transaction chargeTransaction = new Transaction(
-					TransactionType.CREDIT,
-					"Carga de energía para el vehículo",
-					LocalDateTime.now(),
-					startDateTime,
-					endDateTime,
-					new BigDecimal("50.00"),
-					20000
-			);
-			transactionRepository.save(chargeTransaction);
+
 
 			Plan planBasico = new Plan(
 					"Plan Básico",
@@ -82,21 +69,6 @@ public class EVolGreenApplication {
 					new BigDecimal("250.00"));
 			planRepository.save(planBasico);
 
-			Plan planBasicoCompany = new Plan(
-					"Plan Básico",
-					"Plan básico de carga eléctrica para vehículos",
-					30,
-					new BigDecimal("25000.00"));
-			planRepository.save(planBasicoCompany);
-
-			Account account = new Account("Client-12345",
-					LocalDate.now(),
-					TypeAccounts.Client);
-			account.addTransaction(chargeTransaction);
-			account.addPlan(planBasico);
-			account.addLocation(casaCliente);
-			account.addCar(car);
-			accountRepository.save(account);
 
 			Client client = new Client(
 					"John Doe",
@@ -106,14 +78,23 @@ public class EVolGreenApplication {
 					12345678,
 					"A",
 					"password");
-			client.setAccount(account);
+
 			clientRepository.save(client);
 
-			Account accountCompany = new Account("Company-12345",
+
+			Account account = new Account("Client-12345",
 					LocalDate.now(),
-					TypeAccounts.Company);
-			accountCompany.addLocation(clinicaVitacura);
-			accountRepository.save(accountCompany);
+					TypeAccounts.Client);
+			account.setClient(client);
+			account.addPlan(planBasico);
+			account.addLocation(casaCliente);
+			account.addCar(car);
+			accountRepository.save(account);
+
+
+
+
+
 
 			LocalDate fechaCreacion = LocalDate.now();
 			Company company1 = new Company(
@@ -126,14 +107,36 @@ public class EVolGreenApplication {
 					"mi_contraseña",
 					fechaCreacion
 			);
-			company1.addAccount(accountCompany);
+
 			companyRepository.save(company1);
+
+
+			Account accountCompany = new Account("Company-12345",
+					LocalDate.now(),
+					TypeAccounts.Company);
+			accountCompany.setCompany(company1);
+			accountRepository.save(accountCompany);
+
+			Location clinicaVitacura = new Location(
+					"-33.3978",
+					"-70.5685",
+					"Av. Vitacura 5951",
+					"Vitacura",
+					"Santiago",
+					"Chile");
+			clinicaVitacura.setAccount(accountCompany);
+			locationRepository.save(clinicaVitacura);
+
+
+
+
 
 
 			Account accountEmployee = new Account("Employee-12345",
 					LocalDate.now(),
 					TypeAccounts.Employee);
 			accountEmployee.addLocation(clinicaVitacura);
+			accountEmployee.setCompany(company1);
 			accountRepository.save(accountEmployee);
 			Employee nuevoEmpleado = new Employee(
 					"Juan",
@@ -155,9 +158,34 @@ public class EVolGreenApplication {
 			chargingStation.setLocation(clinicaVitacura);
 			chargingStation.setAccount(accountCompany);
 			chargingStation.setAccount(accountEmployee);
-			chargingStation.addPlan(planBasicoCompany);
-			chargingStation.addTransaction(chargeTransaction);
 			chargingStationRepository.save(chargingStation);
+
+
+			Transaction chargeTransaction = new Transaction(
+					TransactionType.CREDIT,
+					"Carga de energía para el vehículo",
+					LocalDateTime.now(),
+					startDateTime,
+					endDateTime,
+					new BigDecimal("80.00"),
+					20000
+			);
+			chargeTransaction.setAccount(account);
+			chargeTransaction.setChargingStation(chargingStation);
+			transactionRepository.save(chargeTransaction);
+
+
+			Plan planBasicoCompany = new Plan(
+					"Plan Básico",
+					"Plan básico de carga eléctrica para vehículos",
+					30,
+					new BigDecimal("25000.00"));
+			planBasicoCompany.setAccount(accountCompany);
+			planBasicoCompany.setChargingStation(chargingStation);
+			planRepository.save(planBasicoCompany);
+
+
+
 
 
 			Charger charger = new Charger(
@@ -174,15 +202,23 @@ public class EVolGreenApplication {
 			chargerRepository.save(charger);
 
 			ChargingUnit chargingUnit = new ChargingUnit("kWh", charger);
-			charger.addChargingUnit(chargingUnit);
-			chargerRepository.save(charger);
+			chargingUnit.setCharger(charger);
+			chargingUnitRepository.save(chargingUnit);
 
 			ChargingStationStatus status = new ChargingStationStatus("Enabled");
 			chargingStation.addChargingStationStatus(status);
 			chargingStationRepository.save(chargingStation);
 			chargingStationStatusRepository.save(status);
 
-
+			Connector connector = new Connector(
+					"Conector Tipo A",
+					BigDecimal.valueOf(50),
+					ConnectorStatus.CONNECTED,
+					BigDecimal.valueOf(80),
+					charger
+			);
+			connector.setCharger(charger);
+			connectorRepository.save(connector);
 
 		};
 	}

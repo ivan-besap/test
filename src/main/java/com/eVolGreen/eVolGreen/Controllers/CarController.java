@@ -1,8 +1,7 @@
 package com.eVolGreen.eVolGreen.Controllers;
 
-import com.eVolGreen.eVolGreen.DTOS.CompanyDTO;
-import com.eVolGreen.eVolGreen.Models.Company;
-import com.eVolGreen.eVolGreen.Repositories.CompanyRepository;
+import com.eVolGreen.eVolGreen.DTOS.CarDTO;
+import com.eVolGreen.eVolGreen.Repositories.CarRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -13,16 +12,15 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
-public class CompanyController {
+public class CarController {
     @Autowired
-    private CompanyRepository companyRepository;
+    private CarRepository carRepository;
 
-    @GetMapping("/companies")
-    public List<CompanyDTO> getCompanies() {
-        return companyRepository.findAll()
+    @GetMapping("/cars")
+    public List<CarDTO> getCars() {
+        return carRepository.findAll()
                 .stream()
-                .map(CompanyDTO::new)
+                .map(CarDTO::new)
                 .collect(Collectors.toList());
     }
-
 }

@@ -6,6 +6,7 @@ import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
 @Entity
 public class Account {
@@ -152,6 +153,12 @@ public class Account {
         this.cars.add(car);
     }
 
+    public Set<ChargingStation> getChargingStations() {
+        return chargingStations;
+    }
 
+    public void setChargingStations(Set<ChargingStation> chargingStations) {
+        this.chargingStations = chargingStations;
+    }
 
 }

@@ -85,6 +85,14 @@ public class Company {
         return rut;
     }
 
+    public Set<Account> getAccounts() {
+        return accounts;
+    }
+
+    public void setAccounts(Set<Account> accounts) {
+        this.accounts = accounts;
+    }
+
     public void setRut(Integer rut) {
         this.rut = rut;
     }
