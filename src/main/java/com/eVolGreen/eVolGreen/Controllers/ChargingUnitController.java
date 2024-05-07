@@ -16,7 +16,7 @@ public class ChargingUnitController {
     @Autowired
     private ChargingUnitRepository chargingUnitRepository;
 
-    @GetMapping("/chargingunits")
+    @GetMapping("/chargingUnits")
     public List<ChargingUnitDTO> getChargingUnits() {
         return chargingUnitRepository.findAll()
                 .stream()

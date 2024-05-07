@@ -1,8 +1,11 @@
 package com.eVolGreen.eVolGreen.DTOS;
 
 import com.eVolGreen.eVolGreen.Models.Employee;
+import com.eVolGreen.eVolGreen.Models.TypeAccounts;
 
 import java.time.LocalDate;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public class EmployeeDTO {
     private Long id;
@@ -14,6 +17,7 @@ public class EmployeeDTO {
     private String password;
     private LocalDate createdDay;
     private String company;
+    private Set<AccountDTO> accounts;
 
 
     public EmployeeDTO(Employee employee) {
@@ -26,6 +30,10 @@ public class EmployeeDTO {
         password = employee.getPassword();
         createdDay = employee.getCreatedDay();
         company = employee.getCompany().getBusinessName();
+        accounts = employee.getCompany().getAccounts().stream()
+                .filter(account -> account.getTypeAccounts() == TypeAccounts.Employee)
+                .map(AccountDTO::new)
+                .collect(Collectors.toSet());
     }
 
     public Long getId() {
@@ -54,5 +62,9 @@ public class EmployeeDTO {
     }
     public String getCompany() {
         return company;
+    }
+
+    public Set<AccountDTO> getAccounts() {
+        return accounts;
     }
 }

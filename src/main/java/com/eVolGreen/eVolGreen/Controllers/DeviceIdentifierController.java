@@ -17,7 +17,7 @@ public class DeviceIdentifierController {
     @Autowired
     private DeviceIdentifierRepository deviceIdentifierRepository;
 
-    @GetMapping("/deviceidentifiers")
+    @GetMapping("/deviceIdentifiers")
     public List<DeviceIdentifierDTO> getDeviceIdentifiers() {
         return deviceIdentifierRepository.findAll()
                 .stream()

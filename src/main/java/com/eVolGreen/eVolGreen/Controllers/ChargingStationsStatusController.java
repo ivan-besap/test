@@ -16,7 +16,7 @@ public class ChargingStationsStatusController {
     @Autowired
     private ChargingStationStatusRepository chargingStationStatusRepository;
 
-    @GetMapping("/chargingstationsstatus")
+    @GetMapping("/chargingStationsStatus")
     public List<ChargingStationStatusDTO> getChargingStationsStatus() {
         return chargingStationStatusRepository.findAll()
                 .stream()
