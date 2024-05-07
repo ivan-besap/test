@@ -27,6 +27,25 @@ public class EVolGreenApplication {
 
 
 
+
+			Client client = new Client(
+					"John Doe",
+					"john@example.com",
+					"Doe",
+					123456789,
+					12345678,
+					"A",
+					"password");
+			clientRepository.save(client);
+
+
+			Account account = new Account("Client-12345",
+					LocalDate.now(),
+					TypeAccounts.Client);
+			account.setClient(client);
+			accountRepository.save(account);
+
+
 			Location casaCliente = new Location(
 					"-33.3978",
 					"-70.5685",
@@ -34,6 +53,7 @@ public class EVolGreenApplication {
 					"Vitacura",
 					"Santiago",
 					"Chile");
+			casaCliente.setAccount(account);
 			locationRepository.save(casaCliente);
 
 			Car car = new Car(
@@ -44,6 +64,7 @@ public class EVolGreenApplication {
 					"Tesla",
 					"2024",
 					new BigDecimal("100"));
+			car.setAccount(account);
 			carRepository.save(car);
 
 			DeviceIdentifier cardIdentifier = new DeviceIdentifier(
@@ -67,29 +88,12 @@ public class EVolGreenApplication {
 					"Plan básico de carga eléctrica para vehículos",
 					30,
 					new BigDecimal("250.00"));
+			planBasico.setAccount(account);
 			planRepository.save(planBasico);
 
 
-			Client client = new Client(
-					"John Doe",
-					"john@example.com",
-					"Doe",
-					123456789,
-					12345678,
-					"A",
-					"password");
-
-			clientRepository.save(client);
 
 
-			Account account = new Account("Client-12345",
-					LocalDate.now(),
-					TypeAccounts.Client);
-			account.setClient(client);
-			account.addPlan(planBasico);
-			account.addLocation(casaCliente);
-			account.addCar(car);
-			accountRepository.save(account);
 
 
 
@@ -158,6 +162,7 @@ public class EVolGreenApplication {
 			chargingStation.setLocation(clinicaVitacura);
 			chargingStation.setAccount(accountCompany);
 			chargingStation.setAccount(accountEmployee);
+			chargingStation.setAccount(account);
 			chargingStationRepository.save(chargingStation);
 
 

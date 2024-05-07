@@ -28,7 +28,7 @@ public class Account {
     private Set<Car> cars = new HashSet<>();
     @OneToMany(mappedBy = "account",fetch = FetchType.EAGER)
     private Set<ChargingStation> chargingStations = new HashSet<>();
-    @OneToOne(fetch = FetchType.EAGER)
+    @ManyToOne
     @JoinColumn(name = "client_id")
     private Client client;
 

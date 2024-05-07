@@ -3,6 +3,9 @@ package com.eVolGreen.eVolGreen.DTOS;
 import com.eVolGreen.eVolGreen.Models.Account;
 import com.eVolGreen.eVolGreen.Models.Client;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+
 public class ClientDTO {
     private Long id;
     private String name;
@@ -12,7 +15,7 @@ public class ClientDTO {
     private Integer rut;
     private String checkDigit;
     private String password;
-    private AccountDTO account;
+    private Set<AccountDTO> account;
 
 
     public ClientDTO(Client client) {
@@ -24,6 +27,7 @@ public class ClientDTO {
         rut = client.getRut();
         checkDigit = client.getCheckDigit();
         password = client.getPassword();
+        account = client.getAccounts().stream().map(AccountDTO -> new AccountDTO(AccountDTO)).collect(Collectors.toSet());
 
     }
 
@@ -59,4 +63,7 @@ public class ClientDTO {
         return password;
     }
 
+    public Set<AccountDTO> getAccount() {
+        return account;
+    }
 }

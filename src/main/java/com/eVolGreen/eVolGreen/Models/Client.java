@@ -3,6 +3,9 @@ package com.eVolGreen.eVolGreen.Models;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 
+import java.util.HashSet;
+import java.util.Set;
+
 @Entity
 public class Client {
     @Id
@@ -16,8 +19,9 @@ public class Client {
     private Integer rut;
     private String checkDigit;
     private String password;
-    @OneToOne(mappedBy = "client", fetch = FetchType.EAGER)
-    private Account account;
+    @OneToMany (mappedBy = "client", fetch = FetchType.EAGER)
+    private Set<Account> accounts = new HashSet<>();
+
 
     public Client() {
     }
@@ -96,11 +100,11 @@ public class Client {
         this.password = password;
     }
 
-    public Account getAccount() {
-        return account;
+    public Set<Account> getAccounts() {
+        return accounts;
     }
 
-    public void setAccount(Account account) {
-        this.account = account;
+    public void setAccounts(Set<Account> accounts) {
+        this.accounts = accounts;
     }
 }
