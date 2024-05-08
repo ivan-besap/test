@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.Controllers;
 
 import com.eVolGreen.eVolGreen.DTOS.EmployeeDTO;
 import com.eVolGreen.eVolGreen.Repositories.EmployeeRepository;
+import com.eVolGreen.eVolGreen.Services.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,13 +15,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/api")
 public class EmployeeController {
     @Autowired
+    private EmployeeService employeeService;
+    @Autowired
     private EmployeeRepository employeeRepository;
 
     @GetMapping("/employees")
     public List<EmployeeDTO> getEmployees() {
-        return employeeRepository.findAll()
-                .stream()
-                .map(EmployeeDTO::new)
-                .collect(Collectors.toList());
+        return employeeService.getEmployeesDTO();
     }
 }

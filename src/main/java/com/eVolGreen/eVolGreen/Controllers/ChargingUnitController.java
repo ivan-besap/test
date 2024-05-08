@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.Controllers;
 
 import com.eVolGreen.eVolGreen.DTOS.ChargingUnitDTO;
 import com.eVolGreen.eVolGreen.Repositories.ChargingUnitRepository;
+import com.eVolGreen.eVolGreen.Services.ChargingUnitService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,13 +15,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/api")
 public class ChargingUnitController {
     @Autowired
+    private ChargingUnitService chargingUnitService;
+    @Autowired
     private ChargingUnitRepository chargingUnitRepository;
 
     @GetMapping("/chargingUnits")
     public List<ChargingUnitDTO> getChargingUnits() {
-        return chargingUnitRepository.findAll()
-                .stream()
-                .map(ChargingUnitDTO::new)
-                .collect(Collectors.toList());
+        return chargingUnitService.getChargingUnitsDTO();
     }
 }

@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.Controllers;
 
 import com.eVolGreen.eVolGreen.DTOS.LocationDTO;
 import com.eVolGreen.eVolGreen.Repositories.LocationRepository;
+import com.eVolGreen.eVolGreen.Services.LocationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -14,13 +15,12 @@ import java.util.stream.Collectors;
 @RequestMapping("/api")
 public class LocationController {
     @Autowired
+    private LocationService locationService;
+    @Autowired
     private LocationRepository locationRepository;
 
     @GetMapping("/locations")
     public List<LocationDTO> getLocations() {
-        return locationRepository.findAll()
-                .stream()
-                .map(LocationDTO::new)
-                .collect(Collectors.toList());
+        return locationService.getLocationsDTO();
     }
 }

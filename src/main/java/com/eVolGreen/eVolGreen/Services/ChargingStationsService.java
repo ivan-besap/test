@@ -1,6 +1,12 @@
 package com.eVolGreen.eVolGreen.Services;
-public interface ChargintStationsService {
 
-    List<ChargintStations> getChargintStationsDTO();
-    void saveChargintStations(ChargintStations chargintStations);
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationsDTO;
+import com.eVolGreen.eVolGreen.Models.ChargingStation;
+
+import java.util.List;
+
+public interface ChargingStationsService {
+
+    List<ChargingStationsDTO> getChargintStationsDTO();
+    void saveChargingStations(ChargingStation chargingStations);
 }

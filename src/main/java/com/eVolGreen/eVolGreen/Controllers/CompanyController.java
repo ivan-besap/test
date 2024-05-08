@@ -3,6 +3,7 @@ package com.eVolGreen.eVolGreen.Controllers;
 import com.eVolGreen.eVolGreen.DTOS.CompanyDTO;
 import com.eVolGreen.eVolGreen.Models.Company;
 import com.eVolGreen.eVolGreen.Repositories.CompanyRepository;
+import com.eVolGreen.eVolGreen.Services.CompanyService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -15,14 +16,13 @@ import java.util.stream.Collectors;
 @RequestMapping("/api")
 public class CompanyController {
     @Autowired
+    private CompanyService companyService;
+    @Autowired
     private CompanyRepository companyRepository;
 
     @GetMapping("/companies")
     public List<CompanyDTO> getCompanies() {
-        return companyRepository.findAll()
-                .stream()
-                .map(CompanyDTO::new)
-                .collect(Collectors.toList());
+        return companyService.getCompaniesDTO();
     }
 
 }

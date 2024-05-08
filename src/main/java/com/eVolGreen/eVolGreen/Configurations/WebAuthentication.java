@@ -6,6 +6,9 @@
 //import com.eVolGreen.eVolGreen.Repositories.ClientRepository;
 //import com.eVolGreen.eVolGreen.Repositories.CompanyRepository;
 //import com.eVolGreen.eVolGreen.Repositories.EmployeeRepository;
+//import com.eVolGreen.eVolGreen.Services.ClientService;
+//import com.eVolGreen.eVolGreen.Services.CompanyService;
+//import com.eVolGreen.eVolGreen.Services.EmployeeService;
 //import org.springframework.beans.factory.annotation.Autowired;
 //import org.springframework.context.annotation.Bean;
 //import org.springframework.context.annotation.Configuration;
@@ -19,12 +22,11 @@
 //@Configuration
 //public class WebAuthentication extends GlobalAuthenticationConfigurerAdapter {
 //    @Autowired
-//    private ClientRepository clientRepository;
+//    private ClientService clientService;
 //    @Autowired
-//    private EmployeeRepository employeeRepository;
+//    private EmployeeService employeeService;
 //    @Autowired
-//    private CompanyRepository companyRepository;
-//
+//    private CompanyService companyService;
 //    @Bean
 //    public PasswordEncoder passwordEncoder() {
 //        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
@@ -33,19 +35,19 @@
 //    @Override
 //    public void init(AuthenticationManagerBuilder auth) throws Exception {
 //        auth.userDetailsService(username -> {
-//            Client client = clientRepository.findByEmail(username);
+//            Client client = clientService.findByEmail(username);
 //            if (client != null) {
 //                return new User(client.getEmail(), client.getPassword(),
 //                        AuthorityUtils.createAuthorityList("CLIENT"));
 //            }
 //
-//            Employee employee = employeeRepository.findByEmail(username);
+//            Employee employee = employeeService.
 //            if (employee != null) {
 //                return new User(employee.getEmail(), employee.getPassword(),
 //                        AuthorityUtils.createAuthorityList("EMPLOYEE"));
 //            }
 //
-//            Company company = companyRepository.findByEmailCompany(username);
+//            Company company = companyService.findByEmailCompany(username);
 //            if (company != null) {
 //                return new User(company.getEmailCompany(), company.getPassword(),
 //                        AuthorityUtils.createAuthorityList("COMPANY"));
