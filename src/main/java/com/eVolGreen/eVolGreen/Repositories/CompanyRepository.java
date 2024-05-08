@@ -6,4 +6,5 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 @RepositoryRestResource
 public interface CompanyRepository extends JpaRepository<Company, Long> {
+    Company findByEmailCompany(String email);
 }

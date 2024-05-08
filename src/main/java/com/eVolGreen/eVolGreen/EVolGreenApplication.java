@@ -2,10 +2,12 @@ package com.eVolGreen.eVolGreen;
 
 import com.eVolGreen.eVolGreen.Models.*;
 import com.eVolGreen.eVolGreen.Repositories.*;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
+//import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.sql.Time;
@@ -15,7 +17,9 @@ import java.time.LocalDateTime;
 @SpringBootApplication
 public class EVolGreenApplication {
 
-	public static void main(String[] args) {
+//	    @Autowired
+//	    public PasswordEncoder passwordEncoder;
+		public static void main(String[] args) {
 		SpringApplication.run(EVolGreenApplication.class, args);
 	}
 	@Bean
@@ -24,9 +28,6 @@ public class EVolGreenApplication {
 									  CompanyRepository companyRepository, EmployeeRepository employeeRepository, ChargerRepository chargerRepository, ChargingStationRepository chargingStationRepository,
 									  ConnectorRepository connectorRepository, ChargingStationStatusRepository chargingStationStatusRepository,ChargingUnitRepository chargingUnitRepository) {
 		return args -> {
-
-
-
 
 			Client client = new Client(
 					"John Doe",
@@ -38,13 +39,11 @@ public class EVolGreenApplication {
 					"password");
 			clientRepository.save(client);
 
-
 			Account account = new Account("Client-12345",
 					LocalDate.now(),
 					TypeAccounts.Client);
 			account.setClient(client);
 			accountRepository.save(account);
-
 
 			Location casaCliente = new Location(
 					"-33.3978",
@@ -76,12 +75,9 @@ public class EVolGreenApplication {
 
 
 			LocalDate currentDate = LocalDate.now();
-
 			// Supongamos que la carga comienza a las 9:00 AM y termina a las 11:00 AM del día actual
 			LocalDateTime startDateTime = currentDate.atTime(9, 0);
 			LocalDateTime endDateTime = currentDate.atTime(11, 0);
-
-
 
 			Plan planBasico = new Plan(
 					"Plan Básico",
@@ -108,7 +104,7 @@ public class EVolGreenApplication {
 					1234567890,
 					"AB",
 					true,
-					"mi_contraseña",
+					"password",
 					fechaCreacion
 			);
 
