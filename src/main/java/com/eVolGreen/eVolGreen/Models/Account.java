@@ -17,7 +17,7 @@ public class Account {
     private String number;
     private LocalDate creationDate;
     private TypeAccounts typeAccounts;
-    private Boolean isActive =true;
+    private Boolean isActive = false;
     @OneToMany(mappedBy = "account", fetch = FetchType.EAGER)
     private Set<Transaction> transactions = new HashSet<>();
     @OneToMany(mappedBy = "account",fetch = FetchType.EAGER)

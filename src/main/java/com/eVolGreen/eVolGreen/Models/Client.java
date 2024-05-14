@@ -12,11 +12,11 @@ public class Client {
     @GenericGenerator(name = "native", strategy = "native")
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-    private String name;
-    private String email;
+    private String firstName;
     private String lastName;
-    private Integer phone;
     private Integer rut;
+    private String email;
+    private Integer phone;
     private String checkDigit;
     private String password;
     @OneToMany (mappedBy = "client", fetch = FetchType.EAGER)
@@ -26,12 +26,12 @@ public class Client {
     public Client() {
     }
 
-    public Client(String name, String email, String lastName, Integer phone, Integer rut, String checkDigit, String password) {
-        this.name = name;
-        this.email = email;
+    public Client(String firstName,String lastName,Integer rut,String email,  Integer phone,  String checkDigit, String password) {
+        this.firstName = firstName;
         this.lastName = lastName;
-        this.phone = phone;
         this.rut = rut;
+        this.email = email;
+        this.phone = phone;
         this.checkDigit = checkDigit;
         this.password = password;
     }
@@ -44,12 +44,12 @@ public class Client {
         this.id = id;
     }
 
-    public String getName() {
-        return name;
+    public String getFirstName() {
+        return firstName;
     }
 
-    public void setName(String name) {
-        this.name = name;
+    public void setFirstName(String name) {
+        this.firstName = name;
     }
 
     public String getEmail() {
@@ -106,5 +106,10 @@ public class Client {
 
     public void setAccounts(Set<Account> accounts) {
         this.accounts = accounts;
+    }
+
+    public void addAccount(Account newAccount) {
+        this.accounts.add(newAccount);
+        newAccount.setClient(this);
     }
 }

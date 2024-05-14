@@ -8,11 +8,11 @@ import java.util.stream.Collectors;
 
 public class ClientDTO {
     private Long id;
-    private String name;
-    private String email;
+    private String firstName;
     private String lastName;
-    private Integer phone;
     private Integer rut;
+    private String email;
+    private Integer phone;
     private String checkDigit;
     private String password;
     private Set<AccountDTO> account;
@@ -20,11 +20,11 @@ public class ClientDTO {
 
     public ClientDTO(Client client) {
         id = client.getId();
-        name = client.getName();
-        email = client.getEmail();
+        firstName = client.getFirstName();
         lastName = client.getLastName();
-        phone = client.getPhone();
         rut = client.getRut();
+        email = client.getEmail();
+        phone = client.getPhone();
         checkDigit = client.getCheckDigit();
         password = client.getPassword();
         account = client.getAccounts().stream().map(AccountDTO -> new AccountDTO(AccountDTO)).collect(Collectors.toSet());
@@ -35,8 +35,9 @@ public class ClientDTO {
         return id;
     }
 
-    public String getName() {
-        return name;
+
+    public String getFirstName() {
+        return firstName;
     }
 
     public String getEmail() {

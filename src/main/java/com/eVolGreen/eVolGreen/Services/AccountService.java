@@ -8,4 +8,9 @@ import java.util.List;
 public interface AccountService {
     List<AccountDTO> getAccountsDTO();
     void saveAccount(Account account);
+
+    Account findById(Long id);
+
+    AccountDTO getAccountDTOCurrent(Long id);
+
 }

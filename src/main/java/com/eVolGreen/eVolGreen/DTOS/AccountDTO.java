@@ -14,7 +14,7 @@ public class AccountDTO {
     private String number;
     private LocalDate creationDate;
     private TypeAccounts typeAccounts;
-    private Boolean isActive =true;
+    private Boolean isActive = false;
     private Set<Long> transactions;
     private Set<Long> plans;
     private Set<LocationDTO> locations;

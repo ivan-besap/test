@@ -26,4 +26,19 @@ public class CarServiceImplement implements CarService {
     public void saveCar(Car car) {
         carRepository.save(car);
     }
+
+    @Override
+    public Car findById(Long id) {
+        return carRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    public void deleteCar(Long id) {
+        carRepository.deleteById(id);
+    }
+
+    @Override
+    public CarDTO getCardDTO(Long id) {
+        return carRepository.findById(id).map(CarDTO::new).orElse(null);
+    }
 }

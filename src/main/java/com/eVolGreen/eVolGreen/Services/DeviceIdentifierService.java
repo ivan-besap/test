@@ -9,4 +9,6 @@ public interface DeviceIdentifierService {
     List<DeviceIdentifierDTO> getDeviceIdentifiersDTO();
 
     void saveDeviceIdentifier(DeviceIdentifier deviceIdentifier);
+
+    void deleteDeviceIdentifier(long id);
 }

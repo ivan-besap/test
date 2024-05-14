@@ -10,4 +10,11 @@ public interface CarService {
     List<CarDTO> getCarsDTO();
 
     void saveCar(Car car);
+
+    Car findById(Long id);
+
+    void deleteCar(Long id);
+
+    CarDTO getCardDTO(Long id);
+
 }

@@ -7,7 +7,7 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
-//import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
 import java.sql.Time;
@@ -17,8 +17,8 @@ import java.time.LocalDateTime;
 @SpringBootApplication
 public class EVolGreenApplication {
 
-//	    @Autowired
-//	    public PasswordEncoder passwordEncoder;
+	    @Autowired
+	    public PasswordEncoder passwordEncoder;
 		public static void main(String[] args) {
 		SpringApplication.run(EVolGreenApplication.class, args);
 	}
@@ -30,13 +30,13 @@ public class EVolGreenApplication {
 		return args -> {
 
 			Client client = new Client(
-					"John Doe",
-					"john@example.com",
+					"John",
 					"Doe",
-					123456789,
+					123456789-9,
+					"4C3L4@example.com",
 					12345678,
 					"A",
-					"password");
+					passwordEncoder.encode("password"));
 			clientRepository.save(client);
 
 			Account account = new Account("Client-12345",
@@ -104,7 +104,7 @@ public class EVolGreenApplication {
 					1234567890,
 					"AB",
 					true,
-					"password",
+					passwordEncoder.encode("password"),
 					fechaCreacion
 			);
 

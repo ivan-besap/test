@@ -26,4 +26,9 @@ public class DeviceIdentifierServiceImplement implements DeviceIdentifierService
     public void saveDeviceIdentifier(DeviceIdentifier deviceIdentifier) {
         deviceIdentifierRepository.save(deviceIdentifier);
     }
+
+    @Override
+    public void deleteDeviceIdentifier(long id) {
+        deviceIdentifierRepository.deleteById(id);
+    }
 }

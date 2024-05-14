@@ -11,7 +11,8 @@ const app = Vue.createApp({
         login(event) {
             let userEmail = this.email;
             event.preventDefault();
-            axios.post('/api/login', `email=${userEmail}&password=${this.password}`, { headers: { 'content-type': 'application/x-www-form-urlencoded' } })
+            axios.post('/api/login', `email=${userEmail}&password=${this.password}`, { headers: { 'content-type':
+             'application/x-www-form-urlencoded' } })
             .then(function (response) {
                 console.log(response);
                 if (userEmail.includes("@admin.com")) {
