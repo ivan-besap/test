@@ -1,13 +1,22 @@
 package com.eVolGreen.eVolGreen.Models;
 
+import com.eVolGreen.eVolGreen.Auth.Role;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
-public class Client {
+public class Client implements UserDetails {
+
     @Id
     @GenericGenerator(name = "native", strategy = "native")
     @GeneratedValue(strategy = GenerationType.AUTO)
@@ -17,25 +26,31 @@ public class Client {
     private Integer rut;
     private String email;
     private Integer phone;
-    private String checkDigit;
     private String password;
-    @OneToMany (mappedBy = "client", fetch = FetchType.EAGER)
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
+
+    @OneToMany(mappedBy = "client", fetch = FetchType.EAGER)
+    @JsonIgnore
     private Set<Account> accounts = new HashSet<>();
 
+    // Constructor vacío
+    public Client() {}
 
-    public Client() {
-    }
-
-    public Client(String firstName,String lastName,Integer rut,String email,  Integer phone,  String checkDigit, String password) {
+    // Constructor con parámetros
+    public Client(String firstName, String lastName, Integer rut, String email, Integer phone, String password, Role role) {
         this.firstName = firstName;
         this.lastName = lastName;
         this.rut = rut;
         this.email = email;
         this.phone = phone;
-        this.checkDigit = checkDigit;
         this.password = password;
+        this.role = Role.CLIENT;
     }
 
+
+    // Getters y Setters
     public Long getId() {
         return id;
     }
@@ -48,8 +63,8 @@ public class Client {
         return firstName;
     }
 
-    public void setFirstName(String name) {
-        this.firstName = name;
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
     }
 
     public String getEmail() {
@@ -84,18 +99,6 @@ public class Client {
         this.rut = rut;
     }
 
-    public String getCheckDigit() {
-        return checkDigit;
-    }
-
-    public void setCheckDigit(String checkDigit) {
-        this.checkDigit = checkDigit;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
     public void setPassword(String password) {
         this.password = password;
     }
@@ -111,5 +114,48 @@ public class Client {
     public void addAccount(Account newAccount) {
         this.accounts.add(newAccount);
         newAccount.setClient(this);
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority(role.name()));
+    }
+
+    @Override
+    public String getPassword() {
+        return password;
+    }
+
+    @Override
+    public String getUsername() {
+        return email;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
     }
 }

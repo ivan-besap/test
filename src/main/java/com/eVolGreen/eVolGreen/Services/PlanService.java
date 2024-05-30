@@ -10,4 +10,6 @@ public interface PlanService {
     List<PlanDTO> getPlansDTO();
 
     void savePlan(Plan plan);
+
+    Plan findById(Long planId);
 }

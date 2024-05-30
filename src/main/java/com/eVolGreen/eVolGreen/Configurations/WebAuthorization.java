@@ -1,77 +1,63 @@
 package com.eVolGreen.eVolGreen.Configurations;
 
-
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import com.eVolGreen.eVolGreen.Auth.Jwt.JwtAuthenticationFilter;
+import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.security.web.WebAttributes;
-import org.springframework.security.web.authentication.logout.HttpStatusReturningLogoutSuccessHandler;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.security.AuthProvider;
 
-@EnableWebSecurity
+import static org.springframework.security.config.Customizer.withDefaults;
 @Configuration
+@EnableWebSecurity
+@RequiredArgsConstructor
 public class WebAuthorization {
 
+    private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final AuthenticationProvider authProvider;
+
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+        http
+                .authorizeHttpRequests(authorize -> authorize
+                        .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/auth/registerCompany").permitAll()
+                        .requestMatchers("http://localhost:53672", "http://localhost:45000").permitAll()
+                        .anyRequest().authenticated()
+                )
+//                .headers(headers -> headers.frameOptions().disable())
+                .sessionManagement(sessionManager -> sessionManager
+                        .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .authenticationProvider(authProvider)
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                .csrf(csrf -> csrf.disable())
+                .cors( withDefaults() );
 
-        http.
-                authorizeRequests()
-                .requestMatchers(HttpMethod.POST, "/api/login").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/clients").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/email").permitAll()
-
-                .requestMatchers("/**").permitAll()
-
-                .requestMatchers("http://localhost:8083").permitAll()
-
-                .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
-
-                .requestMatchers("/web/**","/script/**","/assets/**").permitAll();
-
-
-        http.formLogin()
-                .usernameParameter("email")
-                .passwordParameter("password")
-                .loginPage("/api/login");
-
-        http.logout().logoutUrl("/api/logout");
-
-        // turn off checking for CSRF tokens
-        http.csrf().disable();
-
-        //disabling frameOptions so h2-console can be accessed
-        http.headers().frameOptions().disable();
-
-        // if user is not authenticated, just send an authentication failure response
-        http.exceptionHandling().authenticationEntryPoint((req, res, exc) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED));
-
-        // if login is successful, just clear the flags asking for authentication
-        http.formLogin().successHandler((req, res, auth) -> clearAuthenticationAttributes((HttpServletRequest) req));
-
-        // if login fails, just send an authentication failure response
-        http.formLogin().failureHandler((req, res, exc) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED));
-
-        // if logout is successful, just send a success response
-        http.logout().logoutSuccessHandler(new HttpStatusReturningLogoutSuccessHandler());
 
         return http.build();
     }
 
-    private void clearAuthenticationAttributes(HttpServletRequest request) {
-
-        HttpSession session = request.getSession(false);
-
-        if (session != null) {
-
-            session.removeAttribute(WebAttributes.AUTHENTICATION_EXCEPTION);
-
-        }
-    }
+//    @Bean
+//    public JwtAuthenticationConverter jwtAuthenticationConverter() {
+//        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
+//        grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
+//        grantedAuthoritiesConverter.setAuthoritiesClaimName("cognito:groups");
+//
+//        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
+//        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
+//        return jwtAuthenticationConverter;
+//    }
 }

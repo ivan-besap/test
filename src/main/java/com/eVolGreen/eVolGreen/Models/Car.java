@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Models;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -29,6 +30,7 @@ public class Car {
     private Set<DeviceIdentifier> deviceIdentifiers = new HashSet<>();
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "account_id")
+    @JsonIgnore
     private Account account;
     public Car() {
     }

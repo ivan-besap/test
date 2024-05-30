@@ -10,6 +10,8 @@ public class PlanDTO {
     private String description;
     private Integer days;
     private BigDecimal cost;
+    private BigDecimal totalKWh;
+    private BigDecimal totalCost;
 
     public PlanDTO(Plan plan) {
         id = plan.getId();
@@ -17,6 +19,8 @@ public class PlanDTO {
         description = plan.getDescription();
         days = plan.getDays();
         cost = plan.getCost();
+        totalKWh = plan.getTotalKWh();
+        totalCost = plan.getTotalKWh()  ;
     }
 
     public long getId() {
@@ -37,5 +41,13 @@ public class PlanDTO {
 
     public BigDecimal getCost() {
         return cost;
+    }
+
+    public BigDecimal getTotalKWh() {
+        return totalKWh;
+    }
+
+    public BigDecimal getTotalCost() {
+        return totalCost;
     }
 }

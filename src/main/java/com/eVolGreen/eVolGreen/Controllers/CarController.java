@@ -44,45 +44,38 @@ public class CarController {
 
     @PostMapping("/clients/current/car")
     public ResponseEntity<Object> createCar(Authentication authentication,
-                                            @RequestParam String licensePlate,
-                                            @RequestParam String model,
-                                            @RequestParam String vin,
-                                            @RequestParam String color,
-                                            @RequestParam String make,
-                                            @RequestParam String year,
-                                            @RequestParam BigDecimal mileage,
+                                            @RequestBody Car newCar,
                                             @RequestParam String numberAccount) {
-        try {
-            // Find the current client
-            Client clientCurrent = clientService.findByEmail(authentication.getName());
-            String message = "";
 
+        Client clientCurrent = clientService.findByEmail(authentication.getName());
+        String message = "";
+        try {
             // Validate parameters
-            if (licensePlate.isBlank()){
+            if (newCar.getLicensePlate().isBlank()){
                 message = "Missing license plate";
                 return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
             }
-            if (model.isBlank()){
+            if (newCar.getModel().isBlank()){
                 message = "Missing model";
                 return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
             }
-            if (vin.isBlank()){
+            if (newCar.getVin().isBlank()){
                 message = "Missing vin";
                 return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
             }
-            if (color.isBlank()){
+            if (newCar.getColor().isBlank()){
                 message = "Missing color";
                 return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
             }
-            if (make.isBlank()){
+            if (newCar.getBrand().isBlank()){
                 message = "Missing make";
                 return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
             }
-            if (year.isBlank()){
+            if (newCar.getManufactureYear().isBlank()){
                 message = "Missing year";
                 return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
             }
-            if (mileage == null){
+            if (newCar.getCapacityFullPower() == null){
                 message = "Missing mileage";
                 return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
             }
@@ -106,7 +99,13 @@ public class CarController {
             Account selectedAccount = optionalAccount.get();
 
             // Create the car
-            Car car = new Car(licensePlate, model, vin, color, make, year, mileage);
+            Car car = new Car( newCar.getLicensePlate(),
+                    newCar.getModel(),
+                    newCar.getVin(),
+                    newCar.getColor(),
+                    newCar.getBrand(),
+                    newCar.getManufactureYear(),
+                    newCar.getCapacityFullPower());
 
             // Set the car's identifier
             String indentifierName ="CARD-" + getStringRandomIdentifier();

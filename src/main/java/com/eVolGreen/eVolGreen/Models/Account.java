@@ -1,6 +1,8 @@
 package com.eVolGreen.eVolGreen.Models;
 
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -19,8 +21,10 @@ public class Account {
     private TypeAccounts typeAccounts;
     private Boolean isActive = false;
     @OneToMany(mappedBy = "account", fetch = FetchType.EAGER)
+    @JsonManagedReference
     private Set<Transaction> transactions = new HashSet<>();
     @OneToMany(mappedBy = "account",fetch = FetchType.EAGER)
+    @JsonManagedReference
     private Set<Plan> plans = new HashSet<>();
     @OneToMany(mappedBy = "account",fetch = FetchType.EAGER)
     private Set<Location> locations = new HashSet<>();
@@ -30,10 +34,12 @@ public class Account {
     private Set<ChargingStation> chargingStations = new HashSet<>();
     @ManyToOne
     @JoinColumn(name = "client_id")
+    @JsonBackReference("client-account")
     private Client client;
 
     @ManyToOne
     @JoinColumn(name = "company_id")
+    @JsonBackReference("company-account")
     private Company company;
 
     public Account() {

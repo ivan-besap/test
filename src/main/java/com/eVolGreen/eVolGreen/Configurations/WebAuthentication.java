@@ -1,43 +1,50 @@
-package com.eVolGreen.eVolGreen.Configurations;
 
+package com.eVolGreen.eVolGreen.Configurations;
 import com.eVolGreen.eVolGreen.Models.Client;
 import com.eVolGreen.eVolGreen.Models.Company;
 import com.eVolGreen.eVolGreen.Models.Employee;
-import com.eVolGreen.eVolGreen.Repositories.ClientRepository;
-import com.eVolGreen.eVolGreen.Repositories.CompanyRepository;
-import com.eVolGreen.eVolGreen.Repositories.EmployeeRepository;
 import com.eVolGreen.eVolGreen.Services.ClientService;
 import com.eVolGreen.eVolGreen.Services.CompanyService;
 import com.eVolGreen.eVolGreen.Services.EmployeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
+
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.AuthenticationProvider;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.authentication.builders.AuthenticationManagerBuilder;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.authentication.configuration.GlobalAuthenticationConfigurerAdapter;
 import org.springframework.security.core.authority.AuthorityUtils;
 import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.factory.PasswordEncoderFactories;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.provisioning.InMemoryUserDetailsManager;
+
 @Configuration
-public class WebAuthentication extends GlobalAuthenticationConfigurerAdapter {
+public class WebAuthentication {
+
     @Autowired
     private ClientService clientService;
     @Autowired
     private EmployeeService employeeService;
     @Autowired
     private CompanyService companyService;
+
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return PasswordEncoderFactories.createDelegatingPasswordEncoder();
+        return new BCryptPasswordEncoder();
     }
-
-    @Override
-    public void init(AuthenticationManagerBuilder auth) throws Exception {
-        auth.userDetailsService(username -> {
+    @Bean
+    public UserDetailsService userDetailsService() {
+        return username -> {
             Client client = clientService.findByEmail(username);
             if (client != null) {
-                return new User(client.getEmail().toString(), client.getPassword(),
+                return new User(client.getEmail(), client.getPassword(),
                         AuthorityUtils.createAuthorityList("CLIENT"));
             }
 
@@ -54,9 +61,20 @@ public class WebAuthentication extends GlobalAuthenticationConfigurerAdapter {
             }
 
             throw new UsernameNotFoundException("Unknown user: " + username);
-        }).passwordEncoder(passwordEncoder());
+        };
+    }
+
+    @Bean
+    public AuthenticationProvider authenticationProvider()
+    {
+        DaoAuthenticationProvider authenticationProvider= new DaoAuthenticationProvider();
+        authenticationProvider.setUserDetailsService(userDetailsService());
+        authenticationProvider.setPasswordEncoder(passwordEncoder());
+        return authenticationProvider;
+    }
+
+    @Bean
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
+        return authenticationConfiguration.getAuthenticationManager();
     }
 }
-
-
-

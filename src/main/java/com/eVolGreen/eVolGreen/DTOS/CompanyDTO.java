@@ -17,8 +17,7 @@ public class CompanyDTO {
     private String emailCompany;
     private Integer phoneCompany;
     private Integer rut;
-    private String verifierCode;
-    private Boolean enabled;
+    private Boolean isActive = false;
     private String password;
     private LocalDate createdDay;
     private Set<Long> employees;
@@ -31,12 +30,12 @@ public class CompanyDTO {
         emailCompany = company.getEmailCompany();
         phoneCompany = company.getPhoneCompany();
         rut = company.getRut();
-        verifierCode = company.getVerifierCode();
-        enabled = company.getEnabled();
         password = company.getPassword();
         createdDay = company.getCreatedDay();
         employees = company.getEmployees().stream().map(EmployeeDTO -> new EmployeeDTO(EmployeeDTO).getId()).collect(Collectors.toSet());
         accounts = company.getAccounts().stream().map(AccountDTO -> new AccountDTO(AccountDTO)).collect(Collectors.toSet());
+    }
+    public CompanyDTO( ) {
     }
 
 
@@ -60,14 +59,6 @@ public class CompanyDTO {
         return rut;
     }
 
-    public String getVerifierCode() {
-        return verifierCode;
-    }
-
-    public Boolean getEnabled() {
-        return enabled;
-    }
-
     public String getPassword() {
         return password;
     }
@@ -83,5 +74,9 @@ public class CompanyDTO {
 
     public Set<AccountDTO> getAccounts() {
         return accounts;
+    }
+
+    public Boolean getActive() {
+        return isActive;
     }
 }

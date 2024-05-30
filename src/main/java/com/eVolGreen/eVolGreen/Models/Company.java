@@ -1,54 +1,63 @@
 package com.eVolGreen.eVolGreen.Models;
 
+import com.eVolGreen.eVolGreen.Auth.Role;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @Entity
-public class Company {
+public class Company implements UserDetails {
     @Id
     @GenericGenerator(name = "native", strategy = "native")
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
-
     private String businessName;
-
     private String emailCompany;
-
     private Integer phoneCompany;
-
     private Integer rut;
-
-    private String verifierCode;
-
-    private Boolean enabled;
+    private Boolean isActive = false;
     private String password;
-
     private LocalDate createdDay;
-
+    @Enumerated(EnumType.STRING)
+    private Role role;
     @OneToMany(mappedBy = "company", fetch = FetchType.EAGER)
+    @JsonIgnore
     private Set<Employee> employees = new HashSet<>();
 
     @OneToMany(mappedBy = "company", fetch = FetchType.EAGER)
+    @JsonIgnore
     private Set<Account> accounts = new HashSet<>();
+
 
     public Company() {
     }
 
-    public Company(String businessName, String emailCompany, Integer phoneCompany, Integer rut, String verifierCode, Boolean enabled, String password, LocalDate createdDay) {
+    public Company(String businessName, String emailCompany, Integer phoneCompany, Integer rut, String password, LocalDate createdDay, Role role) {
         this.businessName = businessName;
         this.emailCompany = emailCompany;
         this.phoneCompany = phoneCompany;
         this.rut = rut;
-        this.verifierCode = verifierCode;
-        this.enabled = enabled;
         this.password = password;
         this.createdDay = createdDay;
+        this.role = Role.COMPANY;
     }
 
+    public Boolean getActive() {
+        return isActive;
+    }
+    public void setActive(Boolean active) {
+        isActive = active;
+    }
     public Long getId() {
         return id;
     }
@@ -97,26 +106,6 @@ public class Company {
         this.rut = rut;
     }
 
-    public String getVerifierCode() {
-        return verifierCode;
-    }
-
-    public void setVerifierCode(String verifierCode) {
-        this.verifierCode = verifierCode;
-    }
-
-    public Boolean getEnabled() {
-        return enabled;
-    }
-
-    public void setEnabled(Boolean enabled) {
-        this.enabled = enabled;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
     public void setPassword(String password) {
         this.password = password;
     }
@@ -140,5 +129,45 @@ public class Company {
        account.setCompany(this);
        this.accounts.add(account);
     }
+    public void addEmployee(Employee employee) {
+        employee.setCompany(this);
+        this.employees.add(employee);
+    }
+    public Role getRole() {
+        return role;
+    }
+    public void setRole(Role role) {
+        this.role = role;
+    }
 
+
+
+
+    @Override
+    public Collection<? extends GrantedAuthority> getAuthorities() {
+        return List.of(new SimpleGrantedAuthority((role.name())));
+    }
+    public String getPassword() {
+        return password;
+    }
+    @Override
+    public String getUsername() {
+        return emailCompany;
+    }
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
 }

@@ -17,15 +17,27 @@ public class ClientServiceImplement implements ClientService {
     private ClientRepository clientRepository;
 
     @Override
-    public Client findByEmail(String email) {
-        return clientRepository.findByEmail(email);
-    }
-    @Override
     public List<ClientDTO> getClientsDTO() {
         return clientRepository.findAll()
                 .stream()
                 .map(ClientDTO::new)
                 .collect(Collectors.toList());
+    }
+    @Override
+    public ClientDTO getClientDTO(Long id) {
+        return new ClientDTO(this.findById(id));
+    }
+    @Override
+    public ClientDTO getClientDTOByEmailCurrent(String authentication) {
+        return new ClientDTO(clientRepository.findByEmail(authentication));
+    }
+    @Override
+    public Client findById(Long id) {
+        return clientRepository.findById(id).orElse(null);
+    }
+    @Override
+    public Client findByEmail(String email) {
+        return clientRepository.findByEmail(email);
     }
     @Override
     public void saveClient(Client client) {

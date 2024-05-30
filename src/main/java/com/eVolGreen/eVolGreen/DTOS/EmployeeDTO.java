@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.DTOS;
 
+import com.eVolGreen.eVolGreen.Models.Company;
 import com.eVolGreen.eVolGreen.Models.Employee;
 import com.eVolGreen.eVolGreen.Models.TypeAccounts;
 
@@ -13,7 +14,6 @@ public class EmployeeDTO {
     private String firstSurname;
     private String lastSurname;
     private String email;
-    private String username;
     private String password;
     private LocalDate createdDay;
     private String company;
@@ -26,7 +26,6 @@ public class EmployeeDTO {
         firstSurname = employee.getFirstSurname();
         lastSurname = employee.getLastSurname();
         email = employee.getEmail();
-       username = employee.getUsername();
         password = employee.getPassword();
         createdDay = employee.getCreatedDay();
         company = employee.getCompany().getBusinessName();
@@ -50,9 +49,6 @@ public class EmployeeDTO {
     }
     public String getEmail() {
         return email;
-    }
-    public String getUsername() {
-        return username;
     }
     public String getPassword() {
         return password;

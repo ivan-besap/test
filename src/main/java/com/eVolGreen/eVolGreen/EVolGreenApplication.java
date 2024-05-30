@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen;
 
+import com.eVolGreen.eVolGreen.Auth.Role;
 import com.eVolGreen.eVolGreen.Models.*;
 import com.eVolGreen.eVolGreen.Repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,6 +20,7 @@ public class EVolGreenApplication {
 
 	    @Autowired
 	    public PasswordEncoder passwordEncoder;
+
 		public static void main(String[] args) {
 		SpringApplication.run(EVolGreenApplication.class, args);
 	}
@@ -29,14 +31,15 @@ public class EVolGreenApplication {
 									  ConnectorRepository connectorRepository, ChargingStationStatusRepository chargingStationStatusRepository,ChargingUnitRepository chargingUnitRepository) {
 		return args -> {
 
+			Role clientRole = Role.CLIENT;
 			Client client = new Client(
 					"John",
 					"Doe",
 					123456789-9,
-					"4C3L4@example.com",
+							"4C3L4@example.com",
 					12345678,
-					"A",
-					passwordEncoder.encode("password"));
+					passwordEncoder.encode("password"),
+					clientRole);
 			clientRepository.save(client);
 
 			Account account = new Account("Client-12345",
@@ -83,7 +86,9 @@ public class EVolGreenApplication {
 					"Plan Básico",
 					"Plan básico de carga eléctrica para vehículos",
 					30,
-					new BigDecimal("250.00"));
+					new BigDecimal("250.00"),
+					new BigDecimal("350"),
+					new BigDecimal("280"));
 			planBasico.setAccount(account);
 			planRepository.save(planBasico);
 
@@ -95,17 +100,16 @@ public class EVolGreenApplication {
 
 
 
-
+			Role companyRole = Role.COMPANY;
 			LocalDate fechaCreacion = LocalDate.now();
 			Company company1 = new Company(
 					"Mi Empresa S.A.",
 					"correo@miempresa.com",
 					123456789,
 					1234567890,
-					"AB",
-					true,
 					passwordEncoder.encode("password"),
-					fechaCreacion
+					fechaCreacion,
+					companyRole
 			);
 
 			companyRepository.save(company1);
@@ -138,15 +142,18 @@ public class EVolGreenApplication {
 			accountEmployee.addLocation(clinicaVitacura);
 			accountEmployee.setCompany(company1);
 			accountRepository.save(accountEmployee);
+
+			Role role = Role.EMPLOYEE;
 			Employee nuevoEmpleado = new Employee(
 					"Juan",
 					"Pérez",
 					"González",
 					"juan@example.com",
-					"juanpg",
 					"contraseña",
 					LocalDate.now(),
-					company1);
+					company1,
+					role
+			);
 
 			company1.addAccount(accountEmployee);
 			employeeRepository.save(nuevoEmpleado);
@@ -180,7 +187,9 @@ public class EVolGreenApplication {
 					"Plan Básico",
 					"Plan básico de carga eléctrica para vehículos",
 					30,
-					new BigDecimal("25000.00"));
+					new BigDecimal("25000.00"),
+					new BigDecimal("20000.00"),
+					new BigDecimal("19920.00"));
 			planBasicoCompany.setAccount(accountCompany);
 			planBasicoCompany.setChargingStation(chargingStation);
 			planRepository.save(planBasicoCompany);

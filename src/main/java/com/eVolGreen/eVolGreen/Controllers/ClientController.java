@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Controllers;
 
+import com.eVolGreen.eVolGreen.Auth.Role;
 import com.eVolGreen.eVolGreen.DTOS.ClientDTO;
 import com.eVolGreen.eVolGreen.Models.Account;
 import com.eVolGreen.eVolGreen.Models.Client;
@@ -13,6 +14,7 @@ import jakarta.mail.MessagingException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,41 +43,45 @@ public class ClientController {
         return clientService.getClientsDTO();
     }
 
+    @GetMapping("/clients/{id}")
+    public ClientDTO getClient(@PathVariable Long id){
+        return clientService.getClientDTO(id);
+    }
+    @GetMapping("/clients/current")
+    public ClientDTO getCurrentClient(Authentication authentication){
+        return clientService.getClientDTOByEmailCurrent(authentication.getName());
+    }
+
     @PostMapping("/clients")
     public ResponseEntity<Object> register(
-            @RequestParam String firstName,
-            @RequestParam String lastName,
-            @RequestParam Integer rut,
-            @RequestParam String email,
-            @RequestParam Integer phone,
-            @RequestParam String password) {
+            @RequestBody Client client) {
 
         String mensaje = " ";
-        if (firstName.isBlank()) {
+        if (client.getFirstName().isBlank()) {
             mensaje = "Missing first name";
             return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (lastName.isBlank()) {
+        if (client.getLastName().isBlank()) {
             mensaje = "Missing last name";
             return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (rut == null) {
+        if (client.getRut() == null) {
             mensaje = "Missing rut";
             return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (email.isBlank()) {
+        if (client.getEmail().isBlank()) {
             mensaje = "Missing email";
             return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (phone == null) {
+        if (client.getPhone() == null) {
             mensaje = "Missing phone";
             return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (password.isBlank()) {
+        if (client.getPassword().isBlank()) {
             mensaje = "Missing password";
             return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (clientService.findByEmail(email) != null) {
+        if (clientService.findByEmail(client.getEmail()) != null) {
             mensaje = "Email already in use";
             return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
@@ -83,28 +89,31 @@ public class ClientController {
         // Generar el checkDigit
         String checkDigit = generateCheckDigit();
 
+        Role clientRole = Role.CLIENT;
+
         // Crear el cliente
-        Client client = new Client(
-                firstName,
-                lastName,
-                rut,
-                email,
-                phone,
-                checkDigit,
-                passwordEncoder.encode(password));
-        clientService.saveClient(client);
+        Client newClient = new Client(
+                client.getFirstName(),
+                client.getLastName(),
+                client.getRut(),
+                client.getEmail(),
+                client.getPhone(),
+                passwordEncoder.encode(client.getPassword()),
+                clientRole
+                );
+        clientService.saveClient(newClient);
 
         // Verificar si el cliente no es administrador
-        if (!email.contains("@admin.com")) {
+        if (!newClient.getEmail().contains("@admin.com")) {
             String accountNumber = "VIN" + getStringRandomClient();
             Account newAccount = new Account(accountNumber, LocalDate.now(), TypeAccounts.Client);
-            client.addAccount(newAccount);
+            newClient.addAccount(newAccount);
             accountService.saveAccount(newAccount);
         }
 
         // Enviar el correo electrónico con el checkDigit
         try {
-            Email emailMessage = new Email( email,
+            Email emailMessage = new Email( client.getEmail(),
                     "CheckDigit",
                     checkDigit);
             emailService.sendEmail(emailMessage);
@@ -140,4 +149,8 @@ public class ClientController {
         int randomNumber = getRandomNumber(min, max);
         return String.valueOf(randomNumber);
     }
+
+
+
+
 }

@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -23,9 +24,11 @@ public class Transaction {
 
     @ManyToOne
     @JoinColumn(name = "account_id")
+    @JsonBackReference
     private Account account;
     @ManyToOne
     @JoinColumn(name = "chargingStation_id")
+    @JsonBackReference
     private ChargingStation chargingStation;
 
     public Transaction() {

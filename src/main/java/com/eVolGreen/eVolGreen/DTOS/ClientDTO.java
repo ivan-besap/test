@@ -13,7 +13,6 @@ public class ClientDTO {
     private Integer rut;
     private String email;
     private Integer phone;
-    private String checkDigit;
     private String password;
     private Set<AccountDTO> account;
 
@@ -25,7 +24,6 @@ public class ClientDTO {
         rut = client.getRut();
         email = client.getEmail();
         phone = client.getPhone();
-        checkDigit = client.getCheckDigit();
         password = client.getPassword();
         account = client.getAccounts().stream().map(AccountDTO -> new AccountDTO(AccountDTO)).collect(Collectors.toSet());
 
@@ -54,10 +52,6 @@ public class ClientDTO {
 
     public Integer getRut() {
         return rut;
-    }
-
-    public String getCheckDigit() {
-        return checkDigit;
     }
 
     public String getPassword() {

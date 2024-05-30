@@ -9,4 +9,10 @@ public interface ClientService {
     Client findByEmail (String email);
     List<ClientDTO> getClientsDTO();
     void saveClient(Client client);
+
+    ClientDTO getClientDTO(Long id);
+
+    Client findById(Long id);
+
+    ClientDTO getClientDTOByEmailCurrent(String email);
 }

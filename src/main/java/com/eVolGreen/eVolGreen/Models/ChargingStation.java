@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Models;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -20,6 +21,7 @@ public class ChargingStation {
     @OneToMany(mappedBy = "chargingStation", fetch = FetchType.EAGER)
     private Set<ChargingStationStatus> chargingStationStatus = new HashSet<>();
     @OneToMany(mappedBy = "chargingStation", fetch = FetchType.EAGER)
+    @JsonManagedReference
     private Set<Transaction> transactions = new HashSet<>();
     @OneToMany(mappedBy = "chargingStation", fetch = FetchType.EAGER)
     private Set<Plan> plans = new HashSet<>();
