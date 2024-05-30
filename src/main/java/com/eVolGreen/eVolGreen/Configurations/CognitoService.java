@@ -17,7 +17,7 @@
 //    public AuthResponse authenticateUser(String email, String password) {
 //        AdminInitiateAuthRequest authRequest = new AdminInitiateAuthRequest()
 //                .withUserPoolId("us-west-2_0ZMBhmA70")
-//                .withClientId("4d8gobeisnimnd7gp1nkvl1pml")
+//                .withClientId("")
 //                .withAuthFlow(AuthFlowType.ADMIN_NO_SRP_AUTH)
 //                .withAuthParameters(getAuthParameters(email, password));
 //
@@ -31,7 +31,7 @@
 //
 //    public void registerUser(String firstName, String lastName, Integer rut, String email, Integer phone, String password) {
 //        AdminCreateUserRequest createUserRequest = new AdminCreateUserRequest()
-//                .withUserPoolId("us-west-2_0ZMBhmA70")
+//                .withUserPoolId("")
 //                .withUsername(email)
 //                .withTemporaryPassword(password)
 //                .withUserAttributes(

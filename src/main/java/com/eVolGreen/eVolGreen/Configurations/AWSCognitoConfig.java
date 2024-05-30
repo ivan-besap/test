@@ -13,7 +13,7 @@
 //
 //    @Bean
 //    public AWSCognitoIdentityProvider awsCognitoIdentityProvider() {
-//        BasicAWSCredentials awsCreds = new BasicAWSCredentials("AKIAZI2LDAZ3LBZWOI2F", "YTfbHmN2qtgv465ssxLyU9GfM8SvBN/1rcrShTu1");
+//        BasicAWSCredentials awsCreds = new BasicAWSCredentials("", "");
 //        return AWSCognitoIdentityProviderClientBuilder.standard()
 //                .withCredentials(new AWSStaticCredentialsProvider(awsCreds))
 //                .withRegion(Regions.US_WEST_2)
