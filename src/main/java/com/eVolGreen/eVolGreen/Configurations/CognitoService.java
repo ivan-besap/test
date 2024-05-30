@@ -16,7 +16,7 @@
 //
 //    public AuthResponse authenticateUser(String email, String password) {
 //        AdminInitiateAuthRequest authRequest = new AdminInitiateAuthRequest()
-//                .withUserPoolId("us-west-2_0ZMBhmA70")
+//                .withUserPoolId("")
 //                .withClientId("")
 //                .withAuthFlow(AuthFlowType.ADMIN_NO_SRP_AUTH)
 //                .withAuthParameters(getAuthParameters(email, password));
