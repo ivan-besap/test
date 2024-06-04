@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Controllers;
 
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO;
 import com.eVolGreen.eVolGreen.DTOS.PlanDTO;
 import com.eVolGreen.eVolGreen.Models.Account;
 import com.eVolGreen.eVolGreen.Models.Client;
@@ -38,6 +39,13 @@ public class PlanController {
     @GetMapping("/plans")
     public List<PlanDTO> getPlans() {
         return planService.getPlansDTO();
+    }
+
+
+    @GetMapping("/plans/{id}")
+    public PlanDTO getPlan(@PathVariable Long id) {
+
+        return new PlanDTO(planService.findById(id));
     }
 
     @PostMapping("/clients/current/plans")

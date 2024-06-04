@@ -11,4 +11,6 @@ public interface DeviceIdentifierService {
     void saveDeviceIdentifier(DeviceIdentifier deviceIdentifier);
 
     void deleteDeviceIdentifier(long id);
+
+    DeviceIdentifier findById(Long id);
 }

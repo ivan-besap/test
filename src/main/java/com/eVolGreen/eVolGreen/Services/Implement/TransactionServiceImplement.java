@@ -74,6 +74,11 @@ public class TransactionServiceImplement implements TransactionService {
         return transaction;
     }
 
+    @Override
+    public Transaction findById(Long id) {
+        return transactionRepository.findById(id).orElse(null);
+    }
+
     private BigDecimal calculateSuppliedEnergy(long duration) {
         // Implement the logic to calculate supplied energy based on the duration
         // For example, let's assume 1 kWh per minute

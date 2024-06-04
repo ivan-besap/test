@@ -49,6 +49,7 @@ public class ClientController {
     }
     @GetMapping("/clients/current")
     public ClientDTO getCurrentClient(Authentication authentication){
+
         return clientService.getClientDTOByEmailCurrent(authentication.getName());
     }
 

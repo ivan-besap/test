@@ -15,4 +15,6 @@ public interface TransactionService {
     Transaction startCharging(Account account, Long chargingStationId);
 
     Transaction stopCharging(Long transactionId);
+
+    Transaction findById(Long id);
 }

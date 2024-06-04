@@ -34,7 +34,7 @@ public class WebAuthorization {
                         .requestMatchers(HttpMethod.POST, "/auth/register").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/login").permitAll()
                         .requestMatchers(HttpMethod.POST, "/auth/registerCompany").permitAll()
-                        .requestMatchers("http://localhost:53672", "http://localhost:45000").permitAll()
+                        .requestMatchers("http://localhost:53672", "http://localhost:8081").permitAll()
                         .anyRequest().authenticated()
                 )
 //                .headers(headers -> headers.frameOptions().disable())

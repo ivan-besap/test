@@ -31,4 +31,9 @@ public class DeviceIdentifierServiceImplement implements DeviceIdentifierService
     public void deleteDeviceIdentifier(long id) {
         deviceIdentifierRepository.deleteById(id);
     }
+
+    @Override
+    public DeviceIdentifier findById(Long id) {
+        return deviceIdentifierRepository.findById(id).orElse(null);
+    }
 }

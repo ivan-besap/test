@@ -10,4 +10,6 @@ public interface LocationService {
     List<LocationDTO> getLocationsDTO();
 
     void saveLocation(Location location);
+
+    Location findById(Long id);
 }

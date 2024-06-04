@@ -33,6 +33,11 @@ public class TransactionController {
         return transactionService.getTransactionsDTO();
     }
 
+    @GetMapping("/transactions/{id}")
+    public TransactionDTO getTransaction(@PathVariable Long id) {
+        return new TransactionDTO(transactionService.findById(id));
+    }
+
     @PostMapping("/clients/current/transactions/start")
     public ResponseEntity<Object> startCharging(Authentication authentication,
                                                 @RequestParam Long accountId,
