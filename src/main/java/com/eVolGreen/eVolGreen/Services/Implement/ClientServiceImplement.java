@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.Services.Implement;
 
-import com.eVolGreen.eVolGreen.DTOS.ClientDTO;
+import com.eVolGreen.eVolGreen.DTOS.Client.ClientDTO;
+import com.eVolGreen.eVolGreen.DTOS.Client.ClientLoginDTO;
 import com.eVolGreen.eVolGreen.Models.Client;
 import com.eVolGreen.eVolGreen.Repositories.ClientRepository;
 import com.eVolGreen.eVolGreen.Services.ClientService;
@@ -31,6 +32,15 @@ public class ClientServiceImplement implements ClientService {
     public ClientDTO getClientDTOByEmailCurrent(String authentication) {
         return new ClientDTO(clientRepository.findByEmail(authentication));
     }
+
+    @Override
+    public List<ClientLoginDTO> getClientsLoginDTO() {
+        return clientRepository.findAll()
+                .stream()
+                .map(ClientLoginDTO::new)
+                .collect(Collectors.toList());
+    }
+
     @Override
     public Client findById(Long id) {
         return clientRepository.findById(id).orElse(null);

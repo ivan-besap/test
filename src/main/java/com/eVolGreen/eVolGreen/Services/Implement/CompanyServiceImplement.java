@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.Services.Implement;
 
-import com.eVolGreen.eVolGreen.DTOS.CompanyDTO;
+import com.eVolGreen.eVolGreen.DTOS.Company.CompanyDTO;
+import com.eVolGreen.eVolGreen.DTOS.Company.CompanyLoginDTO;
 import com.eVolGreen.eVolGreen.Models.Company;
 import com.eVolGreen.eVolGreen.Repositories.CompanyRepository;
 import com.eVolGreen.eVolGreen.Services.CompanyService;
@@ -30,5 +31,18 @@ public class CompanyServiceImplement implements CompanyService {
     @Override
     public Company findByEmailCompany(String email) {
         return companyRepository.findByEmailCompany(email);
+    }
+
+    @Override
+    public CompanyDTO getCompanyDTOByEmailCurrent(String email) {
+        return new CompanyDTO(companyRepository.findByEmailCompany(email));
+    }
+
+    @Override
+    public List<CompanyLoginDTO> getCompaniesLoginDTO() {
+        return companyRepository.findAll()
+                .stream()
+                .map(CompanyLoginDTO::new)
+                .collect(Collectors.toList());
     }
 }

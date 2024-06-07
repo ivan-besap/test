@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.Services.Implement;
 
-import com.eVolGreen.eVolGreen.DTOS.EmployeeDTO;
+import com.eVolGreen.eVolGreen.DTOS.Employee.EmployeeDTO;
+import com.eVolGreen.eVolGreen.DTOS.Employee.EmployeeLoginDTO;
 import com.eVolGreen.eVolGreen.Models.Employee;
 import com.eVolGreen.eVolGreen.Repositories.EmployeeRepository;
 import com.eVolGreen.eVolGreen.Services.EmployeeService;
@@ -31,5 +32,13 @@ public class EmployeeServiceImplement implements EmployeeService {
     @Override
     public Employee findByEmail(String email) {
         return employeeRepository.findByEmail(email);
+    }
+
+    @Override
+    public List<EmployeeLoginDTO> getEmployeesLoginDTO() {
+        return employeeRepository.findAll()
+                .stream()
+                .map(EmployeeLoginDTO::new)
+                .collect(Collectors.toList());
     }
 }

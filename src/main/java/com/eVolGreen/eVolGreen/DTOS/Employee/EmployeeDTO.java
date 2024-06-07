@@ -1,5 +1,6 @@
-package com.eVolGreen.eVolGreen.DTOS;
+package com.eVolGreen.eVolGreen.DTOS.Employee;
 
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO;
 import com.eVolGreen.eVolGreen.Models.Company;
 import com.eVolGreen.eVolGreen.Models.Employee;
 import com.eVolGreen.eVolGreen.Models.TypeAccounts;

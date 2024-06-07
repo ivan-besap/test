@@ -36,7 +36,7 @@ public class EVolGreenApplication {
 					"John",
 					"Doe",
 					123456789-9,
-							"4C3L4@example.com",
+					"4C3L4@example.com",
 					12345678,
 					passwordEncoder.encode("password"),
 					clientRole);

@@ -1,13 +1,10 @@
-package com.eVolGreen.eVolGreen.DTOS;
+package com.eVolGreen.eVolGreen.DTOS.Company;
 
-import com.eVolGreen.eVolGreen.Models.Account;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO;
+import com.eVolGreen.eVolGreen.DTOS.Employee.EmployeeDTO;
 import com.eVolGreen.eVolGreen.Models.Company;
-import com.eVolGreen.eVolGreen.Models.Employee;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.OneToMany;
 
 import java.time.LocalDate;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 

@@ -1,7 +1,8 @@
 package com.eVolGreen.eVolGreen.Controllers;
 
 import com.eVolGreen.eVolGreen.Auth.Role;
-import com.eVolGreen.eVolGreen.DTOS.ClientDTO;
+import com.eVolGreen.eVolGreen.DTOS.Client.ClientDTO;
+import com.eVolGreen.eVolGreen.DTOS.Client.ClientLoginDTO;
 import com.eVolGreen.eVolGreen.Models.Account;
 import com.eVolGreen.eVolGreen.Models.Client;
 import com.eVolGreen.eVolGreen.Models.Email;
@@ -41,6 +42,11 @@ public class ClientController {
     @GetMapping("/clients")
     public List<ClientDTO> getClients() {
         return clientService.getClientsDTO();
+    }
+
+    @GetMapping("/clients/logins")
+    public List<ClientLoginDTO> getClientsLogin() {
+        return clientService.getClientsLoginDTO();
     }
 
     @GetMapping("/clients/{id}")

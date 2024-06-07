@@ -1,11 +1,12 @@
 package com.eVolGreen.eVolGreen.Controllers;
 
+import com.eVolGreen.eVolGreen.DTOS.Company.CompanyLoginDTO;
 import com.eVolGreen.eVolGreen.Models.*;
 import com.eVolGreen.eVolGreen.Services.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import com.eVolGreen.eVolGreen.Auth.Role;
-import com.eVolGreen.eVolGreen.DTOS.CompanyDTO;
+import com.eVolGreen.eVolGreen.DTOS.Company.CompanyDTO;
 import com.eVolGreen.eVolGreen.Repositories.CompanyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -36,6 +37,16 @@ public class CompanyController {
     @GetMapping("/companies")
     public List<CompanyDTO> getCompanies() {
         return companyService.getCompaniesDTO();
+    }
+
+    @GetMapping("/companies/logins")
+    public List<CompanyLoginDTO> getCompaniesLogin() {
+        return companyService.getCompaniesLoginDTO();
+    }
+
+    @GetMapping("/companies/current")
+    public CompanyDTO getCurrentCompany(Authentication authentication){
+        return companyService.getCompanyDTOByEmailCurrent(authentication.getName());
     }
 
     @PostMapping("/companies/employee")
