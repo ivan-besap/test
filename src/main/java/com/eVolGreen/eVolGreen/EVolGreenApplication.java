@@ -18,10 +18,10 @@ import java.time.LocalDateTime;
 @SpringBootApplication
 public class EVolGreenApplication {
 
-	    @Autowired
-	    public PasswordEncoder passwordEncoder;
+	@Autowired
+	public PasswordEncoder passwordEncoder;
 
-		public static void main(String[] args) {
+	public static void main(String[] args) {
 		SpringApplication.run(EVolGreenApplication.class, args);
 	}
 	@Bean
@@ -149,7 +149,7 @@ public class EVolGreenApplication {
 					"Pérez",
 					"González",
 					"juan@example.com",
-					"contraseña",
+					passwordEncoder.encode("password"),
 					LocalDate.now(),
 					company1,
 					role

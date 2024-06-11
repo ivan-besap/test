@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Services.Implement;
 
+import com.eVolGreen.eVolGreen.DTOS.Client.ClientDTO;
 import com.eVolGreen.eVolGreen.DTOS.Company.CompanyDTO;
 import com.eVolGreen.eVolGreen.DTOS.Company.CompanyLoginDTO;
 import com.eVolGreen.eVolGreen.Models.Company;
@@ -35,7 +36,14 @@ public class CompanyServiceImplement implements CompanyService {
 
     @Override
     public CompanyDTO getCompanyDTOByEmailCurrent(String email) {
-        return new CompanyDTO(companyRepository.findByEmailCompany(email));
+        Company company = companyRepository.findByEmailCompany(email);
+        if (company != null) {
+            return new CompanyDTO(company);
+        } else {
+            // En este punto, el cliente no se encontró en la base de datos.
+            // Puedes devolver null o lanzar una excepción según tu lógica de negocio.
+            return null;
+        }
     }
 
     @Override

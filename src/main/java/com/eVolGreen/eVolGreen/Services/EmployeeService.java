@@ -14,4 +14,9 @@ public interface EmployeeService {
 
     List<EmployeeLoginDTO> getEmployeesLoginDTO();
 
+    EmployeeDTO getEmployeeDTO(Long id);
+
+    Employee findById(Long id);
+
+    EmployeeDTO getEmployeeDTOByEmailCurrent(String email);
 }

@@ -22,6 +22,8 @@ public class AuthController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(@RequestBody LoginRequest request) {
+        // Agregar log para ver los datos de la solicitud
+        System.out.println("Login request: " + request);
         return ResponseEntity.ok(authService.login(request));
     }
 
@@ -29,9 +31,4 @@ public class AuthController {
     public ResponseEntity<AuthResponse> registerCompany(@RequestBody RegisterCompanyRequest request) {
         return ResponseEntity.ok(authService.registerCompany(request));
     }
-
-//    @PostMapping ("/logout")
-//    public ResponseEntity<AuthResponse> logout(@RequestBody LogoutRequest request) {
-//        return ResponseEntity.ok(authService.logout(request));
-//    }
 }

@@ -30,8 +30,16 @@ public class ClientServiceImplement implements ClientService {
     }
     @Override
     public ClientDTO getClientDTOByEmailCurrent(String authentication) {
-        return new ClientDTO(clientRepository.findByEmail(authentication));
+        Client client = clientRepository.findByEmail(authentication);
+        if (client != null) {
+            return new ClientDTO(client);
+        } else {
+            // En este punto, el cliente no se encontró en la base de datos.
+            // Puedes devolver null o lanzar una excepción según tu lógica de negocio.
+            return null;
+        }
     }
+
 
     @Override
     public List<ClientLoginDTO> getClientsLoginDTO() {

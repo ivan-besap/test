@@ -41,4 +41,19 @@ public class EmployeeServiceImplement implements EmployeeService {
                 .map(EmployeeLoginDTO::new)
                 .collect(Collectors.toList());
     }
+
+    @Override
+    public EmployeeDTO getEmployeeDTO(Long id) {
+        return new EmployeeDTO(this.findById(id));
+    }
+
+    @Override
+    public Employee findById(Long id) {
+        return employeeRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    public EmployeeDTO getEmployeeDTOByEmailCurrent(String email) {
+        return new EmployeeDTO(employeeRepository.findByEmail(email));
+    }
 }
