@@ -16,7 +16,7 @@ public class ChargingStationsServiceImplement implements ChargingStationsService
     private ChargingStationRepository chargingStationRepository;
 
     @Override
-    public List<ChargingStationsDTO> getChargintStationsDTO() {
+    public List<ChargingStationsDTO> getChargingStationsDTO() {
         return chargingStationRepository.findAll()
                 .stream()
                 .map(ChargingStationsDTO::new)

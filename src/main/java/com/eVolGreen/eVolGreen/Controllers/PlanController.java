@@ -49,7 +49,7 @@ public class PlanController {
     }
 
     @PostMapping("/clients/current/plans")
-    public ResponseEntity<Object> registerPlan(Authentication authentication,
+    public ResponseEntity<Object> addPlanClient(Authentication authentication,
                                                @RequestParam Long planId,
                                                @RequestParam Long accountId) {
 
@@ -129,5 +129,35 @@ public class PlanController {
 
         message = "Plan created successfully";
         return ResponseEntity.status(201).body(message);
+    }
+
+    @PostMapping("/companies/current/addPlans")
+    public ResponseEntity<Object> addPlanCompany(Authentication authentication,
+                                               @RequestParam Long planId,
+                                               @RequestParam Long accountId) {
+
+        Company company = companyService.findByEmailCompany(authentication.getName());
+        if (company == null) {
+            return ResponseEntity.status(404).body("Company not found");
+        }
+
+        Plan plan = planService.findById(planId);
+        if (plan == null) {
+            return ResponseEntity.status(404).body("Plan not found");
+        }
+
+        Account account = accountService.findById(accountId);
+        if (account == null) {
+            return ResponseEntity.status(404).body("Account not found");
+        }
+
+        if (!company.getAccounts().contains(account)) {
+            return ResponseEntity.status(403).body("Account does not belong to the company");
+        }
+
+        account.addPlan(plan);
+        accountService.saveAccount(account);
+
+        return ResponseEntity.status(201).body("Plan registered successfully");
     }
 }

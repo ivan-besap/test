@@ -1,4 +1,6 @@
 package com.eVolGreen.eVolGreen.Models;
+import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -17,10 +19,12 @@ public class Location {
     private String city;
     private String region;
     private String country;
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne
     @JoinColumn(name = "account_id")
+    @JsonBackReference("account-location")
     private Account account;
     @OneToMany(mappedBy = "location", fetch = FetchType.EAGER)
+    @JsonManagedReference("location-chargingStation")
     private Set<ChargingStation> chargingStations = new HashSet<>();
     public Location() {
     }

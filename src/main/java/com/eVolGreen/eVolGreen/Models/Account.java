@@ -21,16 +21,19 @@ public class Account {
     private TypeAccounts typeAccounts;
     private Boolean isActive = false;
     @OneToMany(mappedBy = "account", fetch = FetchType.EAGER)
-    @JsonManagedReference
+    @JsonManagedReference("account-transaction")
     private Set<Transaction> transactions = new HashSet<>();
-    @OneToMany(mappedBy = "account",fetch = FetchType.EAGER)
-    @JsonManagedReference
+    @OneToMany(mappedBy = "account", fetch = FetchType.EAGER)
+    @JsonManagedReference("account-plan")
     private Set<Plan> plans = new HashSet<>();
-    @OneToMany(mappedBy = "account",fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "account", fetch = FetchType.EAGER)
+    @JsonManagedReference("account-location")
     private Set<Location> locations = new HashSet<>();
     @OneToMany(mappedBy = "account",fetch = FetchType.EAGER)
+    @JsonManagedReference("account-car")
     private Set<Car> cars = new HashSet<>();
     @OneToMany(mappedBy = "account",fetch = FetchType.EAGER)
+    @JsonManagedReference("account-chargingStation")
     private Set<ChargingStation> chargingStations = new HashSet<>();
     @ManyToOne
     @JoinColumn(name = "client_id")

@@ -34,8 +34,6 @@ public class ClientServiceImplement implements ClientService {
         if (client != null) {
             return new ClientDTO(client);
         } else {
-            // En este punto, el cliente no se encontró en la base de datos.
-            // Puedes devolver null o lanzar una excepción según tu lógica de negocio.
             return null;
         }
     }

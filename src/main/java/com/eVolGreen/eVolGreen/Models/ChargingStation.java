@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Models;
 
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
@@ -19,19 +20,24 @@ public class ChargingStation {
     private BigDecimal currentLoad;
     private LocalDate createdDay;
     @OneToMany(mappedBy = "chargingStation", fetch = FetchType.EAGER)
+    @JsonManagedReference("chargingStation-chargingStationStatus")
     private Set<ChargingStationStatus> chargingStationStatus = new HashSet<>();
     @OneToMany(mappedBy = "chargingStation", fetch = FetchType.EAGER)
-    @JsonManagedReference
+    @JsonManagedReference("chargingStation-transaction")
     private Set<Transaction> transactions = new HashSet<>();
     @OneToMany(mappedBy = "chargingStation", fetch = FetchType.EAGER)
+    @JsonManagedReference("chargingStation-plan")
     private Set<Plan> plans = new HashSet<>();
     @OneToMany(mappedBy = "chargingStation", fetch = FetchType.EAGER)
+    @JsonManagedReference("chargingStation-location")
     private Set<Charger> chargers = new HashSet<>();
     @ManyToOne
     @JoinColumn(name = "location_id")
+    @JsonBackReference("location-chargingStation")
     private Location location;
     @ManyToOne
     @JoinColumn(name = "account_id")
+    @JsonBackReference("account-chargingStation")
     private Account account;
 
     public ChargingStation() {

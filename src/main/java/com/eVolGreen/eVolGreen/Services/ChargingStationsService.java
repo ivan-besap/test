@@ -7,6 +7,6 @@ import java.util.List;
 
 public interface ChargingStationsService {
 
-    List<ChargingStationsDTO> getChargintStationsDTO();
+    List<ChargingStationsDTO> getChargingStationsDTO();
     void saveChargingStations(ChargingStation chargingStations);
 }

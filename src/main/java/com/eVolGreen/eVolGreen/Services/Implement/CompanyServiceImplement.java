@@ -40,8 +40,6 @@ public class CompanyServiceImplement implements CompanyService {
         if (company != null) {
             return new CompanyDTO(company);
         } else {
-            // En este punto, el cliente no se encontró en la base de datos.
-            // Puedes devolver null o lanzar una excepción según tu lógica de negocio.
             return null;
         }
     }
