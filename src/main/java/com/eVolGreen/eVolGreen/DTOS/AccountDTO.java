@@ -16,10 +16,10 @@ public class AccountDTO {
     private TypeAccounts typeAccounts;
     private Boolean isActive = false;
     private Set<Long> transactions;
-    private Set<Long> plans;
+    private Set<PlanDTO> plans;
     private Set<LocationDTO> locations;
     private List<CarDTO> cars;
-    private Set<Long> chargingStations;
+    private Set<ChargingStationsDTO> chargingStations;
 
 
 
@@ -30,10 +30,10 @@ public class AccountDTO {
         typeAccounts = account.getTypeAccounts();
         isActive = account.getActive();
         transactions = account.getTransactions().stream().map(Transaction::getId).collect(Collectors.toSet());
-        plans = account.getPlans().stream().map(PlanDTO::new).map(PlanDTO::getId).collect(Collectors.toSet());
+        plans = account.getPlans().stream().map(PlanDTO::new).collect(Collectors.toSet());
         locations = account.getLocations().stream().map(LocationDTO::new).collect(Collectors.toSet());
         cars = account.getCars().stream().map(CarDTO -> new CarDTO(CarDTO)).collect(Collectors.toList());
-        chargingStations = account.getChargingStations().stream().map(ChargingStationsDTO -> new ChargingStationsDTO(ChargingStationsDTO).getId()).collect(Collectors.toSet());
+        chargingStations = account.getChargingStations().stream().map(ChargingStationsDTO::new).collect(Collectors.toSet());
     }
 
     public Long getId() {
@@ -60,7 +60,7 @@ public class AccountDTO {
         return transactions;
     }
 
-    public Set<Long> getPlans() {
+    public Set<PlanDTO> getPlans() {
         return plans;
     }
 
@@ -72,7 +72,7 @@ public class AccountDTO {
         return cars;
     }
 
-    public Set<Long> getChargingStations() {
+    public Set<ChargingStationsDTO> getChargingStations() {
         return chargingStations;
     }
 
