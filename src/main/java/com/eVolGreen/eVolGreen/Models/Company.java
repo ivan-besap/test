@@ -33,7 +33,6 @@ public class Company implements UserDetails {
     @OneToMany(mappedBy = "company", fetch = FetchType.EAGER)
     @JsonIgnore
     private Set<Employee> employees = new HashSet<>();
-
     @OneToMany(mappedBy = "company", fetch = FetchType.EAGER)
     @JsonIgnore
     private Set<Account> accounts = new HashSet<>();
@@ -139,8 +138,6 @@ public class Company implements UserDetails {
     public void setRole(Role role) {
         this.role = role;
     }
-
-
 
 
     @Override

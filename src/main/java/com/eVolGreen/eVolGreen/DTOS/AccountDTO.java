@@ -20,6 +20,7 @@ public class AccountDTO {
     private Set<LocationDTO> locations;
     private List<CarDTO> cars;
     private Set<ChargingStationsDTO> chargingStations;
+    private Set<ReservationDTO> reservation;
 
 
 
@@ -34,6 +35,7 @@ public class AccountDTO {
         locations = account.getLocations().stream().map(LocationDTO::new).collect(Collectors.toSet());
         cars = account.getCars().stream().map(CarDTO -> new CarDTO(CarDTO)).collect(Collectors.toList());
         chargingStations = account.getChargingStations().stream().map(ChargingStationsDTO::new).collect(Collectors.toSet());
+        reservation = account.getReservations().stream().map(ReservationDTO::new).collect(Collectors.toSet());
     }
 
     public Long getId() {
@@ -76,5 +78,7 @@ public class AccountDTO {
         return chargingStations;
     }
 
-
+    public Set<ReservationDTO> getReservation() {
+        return reservation;
+    }
 }

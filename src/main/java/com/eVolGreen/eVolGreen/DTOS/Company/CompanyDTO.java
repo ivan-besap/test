@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.DTOS.Company;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO;
 import com.eVolGreen.eVolGreen.DTOS.Employee.EmployeeDTO;
+import com.eVolGreen.eVolGreen.DTOS.ReservationDTO;
 import com.eVolGreen.eVolGreen.Models.Company;
 
 import java.time.LocalDate;
@@ -31,10 +32,9 @@ public class CompanyDTO {
         createdDay = company.getCreatedDay();
         employees = company.getEmployees().stream().map(EmployeeDTO -> new EmployeeDTO(EmployeeDTO).getId()).collect(Collectors.toSet());
         accounts = company.getAccounts().stream().map(AccountDTO -> new AccountDTO(AccountDTO)).collect(Collectors.toSet());
-    }
+            }
     public CompanyDTO( ) {
     }
-
 
     public Long getId() {
         return id;

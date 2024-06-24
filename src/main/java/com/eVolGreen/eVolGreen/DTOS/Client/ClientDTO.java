@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.DTOS.Client;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO;
+import com.eVolGreen.eVolGreen.DTOS.ReservationDTO;
 import com.eVolGreen.eVolGreen.Models.Account;
 import com.eVolGreen.eVolGreen.Models.Client;
 

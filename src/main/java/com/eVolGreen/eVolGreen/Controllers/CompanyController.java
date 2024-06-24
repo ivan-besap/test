@@ -39,6 +39,11 @@ public class CompanyController {
         return companyService.getCompaniesDTO();
     }
 
+    @GetMapping("/companies/{id}")
+    public CompanyDTO getCompany(@PathVariable Long id) {
+        return companyService.getCompanyDTO(id);
+    }
+
     @GetMapping("/companies/logins")
     public List<CompanyLoginDTO> getCompaniesLogin() {
         return companyService.getCompaniesLoginDTO();

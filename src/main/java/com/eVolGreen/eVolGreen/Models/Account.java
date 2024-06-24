@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.Models;
 
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
@@ -20,21 +21,24 @@ public class Account {
     private LocalDate creationDate;
     private TypeAccounts typeAccounts;
     private Boolean isActive = false;
-    @OneToMany(mappedBy = "account", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
     @JsonManagedReference("account-transaction")
     private Set<Transaction> transactions = new HashSet<>();
-    @OneToMany(mappedBy = "account", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
     @JsonManagedReference("account-plan")
     private Set<Plan> plans = new HashSet<>();
-    @OneToMany(mappedBy = "account", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
     @JsonManagedReference("account-location")
     private Set<Location> locations = new HashSet<>();
-    @OneToMany(mappedBy = "account",fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "account",fetch = FetchType.LAZY)
     @JsonManagedReference("account-car")
     private Set<Car> cars = new HashSet<>();
-    @OneToMany(mappedBy = "account",fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "account",fetch = FetchType.LAZY)
     @JsonManagedReference("account-chargingStation")
     private Set<ChargingStation> chargingStations = new HashSet<>();
+    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
+    @JsonManagedReference("account-reservation")
+    private Set<Reservation> reservations = new HashSet<>();
     @ManyToOne
     @JoinColumn(name = "client_id")
     @JsonBackReference("client-account")
@@ -130,6 +134,13 @@ public class Account {
         this.client = client;
     }
 
+    public Set<Reservation> getReservations() {
+        return reservations;
+    }
+
+    public void setReservations(Set<Reservation> reservations) {
+        this.reservations = reservations;
+    }
 
     public Company getCompany() {
         return company;

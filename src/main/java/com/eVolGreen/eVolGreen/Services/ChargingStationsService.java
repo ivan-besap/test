@@ -9,4 +9,8 @@ public interface ChargingStationsService {
 
     List<ChargingStationsDTO> getChargingStationsDTO();
     void saveChargingStations(ChargingStation chargingStations);
+
+    ChargingStation findById(Long stationId);
+
+    ChargingStationsDTO getChargingStationDTO(Long id);
 }

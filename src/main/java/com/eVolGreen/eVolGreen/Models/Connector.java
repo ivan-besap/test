@@ -1,9 +1,12 @@
 package com.eVolGreen.eVolGreen.Models;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 
 import java.math.BigDecimal;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 public class Connector {
@@ -19,6 +22,9 @@ public class Connector {
     @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "charger_id")
     private Charger charger;
+    @OneToMany(mappedBy = "connector", fetch = FetchType.EAGER)
+    @JsonManagedReference("connector-reservation")
+    private Set<Reservation> reservations = new HashSet<>();
 
     public Connector() {
     }
@@ -77,5 +83,13 @@ public class Connector {
 
     public void setCharger(Charger charger) {
         this.charger = charger;
+    }
+
+    public Set<Reservation> getReservations() {
+        return reservations;
+    }
+
+    public void setReservations(Set<Reservation> reservations) {
+        this.reservations = reservations;
     }
 }

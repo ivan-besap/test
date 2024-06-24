@@ -38,6 +38,10 @@ public class ChargingStationsController {
         return chargingStationsService.getChargingStationsDTO();
     }
 
+    @GetMapping("/chargingStations/{id}")
+    public ChargingStationsDTO getChargingStations(@PathVariable Long id) {
+        return chargingStationsService.getChargingStationDTO(id);
+    }
     @PostMapping("/company/current/chargingStations")
     public ResponseEntity<Object> registerChargingStation(Authentication authentication,
                                                           @RequestBody ChargingStationsDTO chargingStationsDTO) {

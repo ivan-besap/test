@@ -15,4 +15,8 @@ public interface CompanyService {
     CompanyDTO getCompanyDTOByEmailCurrent(String email);
 
     List<CompanyLoginDTO> getCompaniesLoginDTO();
+
+    Company findById(Long companyId);
+
+    CompanyDTO getCompanyDTO(Long id);
 }

@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Models;
 
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 
@@ -29,6 +30,9 @@ public class Charger {
     private Set<ChargingUnit> chargingUnits = new HashSet<>();
     @OneToMany(mappedBy = "charger", fetch = FetchType.EAGER)
     private Set<Connector> connectors = new HashSet<>();
+    @OneToMany(mappedBy = "charger", fetch = FetchType.EAGER)
+    @JsonManagedReference("charger-reservation")
+    private Set<Reservation> reservations = new HashSet<>();
 
 
     public Charger() {
@@ -121,6 +125,14 @@ public class Charger {
 
     public Set<Connector> getConnectors() {
         return connectors;
+    }
+
+    public Set<Reservation> getReservations() {
+        return reservations;
+    }
+
+    public void setReservations(Set<Reservation> reservations) {
+        this.reservations = reservations;
     }
 
     public void setConnectors(Set<Connector> connectors) {

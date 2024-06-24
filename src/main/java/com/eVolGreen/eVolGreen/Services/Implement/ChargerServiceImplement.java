@@ -26,4 +26,14 @@ public class ChargerServiceImplement implements ChargerService {
     public void saveCharger(Charger charger) {
         chargerRepository.save(charger);
     }
+
+    @Override
+    public Charger findById(Long chargerId) {
+        return chargerRepository.findById(chargerId).orElse(null);
+    }
+
+    @Override
+    public ChargerDTO getChargerDTO(Long id) {
+        return new ChargerDTO(this.findById(id));
+    }
 }

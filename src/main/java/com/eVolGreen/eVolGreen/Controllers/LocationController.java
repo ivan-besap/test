@@ -6,10 +6,10 @@ import com.eVolGreen.eVolGreen.Models.ChargingStation;
 import com.eVolGreen.eVolGreen.Models.Company;
 import com.eVolGreen.eVolGreen.Models.Location;
 import com.eVolGreen.eVolGreen.Services.CompanyService;
-import com.eVolGreen.eVolGreen.Services.GeocodingService;
+
 import com.eVolGreen.eVolGreen.Repositories.LocationRepository;
 import com.eVolGreen.eVolGreen.Services.LocationService;
-import com.google.maps.model.GeocodingResult;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -26,8 +26,6 @@ public class LocationController {
     private LocationRepository locationRepository;
     @Autowired
     private CompanyService companyService;
-    @Autowired
-    private GeocodingService geocodingService;
 
     @GetMapping("/locations")
     public List<LocationDTO> getLocations() {

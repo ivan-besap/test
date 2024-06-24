@@ -30,10 +30,10 @@ public class ChargerController {
         return chargerService.getChargersDTO();
     }
 
-//    @GetMapping("/chargers/{id}")
-//    public ChargerDTO getCharger(@PathVariable Long id) {
-//        return chargerService.getChargerDTO(id);
-//    }
+    @GetMapping("/chargers/{id}")
+    public ChargerDTO getCharger(@PathVariable Long id) {
+        return chargerService.getChargerDTO(id);
+    }
 //
 //    @GetMapping("/chargers")
 //    public List<ChargerDTO> getListChargersByStation(Authentication authentication

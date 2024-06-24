@@ -10,4 +10,8 @@ public interface ConnectorService {
     List<ConnectorDTO> getConnectorsDTO();
 
     void saveConnector(Connector connector);
+
+    Connector findById(Long connectorId);
+
+    ConnectorDTO getConnectorDTO(Long id);
 }

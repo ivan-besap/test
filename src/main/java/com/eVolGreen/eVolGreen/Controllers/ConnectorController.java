@@ -5,6 +5,7 @@ import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
 import com.eVolGreen.eVolGreen.Services.ConnectorService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -22,5 +23,10 @@ public class ConnectorController {
     @GetMapping("/connectors")
     public List<ConnectorDTO> getConnectors() {
         return connectorService.getConnectorsDTO();
+    }
+
+    @GetMapping ("/connectors/{id}")
+    public ConnectorDTO getConnector(@PathVariable Long id) {
+        return connectorService.getConnectorDTO(id);
     }
 }

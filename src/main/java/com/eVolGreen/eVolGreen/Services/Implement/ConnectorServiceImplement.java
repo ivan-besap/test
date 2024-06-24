@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Services.Implement;
 
+import com.eVolGreen.eVolGreen.DTOS.Client.ClientDTO;
 import com.eVolGreen.eVolGreen.DTOS.ConnectorDTO;
 import com.eVolGreen.eVolGreen.Models.Connector;
 import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
@@ -25,5 +26,15 @@ public class ConnectorServiceImplement implements ConnectorService {
     @Override
     public void saveConnector(Connector connector) {
         connectorRepository.save(connector);
+    }
+
+    @Override
+    public Connector findById(Long connectorId) {
+        return connectorRepository.findById(connectorId).orElse(null);
+    }
+
+    @Override
+    public ConnectorDTO getConnectorDTO(Long id) {
+            return new ConnectorDTO(this.findById(id));
     }
 }

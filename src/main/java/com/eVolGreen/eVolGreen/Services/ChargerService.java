@@ -9,4 +9,8 @@ public interface ChargerService {
 
     List<ChargerDTO> getChargersDTO();
     void saveCharger(Charger charger);
+
+    Charger findById(Long chargerId);
+
+    ChargerDTO getChargerDTO(Long id);
 }

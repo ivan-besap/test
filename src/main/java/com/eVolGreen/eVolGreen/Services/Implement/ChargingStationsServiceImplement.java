@@ -26,4 +26,14 @@ public class ChargingStationsServiceImplement implements ChargingStationsService
     public void saveChargingStations(ChargingStation chargingStations) {
         chargingStationRepository.save(chargingStations);
     }
+
+    @Override
+    public ChargingStation findById(Long stationId) {
+        return chargingStationRepository.findById(stationId).orElse(null);
+    }
+
+    @Override
+    public ChargingStationsDTO getChargingStationDTO(Long id) {
+        return new ChargingStationsDTO(this.findById(id));
+    }
 }
