@@ -1,12 +1,17 @@
 
 package com.eVolGreen.eVolGreen.DTOS;
 
+import java.time.LocalDateTime;
+
 public class ReservationRequest {
     private Long stationId;
     private Long chargerId;
     private Long connectorId;
     private Long clientId;
     private Long companyId;
+
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
 
 
     // Getters y setters
@@ -48,5 +53,21 @@ public class ReservationRequest {
 
     public void setCompanyId(Long companyId) {
         this.companyId = companyId;
+    }
+
+    public LocalDateTime getStartTime() {
+        return startTime;
+    }
+
+    public void setStartTime(LocalDateTime startTime) {
+        this.startTime = startTime;
+    }
+
+    public LocalDateTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(LocalDateTime endTime) {
+        this.endTime = endTime;
     }
 }

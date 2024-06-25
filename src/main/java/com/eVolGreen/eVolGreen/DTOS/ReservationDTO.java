@@ -1,8 +1,7 @@
 package com.eVolGreen.eVolGreen.DTOS;
 
-import com.eVolGreen.eVolGreen.Models.*;
+import com.eVolGreen.eVolGreen.Models.Reservation;
 import jakarta.persistence.*;
-
 import java.time.LocalDateTime;
 
 public class ReservationDTO {
@@ -10,8 +9,8 @@ public class ReservationDTO {
     private Long id;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
-    private Charger charger;
-    private Connector connector;
+    private Long chargerId;
+    private Long connectorId;
 
     public ReservationDTO() {
     }
@@ -20,8 +19,8 @@ public class ReservationDTO {
         this.id = reservation.getId();
         this.startTime = reservation.getStartTime();
         this.endTime = reservation.getEndTime();
-//        this.charger = reservation.getCharger();
-//        this.connector = reservation.getConnector();
+        this.chargerId = reservation.getCharger() != null ? reservation.getCharger().getId() : null;
+        this.connectorId = reservation.getConnector() != null ? reservation.getConnector().getId() : null;
     }
 
     public Long getId() {
@@ -48,19 +47,19 @@ public class ReservationDTO {
         this.endTime = endTime;
     }
 
-    public Charger getCharger() {
-        return charger;
+    public Long getChargerId() {
+        return chargerId;
     }
 
-    public void setCharger(Charger charger) {
-        this.charger = charger;
+    public void setChargerId(Long chargerId) {
+        this.chargerId = chargerId;
     }
 
-    public Connector getConnector() {
-        return connector;
+    public Long getConnectorId() {
+        return connectorId;
     }
 
-    public void setConnector(Connector connector) {
-        this.connector = connector;
+    public void setConnectorId(Long connectorId) {
+        this.connectorId = connectorId;
     }
 }
