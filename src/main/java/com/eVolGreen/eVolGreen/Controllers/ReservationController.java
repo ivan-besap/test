@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Controllers;
 
+import com.eVolGreen.eVolGreen.DTOS.ReservationDTO;
 import com.eVolGreen.eVolGreen.DTOS.ReservationRequest;
 import com.eVolGreen.eVolGreen.Models.*;
 import com.eVolGreen.eVolGreen.Services.*;
@@ -10,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 
 @RestController
@@ -33,6 +35,11 @@ public class ReservationController {
 
     @Autowired
     private ReservationService reservationService;
+
+    @GetMapping("/reservations")
+    public List<ReservationDTO> getReservations() {
+        return reservationService.getReservationsDTO();
+    }
 
     @PostMapping("/reservations")
     public ResponseEntity<Object> createReservation(Authentication authentication,
