@@ -9,6 +9,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 
 @RestController
@@ -74,7 +75,18 @@ public class ReservationController {
             return ResponseEntity.status(400).body("The connector does not belong to the specified charger");
         }
 
-        Reservation reservation = new Reservation(LocalDateTime.now(), LocalDateTime.now().plusMinutes(30), account, charger, connector);
+
+        LocalDateTime startTime = reservationRequest.getStartTime().truncatedTo(ChronoUnit.SECONDS);
+        if (startTime == null) {
+            return ResponseEntity.status(400).body("Start time must be provided");
+        }
+        LocalDateTime endTime = startTime.plusMinutes(30).truncatedTo(ChronoUnit.SECONDS);
+
+        if (endTime.isBefore(startTime) || endTime.equals(startTime)) {
+            return ResponseEntity.status(400).body("End time must be after start time");
+        }
+
+        Reservation reservation = new Reservation(startTime, endTime, account, charger, connector);
         reservationService.saveReservation(reservation);
 
         return ResponseEntity.status(201).body("Reservation created successfully");
