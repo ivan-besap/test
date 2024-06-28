@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.2.5'
 	id 'io.spring.dependency-management' version '1.1.4'
+//	id 'war'
 }
 
 group = 'com.eVolGreen'
@@ -18,7 +19,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
-//	runtimeOnly 'com.h2database:h2'
+	runtimeOnly 'com.h2database:h2'
 //	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
@@ -36,8 +37,9 @@ dependencies {
 	implementation 'com.amazonaws:aws-java-sdk-cognitoidp:1.12.725'
 
 	// MySQL Connector
-	runtimeOnly 'mysql:mysql-connector-java:8.0.33'
+//	runtimeOnly 'mysql:mysql-connector-java:8.0.33'
 
+//	providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
 }
 
 tasks.named('test') {
@@ -47,3 +49,7 @@ tasks.named('test') {
 bootRun {
 	sourceResources(sourceSets.main)
 }
+
+//bootWar {
+//	archiveFileName = 'eVolGreen.war'
+//}
