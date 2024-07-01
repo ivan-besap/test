@@ -18,7 +18,7 @@ public class CorsConfig {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("http://localhost:8081", "http://localhost:53672")
+                        .allowedOriginPatterns("*")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")  // Asegúrate de incluir OPTIONS para preflight requests
                         .allowedHeaders("*")
                         .allowCredentials(true);  // Permite el uso de credenciales si es necesario
@@ -29,7 +29,7 @@ public class CorsConfig {
     @RestController
     public class PreflightHandler {
 
-        @CrossOrigin(origins = {"http://localhost:8081", "http://localhost:53672"})
+        @CrossOrigin(origins = {"*"})
         @RequestMapping(value = "/**", method = RequestMethod.OPTIONS)
         public void handlePreflight() {
             // Maneja las solicitudes preflight
