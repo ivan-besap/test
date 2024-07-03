@@ -9,5 +9,5 @@ public interface ChargingUnitService {
 
     List<ChargingUnitDTO> getChargingUnitsDTO();
 
-    void saveChargingUnits(ChargingUnit chargingUnit);
+    void saveChargingUnit(ChargingUnit chargingUnit);
 }

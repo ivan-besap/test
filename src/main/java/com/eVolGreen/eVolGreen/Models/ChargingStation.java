@@ -19,6 +19,9 @@ public class ChargingStation {
     private String name;
     private BigDecimal currentLoad;
     private LocalDate createdDay;
+    @OneToMany(mappedBy = "station", fetch = FetchType.EAGER)
+    @JsonManagedReference("chargingStation-reservation")
+    private Set<Reservation> reservations = new HashSet<>();
     @OneToMany(mappedBy = "chargingStation", fetch = FetchType.EAGER)
     @JsonManagedReference("chargingStation-chargingStationStatus")
     private Set<ChargingStationStatus> chargingStationStatus = new HashSet<>();
@@ -128,6 +131,14 @@ public class ChargingStation {
 
     public void setAccount(Account account) {
         this.account = account;
+    }
+
+    public Set<Reservation> getReservations() {
+        return reservations;
+    }
+
+    public void setReservations(Set<Reservation> reservations) {
+        this.reservations = reservations;
     }
 
     public void addTransaction(Transaction transaction){

@@ -9,6 +9,7 @@ public class ReservationDTO {
     private Long id;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private Long stationId;
     private Long chargerId;
     private Long connectorId;
 
@@ -21,6 +22,7 @@ public class ReservationDTO {
         this.endTime = reservation.getEndTime();
         this.chargerId = reservation.getCharger() != null ? reservation.getCharger().getId() : null;
         this.connectorId = reservation.getConnector() != null ? reservation.getConnector().getId() : null;
+        this.stationId = reservation.getStation() != null ? reservation.getStation().getId() : null;
     }
 
     public Long getId() {
@@ -61,5 +63,9 @@ public class ReservationDTO {
 
     public void setConnectorId(Long connectorId) {
         this.connectorId = connectorId;
+    }
+
+    public Long getStationId() {
+        return stationId;
     }
 }

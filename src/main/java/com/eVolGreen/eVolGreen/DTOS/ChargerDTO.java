@@ -23,7 +23,9 @@ public class ChargerDTO {
     private TypeOfLoad typeOfLoads;
     private Set<ChargingUnitDTO> chargingUnits;
     private Set<ConnectorDTO> connectors;
+    private Long chargingStationId;
 
+    public ChargerDTO() {}
 
     public ChargerDTO(Charger chargingStation) {
         id = chargingStation.getId();
@@ -35,6 +37,7 @@ public class ChargerDTO {
         typeOfLoads = chargingStation.getTypeOfLoads();
         chargingUnits = chargingStation.getChargingUnits().stream().map(ChargingUnitDTO::new).collect(Collectors.toSet());
         connectors = chargingStation.getConnectors().stream().map(ConnectorDTO::new).collect(Collectors.toSet());
+        chargingStationId = chargingStation.getChargingStation().getId();
     }
 
     public Long getId() {
@@ -71,5 +74,9 @@ public class ChargerDTO {
 
     public Set<ConnectorDTO> getConnectors() {
         return connectors;
+    }
+
+    public Long getChargingStationId() {
+        return chargingStationId;
     }
 }

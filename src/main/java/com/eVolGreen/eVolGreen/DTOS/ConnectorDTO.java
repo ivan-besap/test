@@ -11,6 +11,9 @@ public class ConnectorDTO {
     private BigDecimal power;
     private ConnectorStatus connectorStatus;
     private BigDecimal charge;
+    private Long chargerId;
+
+    public ConnectorDTO() {}
 
     public ConnectorDTO(Connector connector) {
         id = connector.getId();
@@ -18,6 +21,7 @@ public class ConnectorDTO {
         power = connector.getPower();
         connectorStatus = connector.getConnectorStatus();
         charge = connector.getCharge();
+        chargerId = connector.getCharger().getId();
     }
 
     public Long getId() {
@@ -38,5 +42,9 @@ public class ConnectorDTO {
 
     public BigDecimal getCharge() {
         return charge;
+    }
+
+    public Long getChargerId() {
+        return chargerId;
     }
 }

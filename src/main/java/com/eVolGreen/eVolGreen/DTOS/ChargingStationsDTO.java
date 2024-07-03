@@ -15,6 +15,8 @@ public class ChargingStationsDTO {
     private Set<TransactionDTO> transactions;
     private Set<PlanDTO> plans;
     private Set<ChargerDTO> chargers;
+    private Set<ReservationDTO> reservations;
+
 
     // Constructor por defecto
     public ChargingStationsDTO() {}
@@ -33,6 +35,8 @@ public class ChargingStationsDTO {
                 .map(PlanDTO::new).collect(Collectors.toSet());
         this.chargers = chargingStation.getChargers().stream()
                 .map(ChargerDTO::new).collect(Collectors.toSet());
+        this.reservations = chargingStation.getReservations().stream()
+                .map(ReservationDTO::new).collect(Collectors.toSet());
     }
 
     // Getters y setters
@@ -74,6 +78,10 @@ public class ChargingStationsDTO {
 
     public void setChargingStationStatus(Set<ChargingStationStatusDTO> chargingStationStatus) {
         this.chargingStationStatus = chargingStationStatus;
+    }
+
+    public Set<ReservationDTO> getReservations() {
+        return reservations;
     }
 
     public Set<TransactionDTO> getTransactions() {

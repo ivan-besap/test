@@ -1,7 +1,6 @@
 package com.eVolGreen.eVolGreen.Controllers;
 
 import com.eVolGreen.eVolGreen.DTOS.ReservationDTO;
-import com.eVolGreen.eVolGreen.DTOS.ReservationRequest;
 import com.eVolGreen.eVolGreen.Models.*;
 import com.eVolGreen.eVolGreen.Services.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -22,10 +21,10 @@ public class ReservationController {
     private ClientService clientService;
 
     @Autowired
-    private CompanyService companyService;
+    private AccountService accountService;
 
     @Autowired
-    private AccountService accountService;
+    private ChargingStationsService chargingStationsService;
 
     @Autowired
     private ChargerService chargerService;
@@ -43,59 +42,56 @@ public class ReservationController {
 
     @PostMapping("/reservations")
     public ResponseEntity<Object> createReservation(Authentication authentication,
-                                                    @RequestBody ReservationRequest reservationRequest) {
+                                                    @RequestBody ReservationDTO reservationRequest) {
 
         String email = authentication.getName();
         Client client = clientService.findByEmail(email);
-        Company company = companyService.findByEmailCompany(email);
 
-        if (client == null && company == null) {
+        if (client == null) {
             return ResponseEntity.status(404).body("User not found");
         }
 
-        Account account;
-        if (client != null) {
-            Optional<Account> clientAccount = client.getAccounts().stream().findFirst();
-            if (clientAccount.isEmpty()) {
-                return ResponseEntity.status(404).body("Client account not found");
-            }
-            account = clientAccount.get();
-        } else {
-            Optional<Account> companyAccount = company.getAccounts().stream().findFirst();
-            if (companyAccount.isEmpty()) {
-                return ResponseEntity.status(404).body("Company account not found");
-            }
-            account = companyAccount.get();
+        Optional<Account> clientAccount = client.getAccounts().stream().findFirst();
+        if (clientAccount.isEmpty()) {
+            return ResponseEntity.status(404).body("Client account not found");
+        }
+        Account account = clientAccount.get();
+
+        if (reservationRequest.getStationId() == null) {
+            return ResponseEntity.status(400).body("Charging station ID must not be null");
+        }
+        ChargingStation chargingStation = chargingStationsService.findById(reservationRequest.getStationId());
+        if (chargingStation == null) {
+            return ResponseEntity.status(404).body("Charging station not found");
         }
 
+        if (reservationRequest.getChargerId() == null) {
+            return ResponseEntity.status(400).body("Charger ID must not be null");
+        }
         Charger charger = chargerService.findById(reservationRequest.getChargerId());
-        if (charger == null) {
-            return ResponseEntity.status(404).body("Charger not found");
+        if (charger == null || !charger.getChargingStation().getId().equals(chargingStation.getId())) {
+            return ResponseEntity.status(404).body("Charger not found in the specified charging station");
         }
 
+        if (reservationRequest.getConnectorId() == null) {
+            return ResponseEntity.status(400).body("Connector ID must not be null");
+        }
         Connector connector = connectorService.findById(reservationRequest.getConnectorId());
-        if (connector == null) {
-            return ResponseEntity.status(404).body("Connector not found");
+        if (connector == null || !connector.getCharger().getId().equals(charger.getId())) {
+            return ResponseEntity.status(404).body("Connector not found or does not belong to the specified charger");
         }
-
-        if (!charger.getConnectors().contains(connector)) {
-            return ResponseEntity.status(400).body("The connector does not belong to the specified charger");
-        }
-
 
         LocalDateTime startTime = reservationRequest.getStartTime().truncatedTo(ChronoUnit.SECONDS);
-        if (startTime == null) {
-            return ResponseEntity.status(400).body("Start time must be provided");
-        }
         LocalDateTime endTime = startTime.plusMinutes(30).truncatedTo(ChronoUnit.SECONDS);
 
         if (endTime.isBefore(startTime) || endTime.equals(startTime)) {
             return ResponseEntity.status(400).body("End time must be after start time");
         }
 
-        Reservation reservation = new Reservation(startTime, endTime, account, charger, connector);
+        Reservation reservation = new Reservation(startTime, endTime, account, chargingStation, charger, connector );
         reservationService.saveReservation(reservation);
 
         return ResponseEntity.status(201).body("Reservation created successfully");
     }
+
 }

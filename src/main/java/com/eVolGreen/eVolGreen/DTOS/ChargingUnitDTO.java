@@ -5,10 +5,15 @@ import com.eVolGreen.eVolGreen.Models.ChargingUnit;
 public class ChargingUnitDTO {
     private Long id;
     private String unit;
+    private Long chargerId;
+
+    public ChargingUnitDTO() {
+    }
 
     public ChargingUnitDTO(ChargingUnit chargingUnit) {
         id = chargingUnit.getId();
         unit = chargingUnit.getUnit();
+        chargerId = chargingUnit.getCharger().getId();
     }
 
     public Long getId() {
@@ -16,5 +21,9 @@ public class ChargingUnitDTO {
     }
     public String getUnit() {
         return unit;
+    }
+
+    public Long getChargerId() {
+        return chargerId;
     }
 }

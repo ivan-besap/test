@@ -1,27 +1,32 @@
 package com.eVolGreen.eVolGreen.Controllers;
 
 import com.eVolGreen.eVolGreen.DTOS.ChargerDTO;
+import com.eVolGreen.eVolGreen.Models.Charger;
+import com.eVolGreen.eVolGreen.Models.ChargingStation;
 import com.eVolGreen.eVolGreen.Models.Company;
-import com.eVolGreen.eVolGreen.Repositories.ChargerRepository;
 import com.eVolGreen.eVolGreen.Services.ChargerService;
+import com.eVolGreen.eVolGreen.Services.ChargingStationsService;
 import com.eVolGreen.eVolGreen.Services.CompanyService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.sql.Time;
+import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
 public class ChargerController {
+
     @Autowired
     private ChargerService chargerService;
+
     @Autowired
-    private ChargerRepository chargerRepository;
+    private ChargingStationsService chargingStationsService;
+
     @Autowired
     private CompanyService companyService;
 
@@ -34,15 +39,38 @@ public class ChargerController {
     public ChargerDTO getCharger(@PathVariable Long id) {
         return chargerService.getChargerDTO(id);
     }
-//
-//    @GetMapping("/chargers")
-//    public List<ChargerDTO> getListChargersByStation(Authentication authentication
-//                                                 ) {
-//        Company company = companyService.findByEmailCompany(authentication.getName());
-//        if (company == null) {
-//            return null;
-//        }
-//        return chargerRepository.findByCompany(company).stream().map(ChargerDTO::new).collect(Collectors.toList());
-//    }
 
+    @PostMapping("/chargers")
+    public ResponseEntity<Object> createCharger(Authentication authentication,
+                                                @RequestBody ChargerDTO chargerDTO) {
+
+        String email = authentication.getName();
+        Company company = companyService.findByEmailCompany(email);
+        if (company == null) {
+            return ResponseEntity.status(404).body("Company not found for the authenticated user.");
+        }
+
+        if(chargerDTO.getModel() == null || chargerDTO.getModel().isBlank()) {
+            return ResponseEntity.status(400).body("Charger model cannot be empty.");
+        }
+
+        ChargingStation chargingStation = chargingStationsService.findById(chargerDTO.getChargingStationId());
+        if (chargingStation == null) {
+            return ResponseEntity.status(404).body("Charging station not found.");
+        }
+
+        Charger charger = new Charger();
+        charger.setModel(chargerDTO.getModel());
+        charger.setChargingStation(chargingStation);
+        charger.setEstimatedLoadingTime(new Time(0, 0, 0));
+        charger.setVoltage(chargerDTO.getVoltage() != null ? chargerDTO.getVoltage() : BigDecimal.valueOf(0.0));
+        charger.setEnabled(false);
+        charger.setCreatedDay(LocalDate.now());
+        charger.setTypeOfLoads(chargerDTO.getTypeOfLoads());
+
+        chargerService.saveCharger(charger);
+
+
+        return ResponseEntity.status(201).body("Charger created successfully and associated with the charging station.");
+    }
 }

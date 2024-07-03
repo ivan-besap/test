@@ -7,13 +7,11 @@ import com.eVolGreen.eVolGreen.Services.AccountService;
 import com.eVolGreen.eVolGreen.Services.ClientService;
 import com.eVolGreen.eVolGreen.Services.CompanyService;
 import com.eVolGreen.eVolGreen.Services.EmployeeService;
-import jakarta.mail.MessagingException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -26,9 +24,9 @@ public class AuthService {
     @Autowired
     private CompanyService companyService;
     @Autowired
-    private EmployeeService  employeeService;
+    private EmployeeService employeeService;
     @Autowired
-    private ClientService  clientService;
+    private ClientService clientService;
     @Autowired
     private AccountService accountService;
     @Autowired
@@ -49,9 +47,15 @@ public class AuthService {
         UserDetails user = webAuthentication.userDetailsService().loadUserByUsername(request.getUsername());
         // Generar el token JWT
         String token = jwtService.getToken(user);
-        // Devolver la respuesta con el token
+        // Obtener el rol del usuario
+        String role = user.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .findFirst()
+                .orElse(null);
+        // Devolver la respuesta con el token y el rol
         return AuthResponse.builder()
                 .token(token)
+                .role(role)
                 .build();
     }
 
@@ -73,8 +77,11 @@ public class AuthService {
             client.addAccount(newAccount);
             accountService.saveAccount(newAccount);
         }
+        // Obtener el rol del usuario
+        String role = client.getRole().name();
         return AuthResponse.builder()
                 .token(jwtService.getToken(client))
+                .role(role)
                 .build();
     }
 
@@ -96,9 +103,11 @@ public class AuthService {
             company.addAccount(newAccount);
             accountService.saveAccount(newAccount);
         }
-
+        // Obtener el rol del usuario
+        String role = company.getRole().name();
         return AuthResponse.builder()
                 .token(jwtService.getToken(company))
+                .role(role)
                 .build();
     }
 
@@ -113,11 +122,4 @@ public class AuthService {
         int randomNumber = getRandomNumber(min, max);
         return String.valueOf(randomNumber);
     }
-
-
-//    public AuthResponse logout(LogoutRequest request) {
-//        return AuthResponse.builder()
-//                .token("")
-//                .build();
-//    }
 }

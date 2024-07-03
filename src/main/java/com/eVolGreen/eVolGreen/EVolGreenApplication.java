@@ -29,7 +29,8 @@ public class EVolGreenApplication {
 	public CommandLineRunner initData(LocationRepository locationRepository, CarRepository carRepository, DeviceIdentifierRepository deviceIdentifierRepository,
 									  TransactionRepository transactionRepository, PlanRepository planRepository, AccountRepository accountRepository, ClientRepository clientRepository,
 									  CompanyRepository companyRepository, EmployeeRepository employeeRepository, ChargerRepository chargerRepository, ChargingStationRepository chargingStationRepository,
-									  ConnectorRepository connectorRepository, ChargingStationStatusRepository chargingStationStatusRepository, ChargingUnitRepository chargingUnitRepository) {
+									  ConnectorRepository connectorRepository, ChargingStationStatusRepository chargingStationStatusRepository, ChargingUnitRepository chargingUnitRepository,
+									  ReservationRepository  reservationRepository) {
 		return args -> {
 			Role clientRole = Role.CLIENT;
 			Client client = new Client(

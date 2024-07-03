@@ -29,12 +29,18 @@ public class Reservation {
     @JsonBackReference("connector-reservation")
     private Connector connector;
 
+    @ManyToOne
+    @JoinColumn(name = "station_id")
+    @JsonManagedReference("chargingStation-reservation")
+    private ChargingStation station;
+
     public Reservation() {}
 
-    public Reservation(LocalDateTime startTime, LocalDateTime endTime, Account account, Charger charger, Connector connector) {
+    public Reservation(LocalDateTime startTime, LocalDateTime endTime, Account account, ChargingStation station ,Charger charger, Connector connector) {
         this.startTime = startTime;
         this.endTime = endTime;
         this.account = account;
+        this.station = station;
         this.charger = charger;
         this.connector = connector;
     }
@@ -85,5 +91,13 @@ public class Reservation {
 
     public void setConnector(Connector connector) {
         this.connector = connector;
+    }
+
+    public ChargingStation getStation() {
+        return station;
+    }
+
+    public void setStation(ChargingStation station) {
+        this.station = station;
     }
 }

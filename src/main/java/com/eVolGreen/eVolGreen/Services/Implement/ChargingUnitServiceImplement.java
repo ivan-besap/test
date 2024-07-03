@@ -24,7 +24,7 @@ public class ChargingUnitServiceImplement implements ChargingUnitService {
     }
 
     @Override
-    public void saveChargingUnits(ChargingUnit chargingUnit) {
+    public void saveChargingUnit(ChargingUnit chargingUnit) { // Corregido el nombre del método
         chargingUnitRepository.save(chargingUnit);
     }
 }
