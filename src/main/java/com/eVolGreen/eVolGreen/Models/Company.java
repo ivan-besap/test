@@ -25,9 +25,9 @@ public class Company implements UserDetails {
     private String emailCompany;
     private Integer phoneCompany;
     private Integer rut;
-    private Boolean isActive = false;
     private String password;
     private LocalDate createdDay;
+    private Boolean isActive = false;
 
     @Enumerated(EnumType.STRING)
     private Role role;

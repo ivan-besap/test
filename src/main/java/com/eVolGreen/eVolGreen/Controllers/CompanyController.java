@@ -230,7 +230,7 @@ public class CompanyController {
 
     // Cambia isActiveStatus de la compañía actualmente autenticada (Test)
     @PutMapping("/companies/change-active-status")
-    public ResponseEntity<String> changeActiveStatus(Authentication authentication,
+    public ResponseEntity<Object> changeActiveStatus(Authentication authentication,
                                                      @RequestParam boolean activeStatus) {
 
         Company company = companyService.findByEmailCompany(authentication.getName());
@@ -241,18 +241,10 @@ public class CompanyController {
             return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
         }
 
-        if (activeStatus == company.getActive()) {
-            message = "Active status is already in " + activeStatus;
-            return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
-        }
-
         company.setActive(activeStatus);
         companyService.saveCompany(company);
 
         return ResponseEntity.ok("Active status updated to: " + activeStatus);
     }
-
-
-
 
 }

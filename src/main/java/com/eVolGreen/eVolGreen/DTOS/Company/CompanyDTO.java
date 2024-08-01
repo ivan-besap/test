@@ -15,9 +15,9 @@ public class CompanyDTO {
     private String emailCompany;
     private Integer phoneCompany;
     private Integer rut;
-    private Boolean isActive = false;
     private String password;
     private LocalDate createdDay;
+    private Boolean isActive;
     private Set<Long> employees;
     private Set<AccountDTO> accounts;
 
@@ -30,9 +30,11 @@ public class CompanyDTO {
         rut = company.getRut();
         password = company.getPassword();
         createdDay = company.getCreatedDay();
+        isActive = company.getActive();
         employees = company.getEmployees().stream().map(EmployeeDTO -> new EmployeeDTO(EmployeeDTO).getId()).collect(Collectors.toSet());
         accounts = company.getAccounts().stream().map(AccountDTO -> new AccountDTO(AccountDTO)).collect(Collectors.toSet());
-            }
+    }
+
     public CompanyDTO( ) {
     }
 
@@ -64,6 +66,9 @@ public class CompanyDTO {
         return createdDay;
     }
 
+    public Boolean getActive() {
+        return isActive;
+    }
 
     public Set<Long> getEmployees() {
         return employees;
@@ -73,7 +78,6 @@ public class CompanyDTO {
         return accounts;
     }
 
-    public Boolean getActive() {
-        return isActive;
-    }
+
+
 }
