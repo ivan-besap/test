@@ -16,6 +16,7 @@ public class ClientDTO {
     private String email;
     private Integer phone;
     private String password;
+    private Boolean isActive;
     private Set<AccountDTO> account;
 
 
@@ -27,6 +28,7 @@ public class ClientDTO {
         email = client.getEmail();
         phone = client.getPhone();
         password = client.getPassword();
+        isActive = client.getActive();
         account = client.getAccounts().stream().map(AccountDTO -> new AccountDTO(AccountDTO)).collect(Collectors.toSet());
 
     }
@@ -62,5 +64,9 @@ public class ClientDTO {
 
     public Set<AccountDTO> getAccount() {
         return account;
+    }
+
+    public Boolean getActive() {
+        return isActive;
     }
 }

@@ -17,8 +17,10 @@ public class EmployeeDTO {
     private String email;
     private String password;
     private LocalDate createdDay;
+    private Boolean isActive;
     private String company;
     private Set<AccountDTO> accounts;
+
 
 
     public EmployeeDTO(Employee employee) {
@@ -29,6 +31,7 @@ public class EmployeeDTO {
         email = employee.getEmail();
         password = employee.getPassword();
         createdDay = employee.getCreatedDay();
+        isActive = employee.getActive();
         company = employee.getCompany().getBusinessName();
         accounts = employee.getCompany().getAccounts().stream()
                 .filter(account -> account.getTypeAccounts() == TypeAccounts.Employee)
@@ -57,6 +60,10 @@ public class EmployeeDTO {
     public LocalDate getCreatedDay() {
         return createdDay;
     }
+    public Boolean getActive() {
+        return isActive;
+    }
+
     public String getCompany() {
         return company;
     }

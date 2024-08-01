@@ -27,6 +27,7 @@ public class Client implements UserDetails {
     private String email;
     private Integer phone;
     private String password;
+    private Boolean isActive = false;
 
     @Enumerated(EnumType.STRING)
     private Role role;
@@ -114,6 +115,14 @@ public class Client implements UserDetails {
     public void addAccount(Account newAccount) {
         this.accounts.add(newAccount);
         newAccount.setClient(this);
+    }
+
+    public Boolean getActive() {
+        return isActive;
+    }
+
+    public void setActive(Boolean active) {
+        isActive = active;
     }
 
     public Role getRole() {

@@ -25,6 +25,7 @@ public class Employee implements UserDetails {
     private String email;
     private String password;
     private LocalDate createdDay;
+    private Boolean isActive = false;
 
     @Enumerated(EnumType.STRING)
     private Role role;
@@ -119,8 +120,13 @@ public class Employee implements UserDetails {
         this.role = role;
     }
 
+    public Boolean getActive() {
+        return isActive;
+    }
 
-
+    public void setActive(Boolean active) {
+        isActive = active;
+    }
 
     @Override
     public boolean isAccountNonExpired() {

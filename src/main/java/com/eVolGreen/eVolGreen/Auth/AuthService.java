@@ -36,7 +36,7 @@ public class AuthService {
     private WebAuthentication webAuthentication;
 
     public AuthResponse login(LoginRequest request) {
-    //    System.out.println("AuthService: Starting authentication process for " + request.getUsername());
+        //    System.out.println("AuthService: Starting authentication process for " + request.getUsername());
 
         // Autenticar al usuario con el AuthenticationManager
         authenticationManager.authenticate(
@@ -44,7 +44,7 @@ public class AuthService {
         );
 
         // Cargar los detalles del usuario desde UserDetailsService solo una vez
-    //    System.out.println("AuthService: Loading user details for " + request.getUsername());
+        //    System.out.println("AuthService: Loading user details for " + request.getUsername());
         UserDetails user = webAuthentication.loadUserByUsername(request.getUsername());
 
         // Generar el token JWT para el usuario autenticado
@@ -56,12 +56,27 @@ public class AuthService {
                 .findFirst()
                 .orElse(null);
 
-    //    System.out.println("AuthService: Authentication successful for " + request.getUsername());
+        //    System.out.println("AuthService: Authentication successful for " + request.getUsername());
 
-        // Devolver la respuesta con el token y el rol
+
+
+        Boolean isActive = null;
+        if ("COMPANY".equals(role)) {
+            Company company = companyService.findByEmailCompany(request.getUsername());
+            isActive = company.getActive();
+        } else if ("EMPLOYEE".equals(role)) {
+            Employee employee = employeeService.findByEmail(request.getUsername());
+            isActive = employee.getActive();
+        } else if ("CLIENT".equals(role)) {
+            Client client = clientService.findByEmail(request.getUsername());
+            isActive = client.getActive();
+        }
+
+        // Devolver la respuesta con el token, el rol y el estado activo
         return AuthResponse.builder()
                 .token(token)
                 .role(role)
+                .isActive(isActive)
                 .build();
     }
 
