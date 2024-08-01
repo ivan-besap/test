@@ -19,32 +19,38 @@ public class ChargingStation {
     private String name;
     private BigDecimal currentLoad;
     private LocalDate createdDay;
-    @OneToMany(mappedBy = "station", fetch = FetchType.EAGER)
+
+    @OneToMany(mappedBy = "station", fetch = FetchType.LAZY)
     @JsonManagedReference("chargingStation-reservation")
     private Set<Reservation> reservations = new HashSet<>();
-    @OneToMany(mappedBy = "chargingStation", fetch = FetchType.EAGER)
+
+    @OneToMany(mappedBy = "chargingStation", fetch = FetchType.LAZY)
     @JsonManagedReference("chargingStation-chargingStationStatus")
     private Set<ChargingStationStatus> chargingStationStatus = new HashSet<>();
-    @OneToMany(mappedBy = "chargingStation", fetch = FetchType.EAGER)
+
+    @OneToMany(mappedBy = "chargingStation", fetch = FetchType.LAZY)
     @JsonManagedReference("chargingStation-transaction")
     private Set<Transaction> transactions = new HashSet<>();
-    @OneToMany(mappedBy = "chargingStation", fetch = FetchType.EAGER)
+
+    @OneToMany(mappedBy = "chargingStation", fetch = FetchType.LAZY)
     @JsonManagedReference("chargingStation-plan")
     private Set<Plan> plans = new HashSet<>();
-    @OneToMany(mappedBy = "chargingStation", fetch = FetchType.EAGER)
+
+    @OneToMany(mappedBy = "chargingStation", fetch = FetchType.LAZY)
     @JsonManagedReference("chargingStation-location")
     private Set<Charger> chargers = new HashSet<>();
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "location_id")
     @JsonBackReference("location-chargingStation")
     private Location location;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
     @JsonBackReference("account-chargingStation")
     private Account account;
 
-    public ChargingStation() {
-    }
+    public ChargingStation() { }
 
     public ChargingStation(String name, BigDecimal currentLoad, LocalDate createdDay) {
         this.name = name;

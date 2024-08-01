@@ -21,30 +21,37 @@ public class Account {
     private LocalDate creationDate;
     private TypeAccounts typeAccounts;
     private Boolean isActive = false;
+
     @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
     @JsonManagedReference("account-transaction")
     private Set<Transaction> transactions = new HashSet<>();
+
     @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
     @JsonManagedReference("account-plan")
     private Set<Plan> plans = new HashSet<>();
+
     @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
     @JsonManagedReference("account-location")
     private Set<Location> locations = new HashSet<>();
+
     @OneToMany(mappedBy = "account",fetch = FetchType.LAZY)
     @JsonManagedReference("account-car")
     private Set<Car> cars = new HashSet<>();
+
     @OneToMany(mappedBy = "account",fetch = FetchType.LAZY)
     @JsonManagedReference("account-chargingStation")
     private Set<ChargingStation> chargingStations = new HashSet<>();
+
     @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
     @JsonManagedReference("account-reservation")
     private Set<Reservation> reservations = new HashSet<>();
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id")
     @JsonBackReference("client-account")
     private Client client;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
     @JsonBackReference("company-account")
     private Company company;

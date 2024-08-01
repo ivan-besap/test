@@ -28,18 +28,20 @@ public class Company implements UserDetails {
     private Boolean isActive = false;
     private String password;
     private LocalDate createdDay;
+
     @Enumerated(EnumType.STRING)
     private Role role;
-    @OneToMany(mappedBy = "company", fetch = FetchType.EAGER)
+
+    @OneToMany(mappedBy = "company", fetch = FetchType.LAZY)
     @JsonIgnore
     private Set<Employee> employees = new HashSet<>();
-    @OneToMany(mappedBy = "company", fetch = FetchType.EAGER)
+
+    @OneToMany(mappedBy = "company", fetch = FetchType.LAZY)
     @JsonIgnore
     private Set<Account> accounts = new HashSet<>();
 
 
-    public Company() {
-    }
+    public Company() { }
 
     public Company(String businessName, String emailCompany, Integer phoneCompany, Integer rut, String password, LocalDate createdDay, Role role) {
         this.businessName = businessName;
@@ -54,9 +56,11 @@ public class Company implements UserDetails {
     public Boolean getActive() {
         return isActive;
     }
+
     public void setActive(Boolean active) {
         isActive = active;
     }
+
     public Long getId() {
         return id;
     }
@@ -124,6 +128,7 @@ public class Company implements UserDetails {
     public void setEmployees(Set<Employee> employees) {
         this.employees = employees;
     }
+
     public void addAccount(Account account) {
        account.setCompany(this);
        this.accounts.add(account);
@@ -135,6 +140,7 @@ public class Company implements UserDetails {
     public Role getRole() {
         return role;
     }
+
     public void setRole(Role role) {
         this.role = role;
     }
@@ -144,6 +150,7 @@ public class Company implements UserDetails {
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority((role.name())));
     }
+
     public String getPassword() {
         return password;
     }

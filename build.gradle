@@ -14,12 +14,12 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-data-rest'
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
-	runtimeOnly 'com.h2database:h2'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-data-rest'
+//	runtimeOnly 'com.h2database:h2'
 //	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
@@ -37,7 +37,19 @@ dependencies {
 	implementation 'com.amazonaws:aws-java-sdk-cognitoidp:1.12.725'
 
 	// MySQL Connector
-//	runtimeOnly 'mysql:mysql-connector-java:8.0.33'
+	runtimeOnly 'mysql:mysql-connector-java:8.0.33'
+
+	// Dependencias de activemq
+	//implementation 'org.springframework.boot:spring-boot-starter-activemq'
+	//implementation 'org.apache.activemq:activemq-broker'
+
+	// Dependencias de OCPP
+	//implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.3'
+
+	// JAXB dependencies
+	//implementation 'javax.xml.bind:jaxb-api:2.3.1'
+	//implementation 'org.glassfish.jaxb:jaxb-core:2.3.1'
+	//implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
 
 //	providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
 }

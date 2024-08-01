@@ -22,17 +22,17 @@ public class Transaction {
     private BigDecimal suppliedEnergy;
     private Integer cost;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
     @JsonBackReference
     private Account account;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chargingStation_id")
     @JsonBackReference
     private ChargingStation chargingStation;
 
-    public Transaction() {
-    }
+    public Transaction() { }
 
     public Transaction(TransactionType type, String description, LocalDateTime date, LocalDateTime loadingStartDate, LocalDateTime loadingEndDate, BigDecimal suppliedEnergy, Integer cost) {
         this.type = type;

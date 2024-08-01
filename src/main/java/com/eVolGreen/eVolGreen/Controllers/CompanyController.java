@@ -63,23 +63,23 @@ public class CompanyController {
 
         if (newEmployee.getName().isBlank()){
             message = "Name is required";
-            return ResponseEntity.badRequest().body(message);
+            return new ResponseEntity<>(message,HttpStatus.FORBIDDEN);
         }
         if (newEmployee.getFirstSurname().isBlank()){
             message = "First surname is required";
-            return ResponseEntity.badRequest().body(message);
+            return new ResponseEntity<>(message,HttpStatus.FORBIDDEN);
         }
         if(newEmployee.getLastSurname().isBlank()){
             message = "Last surname is required";
-            return ResponseEntity.badRequest().body(message);
+            return new ResponseEntity<>(message,HttpStatus.FORBIDDEN);
         }
         if (newEmployee.getEmail().isBlank()){
             message = "Email is required";
-            return ResponseEntity.badRequest().body(message);
+            return new ResponseEntity<>(message,HttpStatus.FORBIDDEN);
         }
         if (newEmployee.getPassword().isBlank()){
             message = "Password is required";
-            return ResponseEntity.badRequest().body(message);
+            return new ResponseEntity<>(message,HttpStatus.FORBIDDEN);
         }
 
         Role role = Role.EMPLOYEE;
@@ -227,5 +227,32 @@ public class CompanyController {
         long randomNumber = getRandomNumber(min, max);
         return randomNumber;
     }
+
+    // Cambia isActiveStatus de la compañía actualmente autenticada (Test)
+    @PutMapping("/companies/change-active-status")
+    public ResponseEntity<String> changeActiveStatus(Authentication authentication,
+                                                     @RequestParam boolean activeStatus) {
+
+        Company company = companyService.findByEmailCompany(authentication.getName());
+        String message = "";
+
+        if (company == null) {
+            message = "Company not found.";
+            return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
+        }
+
+        if (activeStatus == company.getActive()) {
+            message = "Active status is already in " + activeStatus;
+            return new ResponseEntity<>(message, HttpStatus.BAD_REQUEST);
+        }
+
+        company.setActive(activeStatus);
+        companyService.saveCompany(company);
+
+        return ResponseEntity.ok("Active status updated to: " + activeStatus);
+    }
+
+
+
 
 }

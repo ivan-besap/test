@@ -11,12 +11,11 @@ public class ChargingUnit {
     private Long id;
     private String unit;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "charger_id")
     private Charger charger;
 
-    public ChargingUnit() {
-    }
+    public ChargingUnit() { }
 
     public ChargingUnit(String unit, Charger charger) {
         this.unit = unit;

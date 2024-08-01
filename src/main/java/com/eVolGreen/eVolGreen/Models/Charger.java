@@ -22,22 +22,23 @@ public class Charger {
     private Boolean enabled;
     private LocalDate createdDay;
     private TypeOfLoad typeOfLoads;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chargingStation_id")
     private ChargingStation chargingStation;
 
-    @OneToMany(mappedBy = "charger", fetch = FetchType.EAGER)
+    @OneToMany(mappedBy = "charger", fetch = FetchType.LAZY)
     private Set<ChargingUnit> chargingUnits = new HashSet<>();
-    @OneToMany(mappedBy = "charger", fetch = FetchType.EAGER)
+
+    @OneToMany(mappedBy = "charger", fetch = FetchType.LAZY)
     private Set<Connector> connectors = new HashSet<>();
-    @OneToMany(mappedBy = "charger", fetch = FetchType.EAGER)
+
+    @OneToMany(mappedBy = "charger", fetch = FetchType.LAZY)
     @JsonManagedReference("charger-reservation")
     private Set<Reservation> reservations = new HashSet<>();
 
 
-    public Charger() {
-
-    }
+    public Charger() { }
 
     public Charger(String model, Time estimatedLoadingTime, BigDecimal voltage, Boolean enabled, LocalDate createdDay, TypeOfLoad typeOfLoads, ChargingStation chargingStation) {
         this.model = model;
@@ -138,6 +139,7 @@ public class Charger {
     public void setConnectors(Set<Connector> connectors) {
         this.connectors = connectors;
     }
+
     public void addConnector( Connector connector) {
         connector.setCharger(this);
         this.connectors.add(connector);

@@ -3,10 +3,7 @@ package com.eVolGreen.eVolGreen.Auth;
 import com.eVolGreen.eVolGreen.Auth.Jwt.JwtService;
 import com.eVolGreen.eVolGreen.Configurations.WebAuthentication;
 import com.eVolGreen.eVolGreen.Models.*;
-import com.eVolGreen.eVolGreen.Services.AccountService;
-import com.eVolGreen.eVolGreen.Services.ClientService;
-import com.eVolGreen.eVolGreen.Services.CompanyService;
-import com.eVolGreen.eVolGreen.Services.EmployeeService;
+import com.eVolGreen.eVolGreen.Services.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -39,19 +36,28 @@ public class AuthService {
     private WebAuthentication webAuthentication;
 
     public AuthResponse login(LoginRequest request) {
-        // Autenticar al usuario
+    //    System.out.println("AuthService: Starting authentication process for " + request.getUsername());
+
+        // Autenticar al usuario con el AuthenticationManager
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword())
         );
-        // Cargar los detalles del usuario desde UserDetailsService
-        UserDetails user = webAuthentication.userDetailsService().loadUserByUsername(request.getUsername());
-        // Generar el token JWT
+
+        // Cargar los detalles del usuario desde UserDetailsService solo una vez
+    //    System.out.println("AuthService: Loading user details for " + request.getUsername());
+        UserDetails user = webAuthentication.loadUserByUsername(request.getUsername());
+
+        // Generar el token JWT para el usuario autenticado
         String token = jwtService.getToken(user);
+
         // Obtener el rol del usuario
         String role = user.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .findFirst()
                 .orElse(null);
+
+    //    System.out.println("AuthService: Authentication successful for " + request.getUsername());
+
         // Devolver la respuesta con el token y el rol
         return AuthResponse.builder()
                 .token(token)
@@ -69,15 +75,15 @@ public class AuthService {
                 passwordEncoder.encode(request.getPassword()),
                 Role.CLIENT
         );
+
         clientService.saveClient(client);
-        // Verificar si el cliente no es administrador
         if (!request.getEmail().contains("@admin.com")) {
             String accountNumber = "VIN" + getStringRandomClient();
             Account newAccount = new Account(accountNumber, LocalDate.now(), TypeAccounts.Client);
             client.addAccount(newAccount);
             accountService.saveAccount(newAccount);
         }
-        // Obtener el rol del usuario
+
         String role = client.getRole().name();
         return AuthResponse.builder()
                 .token(jwtService.getToken(client))
@@ -95,15 +101,15 @@ public class AuthService {
                 request.getCreatedDay(),
                 Role.COMPANY
         );
+
         companyService.saveCompany(company);
-        // Verificar si el cliente no es administrador
         if (!request.getEmailCompany().contains("@admin.com")) {
             String accountNumber = "VIN" + getStringRandomClient();
             Account newAccount = new Account(accountNumber, LocalDate.now(), TypeAccounts.Company);
             company.addAccount(newAccount);
             accountService.saveAccount(newAccount);
         }
-        // Obtener el rol del usuario
+
         String role = company.getRole().name();
         return AuthResponse.builder()
                 .token(jwtService.getToken(company))

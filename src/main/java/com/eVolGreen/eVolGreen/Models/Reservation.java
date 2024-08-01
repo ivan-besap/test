@@ -14,27 +14,27 @@ public class Reservation {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id", nullable = true)
     @JsonBackReference("account-reservation")
     private Account account;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "charger_id")
     @JsonBackReference("charger-reservation")
     private Charger charger;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "connector_id")
     @JsonBackReference("connector-reservation")
     private Connector connector;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "station_id")
     @JsonManagedReference("chargingStation-reservation")
     private ChargingStation station;
 
-    public Reservation() {}
+    public Reservation() { }
 
     public Reservation(LocalDateTime startTime, LocalDateTime endTime, Account account, ChargingStation station ,Charger charger, Connector connector) {
         this.startTime = startTime;

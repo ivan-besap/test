@@ -18,17 +18,18 @@ public class Plan {
     private BigDecimal cost;
     private BigDecimal totalKWh; // Total de kWh incluidos en el plan
     private BigDecimal availableKWh; // kWh disponibles que quedan en el plan
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
     @JsonIgnore
     private Account account;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chargingStation_id")
     @JsonIgnore
     private ChargingStation chargingStation;
 
-    public Plan() {
-    }
+    public Plan() { }
 
     public Plan(String name, String description, Integer days, BigDecimal cost, BigDecimal  totalKWh, BigDecimal availableKWh) {
         this.name = name;

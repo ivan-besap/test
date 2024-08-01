@@ -11,13 +11,13 @@ public class ChargingStationStatus {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     private String name;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "chargingStation_id")
     @JsonBackReference("chargingStation-chargingStationStatus")
     private ChargingStation chargingStation;
 
-    public ChargingStationStatus() {
-    }
+    public ChargingStationStatus() { }
 
     public ChargingStationStatus(String name) {
         this.name = name;

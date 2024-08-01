@@ -17,5 +17,4 @@ public interface ClientService {
 
     ClientDTO getClientDTOByEmailCurrent(String email);
 
-   List<ClientLoginDTO> getClientsLoginDTO();
 }

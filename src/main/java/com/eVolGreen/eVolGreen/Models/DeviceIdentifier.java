@@ -12,12 +12,12 @@ public class DeviceIdentifier {
     private String identifierName;
     private long identifierNumber;
     private String identifierType;
-    @ManyToOne (fetch = FetchType.EAGER)
+
+    @ManyToOne (fetch = FetchType.LAZY)
     @JoinColumn(name = "car_id")
     private Car car;
 
-    public DeviceIdentifier() {
-    }
+    public DeviceIdentifier() { }
 
     public DeviceIdentifier(String identifierName, long identifierNumber, String identifierType, Car car) {
         this.identifierName = identifierName;

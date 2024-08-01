@@ -32,12 +32,13 @@ public class EVolGreenApplication {
 									  ConnectorRepository connectorRepository, ChargingStationStatusRepository chargingStationStatusRepository, ChargingUnitRepository chargingUnitRepository,
 									  ReservationRepository  reservationRepository) {
 		return args -> {
+		/*
 			Role clientRole = Role.CLIENT;
 			Client client = new Client(
 					"John",
 					"Doe",
 					123456789-9,
-					"4C3L4@example.com",
+					"correo@cliente.com",
 					12345678,
 					passwordEncoder.encode("password"),
 					clientRole);
@@ -230,7 +231,7 @@ public class EVolGreenApplication {
 			);
 			connector.setCharger(charger);
 			connectorRepository.save(connector);
-
+*/
 		};
 	}
 }

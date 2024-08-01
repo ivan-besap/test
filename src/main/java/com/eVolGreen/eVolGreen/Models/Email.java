@@ -7,8 +7,8 @@ public class Email {
     private String subject;
     private String body;
 
-    public Email() {
-    }
+    public Email() { }
+
     public Email(String destination, String subject, String body) {
         this.destination = destination;
         this.subject = subject;

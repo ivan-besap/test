@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.Configurations;
 
 import com.eVolGreen.eVolGreen.Auth.Jwt.JwtAuthenticationFilter;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -18,9 +19,10 @@ import static org.springframework.security.config.Customizer.withDefaults;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class WebAuthorization {
-
-    private final JwtAuthenticationFilter jwtAuthenticationFilter;
-    private final AuthenticationProvider authProvider;
+    @Autowired
+    private JwtAuthenticationFilter jwtAuthenticationFilter;
+    @Autowired
+    private AuthenticationProvider authProvider;
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
@@ -45,14 +47,4 @@ public class WebAuthorization {
         return http.build();
     }
 
-//    @Bean
-//    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-//        JwtGrantedAuthoritiesConverter grantedAuthoritiesConverter = new JwtGrantedAuthoritiesConverter();
-//        grantedAuthoritiesConverter.setAuthorityPrefix("ROLE_");
-//        grantedAuthoritiesConverter.setAuthoritiesClaimName("cognito:groups");
-//
-//        JwtAuthenticationConverter jwtAuthenticationConverter = new JwtAuthenticationConverter();
-//        jwtAuthenticationConverter.setJwtGrantedAuthoritiesConverter(grantedAuthoritiesConverter);
-//        return jwtAuthenticationConverter;
-//    }
 }

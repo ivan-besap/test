@@ -36,7 +36,7 @@ public class Client implements UserDetails {
     private Set<Account> accounts = new HashSet<>();
 
     // Constructor vacío
-    public Client() {}
+    public Client() { }
 
     // Constructor con parámetros
     public Client(String firstName, String lastName, Integer rut, String email, Integer phone, String password, Role role) {

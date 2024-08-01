@@ -25,16 +25,16 @@ public class Employee implements UserDetails {
     private String email;
     private String password;
     private LocalDate createdDay;
+
     @Enumerated(EnumType.STRING)
     private Role role;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
     @JsonIgnore
     private Company company;
 
-    public Employee() {
-    }
-
+    public Employee() { }
 
     public Employee(String name, String firstSurname, String lastSurname, String email, String password, LocalDate createdDay, Company company, Role role) {
         this.name = name;
@@ -114,6 +114,7 @@ public class Employee implements UserDetails {
     public Role getRole() {
         return role;
     }
+
     public void setRole(Role role) {
         this.role = role;
     }

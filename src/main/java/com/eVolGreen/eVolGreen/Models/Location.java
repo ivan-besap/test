@@ -19,15 +19,17 @@ public class Location {
     private String city;
     private String region;
     private String country;
-    @ManyToOne
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
     @JsonBackReference("account-location")
     private Account account;
-    @OneToMany(mappedBy = "location", fetch = FetchType.EAGER)
+
+    @OneToMany(mappedBy = "location", fetch = FetchType.LAZY)
     @JsonManagedReference("location-chargingStation")
     private Set<ChargingStation> chargingStations = new HashSet<>();
-    public Location() {
-    }
+
+    public Location() { }
 
     public Location(String latitude, String longitude, String address, String city, String region, String country) {
         this.latitude = latitude;

@@ -24,10 +24,12 @@ public class ClientServiceImplement implements ClientService {
                 .map(ClientDTO::new)
                 .collect(Collectors.toList());
     }
+
     @Override
     public ClientDTO getClientDTO(Long id) {
         return new ClientDTO(this.findById(id));
     }
+
     @Override
     public ClientDTO getClientDTOByEmailCurrent(String authentication) {
         Client client = clientRepository.findByEmail(authentication);
@@ -38,23 +40,16 @@ public class ClientServiceImplement implements ClientService {
         }
     }
 
-
-    @Override
-    public List<ClientLoginDTO> getClientsLoginDTO() {
-        return clientRepository.findAll()
-                .stream()
-                .map(ClientLoginDTO::new)
-                .collect(Collectors.toList());
-    }
-
     @Override
     public Client findById(Long id) {
         return clientRepository.findById(id).orElse(null);
     }
+
     @Override
     public Client findByEmail(String email) {
         return clientRepository.findByEmail(email);
     }
+
     @Override
     public void saveClient(Client client) {
         clientRepository.save(client);

@@ -19,15 +19,15 @@ public class Connector {
     private ConnectorStatus connectorStatus;
     private BigDecimal charge;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "charger_id")
     private Charger charger;
-    @OneToMany(mappedBy = "connector", fetch = FetchType.EAGER)
+
+    @OneToMany(mappedBy = "connector", fetch = FetchType.LAZY)
     @JsonManagedReference("connector-reservation")
     private Set<Reservation> reservations = new HashSet<>();
 
-    public Connector() {
-    }
+    public Connector() { }
 
     public Connector(String name, BigDecimal power, ConnectorStatus connectorStatus, BigDecimal charge, Charger charger) {
         this.name = name;

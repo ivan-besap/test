@@ -44,10 +44,10 @@ public class ClientController {
         return clientService.getClientsDTO();
     }
 
-    @GetMapping("/clients/logins")
-    public List<ClientLoginDTO> getClientsLogin() {
-        return clientService.getClientsLoginDTO();
-    }
+//    @GetMapping("/clients/logins")
+//    public List<ClientLoginDTO> getClientsLogin() {
+//        return clientService.getClientsLoginDTO();
+//    }
 
     @GetMapping("/clients/{id}")
     public ClientDTO getClient(@PathVariable Long id){

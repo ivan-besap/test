@@ -15,34 +15,29 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
-
 @Service
 public class JwtService {
     private static final String SECRET_KEY = "586E3272357538782F413F4428472B4B6250655368566B597033733676397924";
 
     public String getToken(UserDetails user) {
         Map<String, Object> claims = new HashMap<>();
-        // Obtener el primer (y único) rol del usuario
         String role = user.getAuthorities().stream()
                 .map(GrantedAuthority::getAuthority)
                 .findFirst()
                 .orElseThrow(() -> new RuntimeException("User has no roles assigned"));
-        // Agregar el rol a los claims
         claims.put("role", role);
         return getToken(claims, user);
     }
 
     private String getToken(Map<String, Object> extraClaims, UserDetails user) {
-        return Jwts
-                .builder()
+        return Jwts.builder()
                 .setClaims(extraClaims)
                 .setSubject(user.getUsername())
                 .setIssuedAt(new Date(System.currentTimeMillis()))
-                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 240)) // 4 horas expiración
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 240))
                 .signWith(getKey(), SignatureAlgorithm.HS256)
                 .compact();
     }
-
 
     private Key getKey() {
         byte[] keyBytes = Decoders.BASE64.decode(SECRET_KEY);
@@ -59,8 +54,7 @@ public class JwtService {
     }
 
     private Claims getAllClaims(String token) {
-        return Jwts
-                .parserBuilder()
+        return Jwts.parserBuilder()
                 .setSigningKey(getKey())
                 .build()
                 .parseClaimsJws(token)
@@ -79,6 +73,4 @@ public class JwtService {
     private boolean isTokenExpired(String token) {
         return getExpiration(token).before(new Date());
     }
-
-
 }

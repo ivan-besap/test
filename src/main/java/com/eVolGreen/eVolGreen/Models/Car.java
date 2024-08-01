@@ -26,14 +26,16 @@ public class Car {
     private String manufactureYear;
     @Column(name = "capacity_full_power", precision = 10, scale = 2)
     private BigDecimal capacityFullPower;
-    @OneToMany (mappedBy = "car", fetch = FetchType.EAGER)
+
+    @OneToMany (mappedBy = "car", fetch = FetchType.LAZY)
     private Set<DeviceIdentifier> deviceIdentifiers = new HashSet<>();
-    @ManyToOne(fetch = FetchType.EAGER)
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
     @JsonIgnore
     private Account account;
-    public Car() {
-    }
+
+    public Car() { }
 
     public Car(String licensePlate, String model, String vin, String color, String brand, String manufactureYear, BigDecimal capacityFullPower) {
         this.licensePlate = licensePlate;
