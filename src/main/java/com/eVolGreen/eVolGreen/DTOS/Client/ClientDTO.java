@@ -16,7 +16,7 @@ public class ClientDTO {
     private String email;
     private Integer phone;
     private String password;
-    private Boolean isActive;
+    private Boolean isActive = false;
     private Set<AccountDTO> account;
 
 

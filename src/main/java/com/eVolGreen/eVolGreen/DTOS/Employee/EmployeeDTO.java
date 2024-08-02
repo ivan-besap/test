@@ -17,7 +17,7 @@ public class EmployeeDTO {
     private String email;
     private String password;
     private LocalDate createdDay;
-    private Boolean isActive;
+    private Boolean isActive = false;
     private String company;
     private Set<AccountDTO> accounts;
 

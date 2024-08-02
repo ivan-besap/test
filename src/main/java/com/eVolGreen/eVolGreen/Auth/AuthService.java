@@ -58,8 +58,6 @@ public class AuthService {
 
         //    System.out.println("AuthService: Authentication successful for " + request.getUsername());
 
-
-
         Boolean isActive = null;
         if ("COMPANY".equals(role)) {
             Company company = companyService.findByEmailCompany(request.getUsername());
@@ -91,6 +89,8 @@ public class AuthService {
                 Role.CLIENT
         );
 
+        client.setActive(false);
+
         clientService.saveClient(client);
         if (!request.getEmail().contains("@admin.com")) {
             String accountNumber = "VIN" + getStringRandomClient();
@@ -103,6 +103,7 @@ public class AuthService {
         return AuthResponse.builder()
                 .token(jwtService.getToken(client))
                 .role(role)
+                .isActive(client.getActive())
                 .build();
     }
 
@@ -117,6 +118,8 @@ public class AuthService {
                 Role.COMPANY
         );
 
+        company.setActive(false);
+
         companyService.saveCompany(company);
         if (!request.getEmailCompany().contains("@admin.com")) {
             String accountNumber = "VIN" + getStringRandomClient();
@@ -129,6 +132,7 @@ public class AuthService {
         return AuthResponse.builder()
                 .token(jwtService.getToken(company))
                 .role(role)
+                .isActive(company.getActive())
                 .build();
     }
 

@@ -3,10 +3,7 @@ package com.eVolGreen.eVolGreen.Controllers;
 import com.eVolGreen.eVolGreen.Auth.Role;
 import com.eVolGreen.eVolGreen.DTOS.Client.ClientDTO;
 import com.eVolGreen.eVolGreen.DTOS.Client.ClientLoginDTO;
-import com.eVolGreen.eVolGreen.Models.Account;
-import com.eVolGreen.eVolGreen.Models.Client;
-import com.eVolGreen.eVolGreen.Models.Email;
-import com.eVolGreen.eVolGreen.Models.TypeAccounts;
+import com.eVolGreen.eVolGreen.Models.*;
 import com.eVolGreen.eVolGreen.Repositories.ClientRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService;
 import com.eVolGreen.eVolGreen.Services.ClientService;
@@ -155,6 +152,25 @@ public class ClientController {
     public String getStringRandomClient() {
         int randomNumber = getRandomNumber(min, max);
         return String.valueOf(randomNumber);
+    }
+
+    // Cambia isActiveStatus del cliente actualmente autenticada (Test)
+    @PutMapping("/clients/change-active-status")
+    public ResponseEntity<Object> changeActiveStatus(Authentication authentication,
+                                                     @RequestParam boolean activeStatus) {
+
+        Client client = clientService.findByEmail(authentication.getName());
+        String message = "";
+
+        if (client == null) {
+            message = "Client not found.";
+            return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
+        }
+
+        client.setActive(activeStatus);
+        clientService.saveClient(client);
+
+        return ResponseEntity.ok("Active status updated to: " + activeStatus);
     }
 
 

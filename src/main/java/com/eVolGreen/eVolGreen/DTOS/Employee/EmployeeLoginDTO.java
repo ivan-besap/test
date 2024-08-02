@@ -8,6 +8,7 @@ public class EmployeeLoginDTO {
     private String firstSurname;
     private String lastSurname;
     private String email;
+    private Boolean isActive = false;
 
 
     public EmployeeLoginDTO(Employee employee) {
@@ -36,5 +37,9 @@ public class EmployeeLoginDTO {
 
     public String getEmail() {
         return email;
+    }
+
+    public Boolean getActive() {
+        return isActive;
     }
 }

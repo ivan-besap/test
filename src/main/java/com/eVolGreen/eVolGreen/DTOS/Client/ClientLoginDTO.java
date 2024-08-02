@@ -8,6 +8,7 @@ public class ClientLoginDTO {
     private String firstName;
     private String lastName;
     private String email;
+    private Boolean isActive = false;
 
 
     public ClientLoginDTO(Client client) {
@@ -34,4 +35,7 @@ public class ClientLoginDTO {
         return email;
     }
 
+    public Boolean getActive() {
+        return isActive;
+    }
 }

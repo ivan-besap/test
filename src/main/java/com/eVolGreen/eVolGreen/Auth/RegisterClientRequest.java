@@ -17,6 +17,7 @@ public class RegisterClientRequest {
     String email;
     Integer phone;
     String password;
+    Boolean isActive;
 
 
 }
