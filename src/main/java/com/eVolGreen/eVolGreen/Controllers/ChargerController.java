@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.*;
 import java.math.BigDecimal;
 import java.sql.Time;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -62,7 +63,7 @@ public class ChargerController {
         Charger charger = new Charger();
         charger.setModel(chargerDTO.getModel());
         charger.setChargingStation(chargingStation);
-        charger.setEstimatedLoadingTime(new Time(0, 0, 0));
+        charger.setEstimatedLoadingTime(Time.valueOf(LocalTime.of(0, 1)));
         charger.setVoltage(chargerDTO.getVoltage() != null ? chargerDTO.getVoltage() : BigDecimal.valueOf(0.0));
         charger.setEnabled(false);
         charger.setCreatedDay(LocalDate.now());
