@@ -20,4 +20,10 @@ public class OcppController {
         ocppHandler.sendBootNotification();
         return ResponseEntity.ok("BootNotification sent");
     }
+
+    @GetMapping("/sendHeartbeat")
+    public ResponseEntity<String> sendHeartbeat() {
+        ocppHandler.sendHeartbeat();
+        return ResponseEntity.ok("Heartbeat sent");
+    }
 }

@@ -61,4 +61,10 @@ public class OcppHandler {
     public boolean isRiggedToFail() {
         return riggedToFail;
     }
+
+    public void sendHeartbeat() {
+        HeartbeatRequest request = new HeartbeatRequest();
+        sendMessage(failurePoint(request));
+
+    }
 }

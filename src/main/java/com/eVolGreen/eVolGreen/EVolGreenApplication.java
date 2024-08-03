@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen;
 
 import com.eVolGreen.eVolGreen.Auth.Role;
+import com.eVolGreen.eVolGreen.Configurations.Ocpp.OcppClient;
 import com.eVolGreen.eVolGreen.Models.*;
 import com.eVolGreen.eVolGreen.Repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -11,6 +12,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.math.BigDecimal;
+import java.net.URI;
 import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -30,7 +32,7 @@ public class EVolGreenApplication {
 									  TransactionRepository transactionRepository, PlanRepository planRepository, AccountRepository accountRepository, ClientRepository clientRepository,
 									  CompanyRepository companyRepository, EmployeeRepository employeeRepository, ChargerRepository chargerRepository, ChargingStationRepository chargingStationRepository,
 									  ConnectorRepository connectorRepository, ChargingStationStatusRepository chargingStationStatusRepository, ChargingUnitRepository chargingUnitRepository,
-									  ReservationRepository  reservationRepository) {
+									  ReservationRepository  reservationRepository, OcppClient ocppClient) {
 		return args -> {
 		/*
 			Role clientRole = Role.CLIENT;
@@ -233,5 +235,10 @@ public class EVolGreenApplication {
 			connectorRepository.save(connector);
 */
 		};
+	}
+
+	@Bean
+	public OcppClient ocppClient() {
+		return new OcppClient(URI.create("ws://localhost:8080/ocpp"));
 	}
 }
