@@ -16,6 +16,7 @@ repositories {
 dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-websocket'
+	implementation 'org.java-websocket:Java-WebSocket:1.5.3'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-data-rest'
@@ -25,6 +26,7 @@ dependencies {
 
 	compileOnly 'org.projectlombok:lombok:1.18.24'
 	annotationProcessor 'org.projectlombok:lombok:1.18.24'
+
 	// JJWT dependency
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
 	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
@@ -40,16 +42,16 @@ dependencies {
 	runtimeOnly 'mysql:mysql-connector-java:8.0.33'
 
 	// Dependencias de activemq
-	//implementation 'org.springframework.boot:spring-boot-starter-activemq'
-	//implementation 'org.apache.activemq:activemq-broker'
+	implementation 'org.springframework.boot:spring-boot-starter-activemq'
+	implementation 'org.apache.activemq:activemq-broker'
 
 	// Dependencias de OCPP
-	//implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.3'
+	implementation 'com.fasterxml.jackson.core:jackson-databind:2.13.3'
 
 	// JAXB dependencies
-	//implementation 'javax.xml.bind:jaxb-api:2.3.1'
-	//implementation 'org.glassfish.jaxb:jaxb-core:2.3.1'
-	//implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
+	implementation 'javax.xml.bind:jaxb-api:2.3.1'
+	implementation 'org.glassfish.jaxb:jaxb-core:2.3.1'
+	implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.1'
 
 //	providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
 }
