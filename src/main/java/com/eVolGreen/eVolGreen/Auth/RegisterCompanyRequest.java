@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Auth;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -12,13 +12,12 @@ import java.time.LocalDate;
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor
-
 public class RegisterCompanyRequest {
-    String businessName;
-    String emailCompany;
-    Integer phoneCompany;
-    Integer rut;
-    Boolean isActive;
-    String password;
-    LocalDate createdDay;
+    private String businessName;
+    private String emailCompany;
+    private Integer phoneCompany;
+    private Integer rut;
+    private Boolean isActive;
+    private String password;
+    private LocalDate createdDay;
 }
