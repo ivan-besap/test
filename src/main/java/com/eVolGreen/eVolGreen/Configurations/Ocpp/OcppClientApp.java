@@ -7,8 +7,7 @@ import java.net.URI;
 public class OcppClientApp {
     public static void main(String[] args) {
         try {
-            OcppClient client = new OcppClient(new URI("ws://localhost:8080/ocpp"));
-            client.connectBlocking();
+            OcppClient client = new OcppClient(new URI("ws://localhost:8081/ocpp"));            client.connectBlocking();
 
             // Enviar un BootNotificationRequest
             BootNotificationRequest bootNotificationRequest = new BootNotificationRequest();

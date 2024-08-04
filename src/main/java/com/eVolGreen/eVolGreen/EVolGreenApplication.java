@@ -32,7 +32,7 @@ public class EVolGreenApplication {
 									  TransactionRepository transactionRepository, PlanRepository planRepository, AccountRepository accountRepository, ClientRepository clientRepository,
 									  CompanyRepository companyRepository, EmployeeRepository employeeRepository, ChargerRepository chargerRepository, ChargingStationRepository chargingStationRepository,
 									  ConnectorRepository connectorRepository, ChargingStationStatusRepository chargingStationStatusRepository, ChargingUnitRepository chargingUnitRepository,
-									  ReservationRepository  reservationRepository, OcppClient ocppClient) {
+									  ReservationRepository  reservationRepository) {
 		return args -> {
 		/*
 			Role clientRole = Role.CLIENT;
@@ -239,6 +239,6 @@ public class EVolGreenApplication {
 
 	@Bean
 	public OcppClient ocppClient() {
-		return new OcppClient(URI.create("ws://localhost:8080/ocpp"));
+		return new OcppClient(URI.create("ws://localhost:8081/ocpp"));
 	}
 }

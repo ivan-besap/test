@@ -24,8 +24,8 @@ dependencies {
 //	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
-	compileOnly 'org.projectlombok:lombok:1.18.24'
-	annotationProcessor 'org.projectlombok:lombok:1.18.24'
+	compileOnly 'org.projectlombok:lombok'
+	annotationProcessor 'org.projectlombok:lombok'
 
 	// JJWT dependency
 	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
@@ -44,6 +44,7 @@ dependencies {
 	// Dependencias de activemq
 	implementation 'org.springframework.boot:spring-boot-starter-activemq'
 	implementation 'org.apache.activemq:activemq-broker'
+	
 
 	// Dependencias de OCPP
 	implementation 'com.fasterxml.jackson.core:jackson-databind'
