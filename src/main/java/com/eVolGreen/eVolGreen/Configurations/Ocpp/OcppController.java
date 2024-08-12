@@ -21,19 +21,37 @@ public class OcppController {
 
     @GetMapping("/sendBootNotification")
     public ResponseEntity<String> sendBootNotification() {
-        ocppHandler.sendBootNotification();
-        return ResponseEntity.ok("BootNotification sent");
+        try {
+            ocppHandler.sendBootNotification();
+            System.out.println("BootNotification enviado exitosamente");
+            return ResponseEntity.ok("BootNotification enviado");
+        } catch (Exception e) {
+            System.err.println("Error al enviar BootNotification: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al enviar BootNotification");
+        }
     }
 
     @GetMapping("/sendHeartbeat")
     public ResponseEntity<String> sendHeartbeat() {
-        ocppHandler.sendHeartbeat();
-        return ResponseEntity.ok("Heartbeat sent");
+        try {
+            ocppHandler.sendHeartbeat();
+            System.out.println("Heartbeat enviado exitosamente");
+            return ResponseEntity.ok("Heartbeat enviado");
+        } catch (Exception e) {
+            System.err.println("Error al enviar Heartbeat: " + e.getMessage());
+            return ResponseEntity.status(500).body("Error al enviar Heartbeat");
+        }
     }
 
     @GetMapping("/send")
     public String sendMessage() {
-        jmsTemplate.convertAndSend("testQueue", "Hello from ActiveMQ!");
-        return "Message sent!";
+        try {
+            jmsTemplate.convertAndSend("testQueue", "¡Hola desde ActiveMQ!");
+            System.out.println("Mensaje enviado a testQueue exitosamente");
+            return "¡Mensaje enviado!";
+        } catch (Exception e) {
+            System.err.println("Error al enviar mensaje a testQueue: " + e.getMessage());
+            return "Error al enviar mensaje";
+        }
     }
 }

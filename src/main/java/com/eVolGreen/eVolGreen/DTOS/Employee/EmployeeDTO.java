@@ -20,11 +20,13 @@ public class EmployeeDTO {
     private Boolean isActive = false;
     private String company;
     private Set<AccountDTO> accounts;
+    private Set<String> roles;
 
-
+    public EmployeeDTO() {
+    }
 
     public EmployeeDTO(Employee employee) {
-       id = employee.getId();
+        id = employee.getId();
         name = employee.getName();
         firstSurname = employee.getFirstSurname();
         lastSurname = employee.getLastSurname();
@@ -37,29 +39,39 @@ public class EmployeeDTO {
                 .filter(account -> account.getTypeAccounts() == TypeAccounts.Employee)
                 .map(AccountDTO::new)
                 .collect(Collectors.toSet());
+        roles = employee.getRoles().stream()
+                .map(role -> role.getName())
+                .collect(Collectors.toSet());
     }
 
     public Long getId() {
         return id;
     }
+
     public String getName() {
         return name;
     }
+
     public String getFirstSurname() {
         return firstSurname;
     }
+
     public String getLastSurname() {
         return lastSurname;
     }
+
     public String getEmail() {
         return email;
     }
+
     public String getPassword() {
         return password;
     }
+
     public LocalDate getCreatedDay() {
         return createdDay;
     }
+
     public Boolean getActive() {
         return isActive;
     }
@@ -70,5 +82,9 @@ public class EmployeeDTO {
 
     public Set<AccountDTO> getAccounts() {
         return accounts;
+    }
+
+    public Set<String> getRoles() {
+        return roles;
     }
 }

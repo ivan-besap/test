@@ -1,10 +1,10 @@
 package com.eVolGreen.eVolGreen.Repositories;
 
-import com.eVolGreen.eVolGreen.Models.Plan;
+import com.eVolGreen.eVolGreen.Models.Fee;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 @RepositoryRestResource
-public interface PlanRepository extends JpaRepository<Plan, Long> {
+public interface FeeRepository extends JpaRepository<Fee, Long> {
 
 }

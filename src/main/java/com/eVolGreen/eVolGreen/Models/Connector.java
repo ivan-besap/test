@@ -12,7 +12,7 @@ import java.util.Set;
 public class Connector {
     @Id
     @GenericGenerator(name = "native", strategy = "native")
-    @GeneratedValue(strategy = GenerationType.AUTO)
+    @GeneratedValue(strategy = GenerationType.AUTO, generator = "native")
     private Long id;
     private String name;
     private BigDecimal power;
@@ -26,6 +26,9 @@ public class Connector {
     @OneToMany(mappedBy = "connector", fetch = FetchType.LAZY)
     @JsonManagedReference("connector-reservation")
     private Set<Reservation> reservations = new HashSet<>();
+
+    @ManyToMany(mappedBy = "connectors")
+    private Set<Fee> fees = new HashSet<>();
 
     public Connector() { }
 
@@ -91,5 +94,13 @@ public class Connector {
 
     public void setReservations(Set<Reservation> reservations) {
         this.reservations = reservations;
+    }
+
+    public Set<Fee> getFees() {
+        return fees;
+    }
+
+    public void setFees(Set<Fee> fees) {
+        this.fees = fees;
     }
 }

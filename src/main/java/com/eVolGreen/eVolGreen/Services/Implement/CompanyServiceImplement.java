@@ -4,6 +4,7 @@ package com.eVolGreen.eVolGreen.Services.Implement;
 import com.eVolGreen.eVolGreen.DTOS.Company.CompanyDTO;
 import com.eVolGreen.eVolGreen.DTOS.Company.CompanyLoginDTO;
 import com.eVolGreen.eVolGreen.Models.Company;
+import com.eVolGreen.eVolGreen.Models.Fee;
 import com.eVolGreen.eVolGreen.Repositories.CompanyRepository;
 import com.eVolGreen.eVolGreen.Services.CompanyService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,5 +62,13 @@ public class CompanyServiceImplement implements CompanyService {
     @Override
     public CompanyDTO getCompanyDTO(Long id) {
         return new CompanyDTO(this.findById(id));
+    }
+
+    @Override
+    public List<Fee> getCompanyFeesById(Long companyId) {
+        Company company = companyRepository.findById(companyId).orElse(null);
+        return company != null ? company.getFees()
+                .stream()
+                .collect(Collectors.toList()) : null;
     }
 }

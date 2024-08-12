@@ -54,14 +54,18 @@ public class WebAuthentication {
 
         Employee employee = employeeService.findByEmail(username);
         if (employee != null) {
-        //    System.out.println("WebAuthentication: User found as Employee");
+            System.out.println("WebAuthentication: User found as Employee");
             return new User(employee.getEmail(), employee.getPassword(),
-                    AuthorityUtils.createAuthorityList("EMPLOYEE"));
+                    AuthorityUtils.createAuthorityList(
+                            employee.getRoles().stream()
+                                    .map(role -> "EMPLOYEE_" + role.getName().toUpperCase())
+                                    .toArray(String[]::new)
+                    ));
         }
 
         Company company = companyService.findByEmailCompany(username);
         if (company != null) {
-        //    System.out.println("WebAuthentication: User found as Company");
+            System.out.println("WebAuthentication: User found as Company");
             return new User(company.getEmailCompany(), company.getPassword(),
                     AuthorityUtils.createAuthorityList("COMPANY"));
         }

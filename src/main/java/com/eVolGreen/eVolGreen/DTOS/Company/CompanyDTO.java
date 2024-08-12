@@ -2,7 +2,7 @@ package com.eVolGreen.eVolGreen.DTOS.Company;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO;
 import com.eVolGreen.eVolGreen.DTOS.Employee.EmployeeDTO;
-import com.eVolGreen.eVolGreen.DTOS.ReservationDTO;
+import com.eVolGreen.eVolGreen.DTOS.FeeDTO;
 import com.eVolGreen.eVolGreen.Models.Company;
 
 import java.time.LocalDate;
@@ -20,7 +20,9 @@ public class CompanyDTO {
     private Boolean isActive;
     private Set<Long> employees;
     private Set<AccountDTO> accounts;
+    private Set<FeeDTO> fees;
 
+    public CompanyDTO( ) { }
 
     public CompanyDTO(Company company) {
         id = company.getId();
@@ -33,9 +35,7 @@ public class CompanyDTO {
         isActive = company.getActive();
         employees = company.getEmployees().stream().map(EmployeeDTO -> new EmployeeDTO(EmployeeDTO).getId()).collect(Collectors.toSet());
         accounts = company.getAccounts().stream().map(AccountDTO -> new AccountDTO(AccountDTO)).collect(Collectors.toSet());
-    }
-
-    public CompanyDTO( ) {
+        fees = company.getFees().stream().map(FeeDTO -> new FeeDTO(FeeDTO)).collect(Collectors.toSet());
     }
 
     public Long getId() {
@@ -78,6 +78,8 @@ public class CompanyDTO {
         return accounts;
     }
 
-
+    public Set<FeeDTO> getFees() {
+        return fees;
+    }
 
 }

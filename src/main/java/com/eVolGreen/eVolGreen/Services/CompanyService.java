@@ -3,6 +3,7 @@ package com.eVolGreen.eVolGreen.Services;
 import com.eVolGreen.eVolGreen.DTOS.Company.CompanyDTO;
 import com.eVolGreen.eVolGreen.DTOS.Company.CompanyLoginDTO;
 import com.eVolGreen.eVolGreen.Models.Company;
+import com.eVolGreen.eVolGreen.Models.Fee;
 
 import java.util.List;
 
@@ -19,4 +20,6 @@ public interface CompanyService {
     Company findById(Long companyId);
 
     CompanyDTO getCompanyDTO(Long id);
+
+    List<Fee> getCompanyFeesById(Long companyId);
 }

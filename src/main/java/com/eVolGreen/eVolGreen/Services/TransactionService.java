@@ -8,13 +8,13 @@ import java.util.List;
 
 public interface TransactionService {
 
-    List<TransactionDTO> getTransactionsDTO();
-
-    void saveTransaction(Transaction transaction);
-
-    Transaction startCharging(Account account, Long chargingStationId);
-
-    Transaction stopCharging(Long transactionId);
-
-    Transaction findById(Long id);
+//    List<TransactionDTO> getTransactionsDTO();
+//
+//    void saveTransaction(Transaction transaction);
+//
+//    Transaction startCharging(Account account, Long chargingStationId);
+//
+//    Transaction stopCharging(Long transactionId);
+//
+//    Transaction findById(Long id);
 }

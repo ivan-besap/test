@@ -1,8 +1,6 @@
 package com.eVolGreen.eVolGreen.Controllers;
 
-import com.eVolGreen.eVolGreen.Auth.Role;
 import com.eVolGreen.eVolGreen.DTOS.Client.ClientDTO;
-import com.eVolGreen.eVolGreen.DTOS.Client.ClientLoginDTO;
 import com.eVolGreen.eVolGreen.Models.*;
 import com.eVolGreen.eVolGreen.Repositories.ClientRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService;
@@ -93,7 +91,8 @@ public class ClientController {
         // Generar el checkDigit
         String checkDigit = generateCheckDigit();
 
-        Role clientRole = Role.CLIENT;
+        Role clientRole = new Role("CLIENT");
+
 
         // Crear el cliente
         Client newClient = new Client(

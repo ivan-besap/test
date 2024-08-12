@@ -2,10 +2,10 @@ package com.eVolGreen.eVolGreen.Controllers;
 
 import com.eVolGreen.eVolGreen.DTOS.Company.CompanyLoginDTO;
 import com.eVolGreen.eVolGreen.Models.*;
+import com.eVolGreen.eVolGreen.Repositories.PermissionRepository;
 import com.eVolGreen.eVolGreen.Services.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import com.eVolGreen.eVolGreen.Auth.Role;
 import com.eVolGreen.eVolGreen.DTOS.Company.CompanyDTO;
 import com.eVolGreen.eVolGreen.Repositories.CompanyRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -13,12 +13,12 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 @RestController
 @RequestMapping("/api")
 public class CompanyController {
+
     @Autowired
     private CompanyService companyService;
     @Autowired
@@ -33,6 +33,10 @@ public class CompanyController {
     private CarService  carService;
     @Autowired
     private DeviceIdentifierService deviceIdentifierService;
+    @Autowired
+    private RoleService roleService;
+    @Autowired
+    private PermissionRepository permissionRepository;
 
     @GetMapping("/companies")
     public List<CompanyDTO> getCompanies() {
@@ -54,62 +58,81 @@ public class CompanyController {
         return companyService.getCompanyDTOByEmailCurrent(authentication.getName());
     }
 
-    @PostMapping("/companies/employee")
-    public ResponseEntity<Object> registerEmployee (Authentication authentication,
-                                              @RequestBody Employee newEmployee) {
+//    @PostMapping("/companies/employee")
+//    public ResponseEntity<Object> registerEmployee(Authentication authentication,
+//                                                   @RequestBody Employee newEmployee) {
+//
+//        Company company = companyService.findByEmailCompany(authentication.getName());
+//        String message = "";
+//
+//        if (newEmployee.getName().isBlank()) {
+//            message = "Name is required";
+//            return new ResponseEntity<>(message, HttpStatus.FORBIDDEN);
+//        }
+//        if (newEmployee.getFirstSurname().isBlank()) {
+//            message = "First surname is required";
+//            return new ResponseEntity<>(message, HttpStatus.FORBIDDEN);
+//        }
+//        if (newEmployee.getLastSurname().isBlank()) {
+//            message = "Last surname is required";
+//            return new ResponseEntity<>(message, HttpStatus.FORBIDDEN);
+//        }
+//        if (newEmployee.getEmail().isBlank()) {
+//            message = "Email is required";
+//            return new ResponseEntity<>(message, HttpStatus.FORBIDDEN);
+//        }
+//        if (newEmployee.getPassword().isBlank()) {
+//            message = "Password is required";
+//            return new ResponseEntity<>(message, HttpStatus.FORBIDDEN);
+//        }
+//
+//        // Obtener el rol de empleado de la base de datos o crearlo si no existe
+//        Role employeeRole = roleService.findByName("EMPLOYEE");
+//        if (employeeRole == null) {
+//            Optional<Permission> employeeViewPermission = permissionRepository.findByName("employee_view");
+//            if (employeeViewPermission == null) {
+//                employeeViewPermission = Optional.of(new Permission("employee_view", "Permitir vista encargado"));
+//                permissionRepository.save(employeeViewPermission.get());
+//            }
+//
+//            employeeRole = new Role("EMPLOYEE");
+//            employeeRole.setPermissions(new HashSet<>(List.of(employeeViewPermission.get())));
+//            roleService.saveRole(employeeRole);
+//        }
+//
+//        // Asignar roles
+//        Set<Role> roles = new HashSet<>();
+//        roles.add(employeeRole);
+//
+//        // Codificar la contraseña antes de guardar el empleado
+//        Employee employee = new Employee(
+//                newEmployee.getName(),
+//                newEmployee.getFirstSurname(),
+//                newEmployee.getLastSurname(),
+//                newEmployee.getEmail(),
+//                passwordEncoder.encode(newEmployee.getPassword()),  // codificar la contraseña
+//                LocalDate.now(),
+//                company
+//        );
+//        employee.setRoles(roles);
+//
+//        employeeService.saveEmployee(employee);
+//
+//        // Verificar si el empleado no es administrador
+//        if (!employee.getEmail().contains("@admin.com")) {
+//            String accountNumber = "VIN" + getStringRandomEmployee();
+//            Account newAccount = new Account(accountNumber, LocalDate.now(), TypeAccounts.Employee);
+//            company.addAccount(newAccount);
+//            accountService.saveAccount(newAccount);
+//        }
+//
+//        company.addEmployee(employee);
+//        companyRepository.save(company);
+//
+//        message = "Employee created successfully";
+//        return ResponseEntity.ok(message);
+//    }
 
-        Company company = companyService.findByEmailCompany(authentication.getName());
-        String message = " ";
-
-        if (newEmployee.getName().isBlank()){
-            message = "Name is required";
-            return new ResponseEntity<>(message,HttpStatus.FORBIDDEN);
-        }
-        if (newEmployee.getFirstSurname().isBlank()){
-            message = "First surname is required";
-            return new ResponseEntity<>(message,HttpStatus.FORBIDDEN);
-        }
-        if(newEmployee.getLastSurname().isBlank()){
-            message = "Last surname is required";
-            return new ResponseEntity<>(message,HttpStatus.FORBIDDEN);
-        }
-        if (newEmployee.getEmail().isBlank()){
-            message = "Email is required";
-            return new ResponseEntity<>(message,HttpStatus.FORBIDDEN);
-        }
-        if (newEmployee.getPassword().isBlank()){
-            message = "Password is required";
-            return new ResponseEntity<>(message,HttpStatus.FORBIDDEN);
-        }
-
-        Role role = Role.EMPLOYEE;
-
-        Employee employee = new Employee(
-                newEmployee.getName(),
-                newEmployee.getFirstSurname(),
-                newEmployee.getLastSurname(),
-                newEmployee.getEmail(),
-                newEmployee.getPassword(),
-                LocalDate.now(),
-                company,
-                role
-                );
-        employeeService.saveEmployee(employee);
-        // Verificar si el cliente no es administrador
-        if (!employee.getEmail().contains("@admin.com")) {
-            String accountNumber = "VIN" + getStringRandomEmployee();
-            Account newAccount = new Account(accountNumber, LocalDate.now(), TypeAccounts.Employee);
-            company.addAccount(newAccount);
-            accountService.saveAccount(newAccount);
-        }
-
-        company.addEmployee(employee);
-        companyRepository.save(company);
-
-
-        message = "Employee created successfully";
-        return ResponseEntity.ok(message);
-    }
 
     int min = 00000000;
     int max = 99999999;
@@ -228,7 +251,6 @@ public class CompanyController {
         return randomNumber;
     }
 
-    // Cambia isActiveStatus de la compañía actualmente autenticada (Test)
     @PutMapping("/companies/change-active-status")
     public ResponseEntity<Object> changeActiveStatus(Authentication authentication,
                                                      @RequestParam boolean activeStatus) {

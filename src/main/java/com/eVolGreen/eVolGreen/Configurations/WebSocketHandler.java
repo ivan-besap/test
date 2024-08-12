@@ -44,6 +44,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         if (this.session != null && this.session.isOpen()) {
             try {
                 this.session.sendMessage(new TextMessage(messageString));
+                System.out.println("Mensaje enviado a través de WebSocket: " + messageString);
             } catch (Exception e) {
                 e.printStackTrace();
             }

@@ -33,10 +33,6 @@ public class ChargingStation {
     private Set<Transaction> transactions = new HashSet<>();
 
     @OneToMany(mappedBy = "chargingStation", fetch = FetchType.LAZY)
-    @JsonManagedReference("chargingStation-plan")
-    private Set<Plan> plans = new HashSet<>();
-
-    @OneToMany(mappedBy = "chargingStation", fetch = FetchType.LAZY)
     @JsonManagedReference("chargingStation-location")
     private Set<Charger> chargers = new HashSet<>();
 
@@ -107,14 +103,6 @@ public class ChargingStation {
         this.transactions = transactions;
     }
 
-    public Set<Plan> getPlans() {
-        return plans;
-    }
-
-    public void setPlans(Set<Plan> plans) {
-        this.plans = plans;
-    }
-
     public Set<Charger> getChargers() {
         return chargers;
     }
@@ -155,11 +143,6 @@ public class ChargingStation {
     public void addChargingStationStatus(ChargingStationStatus chargingStationStatus){
         chargingStationStatus.setChargingStation(this);
         this.chargingStationStatus.add(chargingStationStatus);
-    }
-
-    public void addPlan(Plan plan){
-        plan.setChargingStation(this);
-        this.plans.add(plan);
     }
 
     public void addCharger(Charger charger){

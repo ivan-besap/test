@@ -1,7 +1,5 @@
 package com.eVolGreen.eVolGreen.Models;
 
-import com.eVolGreen.eVolGreen.Auth.Role;
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
@@ -11,7 +9,10 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.time.LocalDate;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Entity
 public class Employee implements UserDetails {
@@ -27,8 +28,13 @@ public class Employee implements UserDetails {
     private LocalDate createdDay;
     private Boolean isActive = false;
 
-    @Enumerated(EnumType.STRING)
-    private Role role;
+    @ManyToMany(fetch = FetchType.EAGER)
+    @JoinTable(
+            name = "employee_roles",
+            joinColumns = @JoinColumn(name = "employee_id"),
+            inverseJoinColumns = @JoinColumn(name = "role_id")
+    )
+    private Set<Role> roles = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
@@ -37,7 +43,7 @@ public class Employee implements UserDetails {
 
     public Employee() { }
 
-    public Employee(String name, String firstSurname, String lastSurname, String email, String password, LocalDate createdDay, Company company, Role role) {
+    public Employee(String name, String firstSurname, String lastSurname, String email, String password, LocalDate createdDay, Company company) {
         this.name = name;
         this.firstSurname = firstSurname;
         this.lastSurname = lastSurname;
@@ -45,7 +51,6 @@ public class Employee implements UserDetails {
         this.password = password;
         this.createdDay = createdDay;
         this.company = company;
-        this.role = Role.EMPLOYEE;
     }
 
     public Long getId() {
@@ -88,6 +93,7 @@ public class Employee implements UserDetails {
         this.email = email;
     }
 
+    @Override
     public String getPassword() {
         return password;
     }
@@ -104,28 +110,28 @@ public class Employee implements UserDetails {
         this.createdDay = createdDay;
     }
 
-    public Company getCompany() {
-        return company;
-    }
-
-    public void setCompany(Company company) {
-        this.company = company;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
-
     public Boolean getActive() {
         return isActive;
     }
 
     public void setActive(Boolean active) {
         isActive = active;
+    }
+
+    public Set<Role> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
+    }
+
+    public Company getCompany() {
+        return company;
+    }
+
+    public void setCompany(Company company) {
+        this.company = company;
     }
 
     @Override
@@ -150,7 +156,24 @@ public class Employee implements UserDetails {
     }
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority((role.name())));
+        return roles.stream()
+                .map(role -> new SimpleGrantedAuthority("EMPLOYEE_" + role.getName().toUpperCase()))
+                .collect(Collectors.toList());
     }
+
+    @Override
+    public String toString() {
+        return "Employee{" +
+                "id=" + id +
+                ", name='" + name + '\'' +
+                ", firstSurname='" + firstSurname + '\'' +
+                ", lastSurname='" + lastSurname + '\'' +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", createdDay=" + createdDay +
+                ", isActive=" + isActive +
+                '}';
+    }
+
 
 }

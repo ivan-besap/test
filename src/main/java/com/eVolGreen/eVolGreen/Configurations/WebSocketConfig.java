@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.Configurations;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Profile;
 import org.springframework.web.socket.config.annotation.EnableWebSocket;
 import org.springframework.web.socket.config.annotation.WebSocketConfigurer;
 import org.springframework.web.socket.config.annotation.WebSocketHandlerRegistry;
@@ -17,6 +18,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     }
 
     @Bean
+    @Profile("!test")
     public ServerEndpointExporter serverEndpointExporter() {
         return new ServerEndpointExporter();
     }

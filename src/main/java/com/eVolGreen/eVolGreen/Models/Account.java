@@ -2,14 +2,12 @@ package com.eVolGreen.eVolGreen.Models;
 
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 
 import java.time.LocalDate;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 @Entity
 public class Account {
@@ -26,9 +24,6 @@ public class Account {
     @JsonManagedReference("account-transaction")
     private Set<Transaction> transactions = new HashSet<>();
 
-    @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
-    @JsonManagedReference("account-plan")
-    private Set<Plan> plans = new HashSet<>();
 
     @OneToMany(mappedBy = "account", fetch = FetchType.LAZY)
     @JsonManagedReference("account-location")
@@ -113,14 +108,6 @@ public class Account {
         this.transactions = transactions;
     }
 
-    public Set<Plan> getPlans() {
-        return plans;
-    }
-
-    public void setPlans(Set<Plan> plans) {
-        this.plans = plans;
-    }
-
     public Set<Location> getLocations() {
         return locations;
     }
@@ -163,11 +150,6 @@ public class Account {
     public void addTransaction(Transaction transaction){
         transaction.setAccount(this);
         this.transactions.add(transaction);
-    }
-
-    public void addPlan(Plan plan){
-        plan.setAccount(this);
-        this.plans.add(plan);
     }
 
     public void addLocation(Location location){

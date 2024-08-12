@@ -4,12 +4,17 @@ import com.eVolGreen.eVolGreen.Configurations.Ocpp.Models.*;
 import com.eVolGreen.eVolGreen.Configurations.WebSocketHandler;
 
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jms.core.JmsTemplate;
 import org.springframework.stereotype.Component;
 
 import java.time.ZonedDateTime;
 
 @Component
 public class OcppHandler {
+
+    @Autowired
+    private JmsTemplate jmsTemplate;
 
     private final WebSocketHandler webSocketHandler;
     private boolean riggedToFail;
@@ -24,7 +29,9 @@ public class OcppHandler {
         request.setChargePointVendor("Tesla");
 
         // Aquí envías el mensaje usando WebSocket
-        sendMessage(request);
+        String message = request.toString();
+        jmsTemplate.convertAndSend("ocpp_queue", message);
+        System.out.println("BootNotification enviado: " + request.toString());
     }
 
     public void handleAuthorizeRequest(AuthorizeRequest request) {

@@ -13,7 +13,7 @@ public class ChargingStationsDTO {
     private LocalDate createdDay;
     private Set<ChargingStationStatusDTO> chargingStationStatus;
     private Set<TransactionDTO> transactions;
-    private Set<PlanDTO> plans;
+    private Set<FeeDTO> plans;
     private Set<ChargerDTO> chargers;
     private Set<ReservationDTO> reservations;
 
@@ -31,8 +31,6 @@ public class ChargingStationsDTO {
                 .map(ChargingStationStatusDTO::new).collect(Collectors.toSet());
         this.transactions = chargingStation.getTransactions().stream()
                 .map(TransactionDTO::new).collect(Collectors.toSet());
-        this.plans = chargingStation.getPlans().stream()
-                .map(PlanDTO::new).collect(Collectors.toSet());
         this.chargers = chargingStation.getChargers().stream()
                 .map(ChargerDTO::new).collect(Collectors.toSet());
         this.reservations = chargingStation.getReservations().stream()
@@ -90,14 +88,6 @@ public class ChargingStationsDTO {
 
     public void setTransactions(Set<TransactionDTO> transactions) {
         this.transactions = transactions;
-    }
-
-    public Set<PlanDTO> getPlans() {
-        return plans;
-    }
-
-    public void setPlans(Set<PlanDTO> plans) {
-        this.plans = plans;
     }
 
     public Set<ChargerDTO> getChargers() {
