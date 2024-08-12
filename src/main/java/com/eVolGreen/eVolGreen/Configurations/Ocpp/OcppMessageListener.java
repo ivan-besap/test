@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 public class OcppMessageListener implements MessageListener {
 
     @Override
-    @JmsListener(destination = "ocpp_queue")
+//    @JmsListener(destination = "ocpp_queue")
     public void onMessage(Message message) {
         if (message instanceof TextMessage) {
             try {
