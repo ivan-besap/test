@@ -17,7 +17,6 @@ public class ChargingStation {
     @GeneratedValue(strategy = GenerationType.AUTO)
     private Long id;
     private String name;
-    private BigDecimal currentLoad;
     private LocalDate createdDay;
 
     @OneToMany(mappedBy = "station", fetch = FetchType.LAZY)
@@ -48,9 +47,8 @@ public class ChargingStation {
 
     public ChargingStation() { }
 
-    public ChargingStation(String name, BigDecimal currentLoad, LocalDate createdDay) {
+    public ChargingStation(String name, LocalDate createdDay) {
         this.name = name;
-        this.currentLoad = currentLoad;
         this.createdDay = createdDay;
     }
 
@@ -69,14 +67,6 @@ public class ChargingStation {
 
     public void setName(String name) {
         this.name = name;
-    }
-
-    public BigDecimal getCurrentLoad() {
-        return currentLoad;
-    }
-
-    public void setCurrentLoad(BigDecimal currentLoad) {
-        this.currentLoad = currentLoad;
     }
 
     public LocalDate getCreatedDay() {

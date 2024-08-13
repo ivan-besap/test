@@ -1,7 +1,7 @@
 package com.eVolGreen.eVolGreen.DTOS;
 
-import com.eVolGreen.eVolGreen.Models.*;
-import java.math.BigDecimal;
+import com.eVolGreen.eVolGreen.Models.ChargingStation;
+
 import java.time.LocalDate;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -9,14 +9,12 @@ import java.util.stream.Collectors;
 public class ChargingStationsDTO {
     private Long id;
     private String name;
-    private BigDecimal currentLoad;
     private LocalDate createdDay;
     private Set<ChargingStationStatusDTO> chargingStationStatus;
     private Set<TransactionDTO> transactions;
-    private Set<FeeDTO> plans;
     private Set<ChargerDTO> chargers;
     private Set<ReservationDTO> reservations;
-
+    private LocationDTO location;
 
     // Constructor por defecto
     public ChargingStationsDTO() {}
@@ -25,7 +23,6 @@ public class ChargingStationsDTO {
     public ChargingStationsDTO(ChargingStation chargingStation) {
         this.id = chargingStation.getId();
         this.name = chargingStation.getName();
-        this.currentLoad = chargingStation.getCurrentLoad();
         this.createdDay = chargingStation.getCreatedDay();
         this.chargingStationStatus = chargingStation.getChargingStationStatus().stream()
                 .map(ChargingStationStatusDTO::new).collect(Collectors.toSet());
@@ -35,6 +32,7 @@ public class ChargingStationsDTO {
                 .map(ChargerDTO::new).collect(Collectors.toSet());
         this.reservations = chargingStation.getReservations().stream()
                 .map(ReservationDTO::new).collect(Collectors.toSet());
+        this.location = new LocationDTO(chargingStation.getLocation());
     }
 
     // Getters y setters
@@ -54,14 +52,6 @@ public class ChargingStationsDTO {
         this.name = name;
     }
 
-    public BigDecimal getCurrentLoad() {
-        return currentLoad;
-    }
-
-    public void setCurrentLoad(BigDecimal currentLoad) {
-        this.currentLoad = currentLoad;
-    }
-
     public LocalDate getCreatedDay() {
         return createdDay;
     }
@@ -78,8 +68,20 @@ public class ChargingStationsDTO {
         this.chargingStationStatus = chargingStationStatus;
     }
 
+    public LocationDTO getLocation() {
+        return location;
+    }
+
+    public void setLocation(LocationDTO location) {
+        this.location = location;
+    }
+
     public Set<ReservationDTO> getReservations() {
         return reservations;
+    }
+
+    public void setReservations(Set<ReservationDTO> reservations) {
+        this.reservations = reservations;
     }
 
     public Set<TransactionDTO> getTransactions() {

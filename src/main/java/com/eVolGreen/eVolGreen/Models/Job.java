@@ -2,7 +2,6 @@ package com.eVolGreen.eVolGreen.Models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.GenericGenerator;
@@ -12,7 +11,7 @@ import java.util.Set;
 
 @Entity
 @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
-public class Role {
+public class Job {
     @Id
     @GenericGenerator(name = "native", strategy = "native")
     @GeneratedValue(strategy = GenerationType.AUTO, generator = "native")
@@ -23,17 +22,17 @@ public class Role {
 
     private boolean isActive = false;
 
-    @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
-    @JsonIgnore
-    private Set<Employee> employees = new HashSet<>();
-
-    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
-    @JsonIgnore
-    private Set<Company> companies = new HashSet<>();
-
-    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
-    @JsonIgnore
-    private Set<Client> clients = new HashSet<>();
+//    @ManyToMany(mappedBy = "roles", fetch = FetchType.LAZY)
+//    @JsonIgnore
+//    private Set<Employee> employees = new HashSet<>();
+//
+//    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
+//    @JsonIgnore
+//    private Set<Company> companies = new HashSet<>();
+//
+//    @OneToMany(mappedBy = "role", fetch = FetchType.LAZY)
+//    @JsonIgnore
+//    private Set<Client> clients = new HashSet<>();
 
     @ManyToMany(fetch = FetchType.LAZY)
     @JoinTable(
@@ -44,10 +43,10 @@ public class Role {
     @JsonIgnore
     private Set<Permission> permissions = new HashSet<>();
 
-    public Role() {
+    public Job() {
     }
 
-    public Role(String name) {
+    public Job(String name) {
         this.name = name;
     }
 
@@ -101,29 +100,29 @@ public class Role {
         permission.getRoles().remove(this);
     }
 
-    public Set<Employee> getEmployees() {
-        return employees;
-    }
-
-    public void setEmployees(Set<Employee> employees) {
-        this.employees = employees;
-    }
-
-    public Set<Company> getCompanies() {
-        return companies;
-    }
-
-    public void setCompanies(Set<Company> companies) {
-        this.companies = companies;
-    }
-
-    public Set<Client> getClients() {
-        return clients;
-    }
-
-    public void setClients(Set<Client> clients) {
-        this.clients = clients;
-    }
+//    public Set<Employee> getEmployees() {
+//        return employees;
+//    }
+//
+//    public void setEmployees(Set<Employee> employees) {
+//        this.employees = employees;
+//    }
+//
+//    public Set<Company> getCompanies() {
+//        return companies;
+//    }
+//
+//    public void setCompanies(Set<Company> companies) {
+//        this.companies = companies;
+//    }
+//
+//    public Set<Client> getClients() {
+//        return clients;
+//    }
+//
+//    public void setClients(Set<Client> clients) {
+//        this.clients = clients;
+//    }
 
     @Override
     public String toString() {

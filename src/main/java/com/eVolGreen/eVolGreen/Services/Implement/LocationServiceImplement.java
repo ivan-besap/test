@@ -31,4 +31,9 @@ public class LocationServiceImplement implements LocationService {
     public Location findById(Long id) {
         return locationRepository.findById(id).orElse(null);
     }
+
+    @Override
+    public LocationDTO getLocationDTO(Long id) {
+        return new LocationDTO(this.findById(id));
+    }
 }

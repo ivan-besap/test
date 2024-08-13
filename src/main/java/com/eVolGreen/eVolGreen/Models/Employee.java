@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Models;
 
+import com.eVolGreen.eVolGreen.Auth.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
@@ -28,13 +29,16 @@ public class Employee implements UserDetails {
     private LocalDate createdDay;
     private Boolean isActive = false;
 
-    @ManyToMany(fetch = FetchType.EAGER)
-    @JoinTable(
-            name = "employee_roles",
-            joinColumns = @JoinColumn(name = "employee_id"),
-            inverseJoinColumns = @JoinColumn(name = "role_id")
-    )
-    private Set<Role> roles = new HashSet<>();
+//    @ManyToMany(fetch = FetchType.EAGER)
+//    @JoinTable(
+//            name = "employee_roles",
+//            joinColumns = @JoinColumn(name = "employee_id"),
+//            inverseJoinColumns = @JoinColumn(name = "role_id")
+//    )
+//    private Set<Job> jobs = new HashSet<>();
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "company_id")
@@ -118,13 +122,13 @@ public class Employee implements UserDetails {
         isActive = active;
     }
 
-    public Set<Role> getRoles() {
-        return roles;
-    }
-
-    public void setRoles(Set<Role> roles) {
-        this.roles = roles;
-    }
+//    public Set<Job> getRoles() {
+//        return jobs;
+//    }
+//
+//    public void setRoles(Set<Job> jobs) {
+//        this.jobs = jobs;
+//    }
 
     public Company getCompany() {
         return company;
@@ -132,6 +136,22 @@ public class Employee implements UserDetails {
 
     public void setCompany(Company company) {
         this.company = company;
+    }
+//
+//    public Set<Job> getJobs() {
+//        return jobs;
+//    }
+//
+//    public void setJobs(Set<Job> jobs) {
+//        this.jobs = jobs;
+//    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     @Override
@@ -156,11 +176,8 @@ public class Employee implements UserDetails {
     }
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return roles.stream()
-                .map(role -> new SimpleGrantedAuthority("EMPLOYEE_" + role.getName().toUpperCase()))
-                .collect(Collectors.toList());
+        return List.of(new SimpleGrantedAuthority((role.name())));
     }
-
     @Override
     public String toString() {
         return "Employee{" +

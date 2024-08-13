@@ -2,17 +2,17 @@ package com.eVolGreen.eVolGreen.DTOS;
 
 import java.util.List;
 
-public class RoleRequestDTO {
+public class JobRequestDTO {
 
-    private RoleDTO roleDTO;
+    private JobDTO jobDTO;
     private List<Long> permissionIds;
 
-    public RoleDTO getRoleDTO() {
-        return roleDTO;
+    public JobDTO getJobDTO() {
+        return jobDTO;
     }
 
-    public void setRoleDTO(RoleDTO roleDTO) {
-        this.roleDTO = roleDTO;
+    public void setJobDTO(JobDTO jobDTO) {
+        this.jobDTO = jobDTO;
     }
 
     public List<Long> getPermissionIds() {

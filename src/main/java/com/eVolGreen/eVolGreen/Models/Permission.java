@@ -1,6 +1,5 @@
 package com.eVolGreen.eVolGreen.Models;
 
-import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -24,7 +23,7 @@ public class Permission {
 
     @ManyToMany(mappedBy = "permissions", fetch = FetchType.LAZY)
     @JsonIgnore
-    private Set<Role> roles = new HashSet<>();
+    private Set<Job> jobs = new HashSet<>();
 
     @ManyToOne
     @JoinColumn(name = "company_id")
@@ -62,12 +61,12 @@ public class Permission {
         this.description = description;
     }
 
-    public Set<Role> getRoles() {
-        return roles;
+    public Set<Job> getRoles() {
+        return jobs;
     }
 
-    public void setRoles(Set<Role> roles) {
-        this.roles = roles;
+    public void setRoles(Set<Job> jobs) {
+        this.jobs = jobs;
     }
 
     public Company getCompany() {

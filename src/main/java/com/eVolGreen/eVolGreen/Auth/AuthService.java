@@ -3,7 +3,6 @@ package com.eVolGreen.eVolGreen.Auth;
 import com.eVolGreen.eVolGreen.Auth.Jwt.JwtService;
 import com.eVolGreen.eVolGreen.Configurations.WebAuthentication;
 import com.eVolGreen.eVolGreen.Models.*;
-import com.eVolGreen.eVolGreen.Repositories.PermissionRepository;
 import com.eVolGreen.eVolGreen.Services.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +14,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.*;
+import java.util.Arrays;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -28,10 +28,6 @@ public class AuthService {
     private ClientService clientService;
     @Autowired
     private AccountService accountService;
-    @Autowired
-    private RoleService roleService;
-    @Autowired
-    private PermissionRepository permissionRepository;
     @Autowired
     private JwtService jwtService;
     @Autowired
@@ -57,58 +53,34 @@ public class AuthService {
         String token = jwtService.getToken(user);
 
         // Obtener el rol del usuario
-        UserRole userRole = getUserRoleAndStatus(request.getUsername());
+        String role = user.getAuthorities().stream()
+                .map(GrantedAuthority::getAuthority)
+                .findFirst()
+                .orElse(null);
 
         //    System.out.println("AuthService: Authentication successful for " + request.getUsername());
+
+        Boolean isActive = null;
+        if ("COMPANY".equals(role)) {
+            Company company = companyService.findByEmailCompany(request.getUsername());
+            isActive = company.getActive();
+        } else if ("EMPLOYEE".equals(role)) {
+            Employee employee = employeeService.findByEmail(request.getUsername());
+            isActive = employee.getActive();
+        } else if ("CLIENT".equals(role)) {
+            Client client = clientService.findByEmail(request.getUsername());
+            isActive = client.getActive();
+        }
 
         // Devolver la respuesta con el token, el rol y el estado activo
         return AuthResponse.builder()
                 .token(token)
-                .role(userRole.getRole())
-                .isActive(userRole.isActive())
+                .role(role)
+                .isActive(isActive)
                 .build();
     }
 
-    private UserRole getUserRoleAndStatus(String username) {
-        Company company = companyService.findByEmailCompany(username);
-        if (company != null) {
-            return new UserRole(company.getRole().getName(), company.getActive());
-        }
-
-        Employee employee = employeeService.findByEmail(username);
-        if (employee != null) {
-            return new UserRole(employee.getRoles().stream().map(role -> role.getName()).findFirst().get(), employee.getActive());
-        }
-
-        Client client = clientService.findByEmail(username);
-        if (client != null) {
-            return new UserRole(client.getRole().getName(), client.getActive());
-        }
-
-        throw new RuntimeException("User role not found for username: " + username);
-    }
-
-    private static class UserRole {
-        private String role;
-        private Boolean isActive;
-
-        public UserRole(String role, Boolean isActive) {
-            this.role = role;
-            this.isActive = isActive;
-        }
-
-        public String getRole() {
-            return role;
-        }
-
-        public Boolean isActive() {
-            return isActive;
-        }
-    }
-
-
     public AuthResponse register(RegisterClientRequest request) {
-        Role clientRole = new Role("CLIENT");
         Client client = new Client(
                 request.getFirstName(),
                 request.getLastName(),
@@ -116,7 +88,7 @@ public class AuthService {
                 request.getEmail(),
                 request.getPhone(),
                 passwordEncoder.encode(request.getPassword()),
-                clientRole
+                Role.CLIENT
         );
 
         client.setActive(false);
@@ -129,7 +101,7 @@ public class AuthService {
             accountService.saveAccount(newAccount);
         }
 
-        String role = client.getRole().getName();
+        String role = client.getRole().name();
         return AuthResponse.builder()
                 .token(jwtService.getToken(client))
                 .role(role)
@@ -153,29 +125,6 @@ public class AuthService {
     );
 
     public AuthResponse registerCompany(RegisterCompanyRequest request) {
-        Optional<Role> companyRole = roleService.findByName("COMPANY");
-
-        if (companyRole.isEmpty()) {
-            Role newCompanyRole = new Role("COMPANY");
-
-            // Buscar los permisos por defecto por nombre
-            List<Permission> defaultPermissions = permissionRepository.findByNameIn(DEFAULT_PERMISSION_NAMES);
-
-            // Asignar los permisos al nuevo rol
-            newCompanyRole.setPermissions(new HashSet<>(defaultPermissions));
-            roleService.saveRole(newCompanyRole);
-
-            companyRole = Optional.of(newCompanyRole);
-        } else {
-            // Si el rol ya existe, asegurarse de que tiene los permisos por defecto
-            Role existingCompanyRole = companyRole.get();
-            if (existingCompanyRole.getPermissions().isEmpty()) {
-                List<Permission> defaultPermissions = permissionRepository.findByNameIn(DEFAULT_PERMISSION_NAMES);
-                existingCompanyRole.setPermissions(new HashSet<>(defaultPermissions));
-                roleService.saveRole(existingCompanyRole);
-            }
-        }
-
         Company company = new Company(
                 request.getBusinessName(),
                 request.getEmailCompany(),
@@ -183,7 +132,7 @@ public class AuthService {
                 request.getRut(),
                 passwordEncoder.encode(request.getPassword()),
                 request.getCreatedDay(),
-                companyRole.get()
+                Role.COMPANY
         );
 
         company.setActive(false);
@@ -196,7 +145,7 @@ public class AuthService {
             accountService.saveAccount(newAccount);
         }
 
-        String role = company.getRole().getName();
+        String role = company.getRole().name();
         return AuthResponse.builder()
                 .token(jwtService.getToken(company))
                 .role(role)

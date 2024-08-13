@@ -1,14 +1,14 @@
 package com.eVolGreen.eVolGreen.Controllers;
 
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationRequestDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationsDTO;
-import com.eVolGreen.eVolGreen.Models.Account;
-import com.eVolGreen.eVolGreen.Models.ChargingStation;
-import com.eVolGreen.eVolGreen.Models.ChargingStationStatus;
-import com.eVolGreen.eVolGreen.Models.Company;
+import com.eVolGreen.eVolGreen.DTOS.LocationDTO;
+import com.eVolGreen.eVolGreen.Models.*;
 import com.eVolGreen.eVolGreen.Repositories.ChargingStationRepository;
 import com.eVolGreen.eVolGreen.Services.ChargingStationsService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationsStatusService;
 import com.eVolGreen.eVolGreen.Services.CompanyService;
+import com.eVolGreen.eVolGreen.Services.LocationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -32,6 +32,8 @@ public class ChargingStationsController {
     private CompanyService companyService;
     @Autowired
     private ChargingStationsStatusService chargingStationsStatusService;
+    @Autowired
+    private LocationService  locationService;
 
     @GetMapping("/chargingStations")
     public List<ChargingStationsDTO> getChargingStations() {
@@ -59,17 +61,20 @@ public class ChargingStationsController {
             return ResponseEntity.status(400).body(message);
         }
 
-        if (chargingStationsDTO.getCurrentLoad().compareTo(BigDecimal.ZERO) < 0) {
-            message = "La carga actual de la estación de carga no puede ser negativa";
+        if(chargingStationsDTO.getLocation().getAddress() == null || chargingStationsDTO.getLocation().getAddress().isBlank()) {
+            message = "La dirección no puede estar vacía";
             return ResponseEntity.status(400).body(message);
         }
 
         ChargingStationStatus newChargingStationStatus = new ChargingStationStatus("No disponible / En creación");
         chargingStationsStatusService.saveChargingStationsStatus(newChargingStationStatus);
 
+        Location location = new Location(chargingStationsDTO.getLocation().getAddress());
+        locationService.saveLocation(location);
+
         ChargingStation newChargingStation = new ChargingStation();
         newChargingStation.setName(chargingStationsDTO.getName());
-        newChargingStation.setCurrentLoad(chargingStationsDTO.getCurrentLoad());
+        newChargingStation.setLocation(location);
         newChargingStation.setCreatedDay(LocalDate.now());
 
         Set<ChargingStationStatus> statusSet = new HashSet<>();
@@ -87,4 +92,5 @@ public class ChargingStationsController {
 
         return ResponseEntity.status(201).body(new ChargingStationsDTO(newChargingStation));
     }
+
 }

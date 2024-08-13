@@ -20,7 +20,6 @@ public class EmployeeDTO {
     private Boolean isActive = false;
     private String company;
     private Set<AccountDTO> accounts;
-    private Set<String> roles;
 
     public EmployeeDTO() {
     }
@@ -38,9 +37,6 @@ public class EmployeeDTO {
         accounts = employee.getCompany().getAccounts().stream()
                 .filter(account -> account.getTypeAccounts() == TypeAccounts.Employee)
                 .map(AccountDTO::new)
-                .collect(Collectors.toSet());
-        roles = employee.getRoles().stream()
-                .map(role -> role.getName())
                 .collect(Collectors.toSet());
     }
 
@@ -84,7 +80,4 @@ public class EmployeeDTO {
         return accounts;
     }
 
-    public Set<String> getRoles() {
-        return roles;
-    }
 }

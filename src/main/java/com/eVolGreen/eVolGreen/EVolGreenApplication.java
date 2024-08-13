@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen;
 
 
+import com.eVolGreen.eVolGreen.Auth.Role;
 import com.eVolGreen.eVolGreen.Configurations.Ocpp.OcppClient;
 import com.eVolGreen.eVolGreen.Models.*;
 import com.eVolGreen.eVolGreen.Repositories.*;
@@ -18,7 +19,6 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.HashSet;
-import java.util.Optional;
 import java.util.Set;
 
 @SpringBootApplication
@@ -36,12 +36,8 @@ public class EVolGreenApplication {
 									  TransactionRepository transactionRepository, FeeRepository feeRepository, AccountRepository accountRepository, ClientRepository clientRepository,
 									  CompanyRepository companyRepository, EmployeeRepository employeeRepository, ChargerRepository chargerRepository, ChargingStationRepository chargingStationRepository,
 									  ConnectorRepository connectorRepository, ChargingStationStatusRepository chargingStationStatusRepository, ChargingUnitRepository chargingUnitRepository,
-									  ReservationRepository reservationRepository, RoleRepository roleRepository, PermissionRepository permissionRepository) {
+									  ReservationRepository reservationRepository, JobRepository jobRepository, PermissionRepository permissionRepository) {
 		return args -> {
-			// Crear y guardar roles
-			Role clientRole = new Role("Client");
-			Role companyRole = new Role("Company");
-			Role employeeRole = new Role("Employee");
 
 			// Crear y guardar permisos
 			Permission chargerCreate = new Permission("charger_create", "Permitir crear un nuevo cargador");
@@ -121,21 +117,22 @@ public class EVolGreenApplication {
 			Permission employeeView = new Permission("employee_view", "Permitir vista encargado");
 			permissionRepository.save(employeeView);
 
-			// Asociar permisos a roles
-			Set<Permission> permissions = new HashSet<>();
-			permissions.add(clientView);
-			permissions.add(driverView);
+//			// Asociar permisos a roles
+//			Set<Permission> permissions = new HashSet<>();
+//			permissions.add(clientView);
+//			permissions.add(driverView);
 
-			clientRole.setPermissions(permissions);
-			companyRole.setPermissions(permissions);
-			employeeRole.setPermissions(permissions);
-
-			// Guardar roles
-			roleRepository.save(clientRole);
-			roleRepository.save(companyRole);
-			roleRepository.save(employeeRole);
+//			clientJob.setPermissions(permissions);
+//			companyJob.setPermissions(permissions);
+//			employeeJob.setPermissions(permissions);
+//
+//			// Guardar roles
+//			jobRepository.save(clientJob);
+//			jobRepository.save(companyJob);
+//			jobRepository.save(employeeJob);
 
 			// Crear y guardar cliente
+			Role clientRole = Role.CLIENT;
 			Client client = new Client(
 					"John",
 					"Doe",
@@ -153,12 +150,8 @@ public class EVolGreenApplication {
 			accountRepository.save(account);
 
 			Location casaCliente = new Location(
-					"-33.3978",
-					"-70.5685",
-					"Calle Ejemplo 123",
-					"Vitacura",
-					"Santiago",
-					"Chile");
+					"Calle Ejemplo 123 Vitacura"
+			);
 			casaCliente.setAccount(account);
 			locationRepository.save(casaCliente);
 
@@ -185,6 +178,7 @@ public class EVolGreenApplication {
 			LocalDateTime endDateTime = currentDate.atTime(11, 0);
 
 			// Crear y guardar compañía
+			Role companyRole = Role.COMPANY;
 			LocalDate fechaCreacion = LocalDate.now();
 			Company company1 = new Company(
 					"Mi Empresa S.A.",
@@ -204,12 +198,8 @@ public class EVolGreenApplication {
 			accountRepository.save(accountCompany);
 
 			Location clinicaVitacura = new Location(
-					"-33.3978",
-					"-70.5685",
-					"Av. Vitacura 5951",
-					"Vitacura",
-					"Santiago",
-					"Chile");
+					"Av. Vitacura 5951Vitacura"
+			);
 			clinicaVitacura.setAccount(accountCompany);
 			locationRepository.save(clinicaVitacura);
 
@@ -221,6 +211,7 @@ public class EVolGreenApplication {
 			accountRepository.save(accountEmployee);
 
 			// Crear y guardar empleado
+			Role employeeRole = Role.EMPLOYEE;
 			Employee nuevoEmpleado = new Employee(
 					"Juan",
 					"Pérez",
@@ -230,14 +221,13 @@ public class EVolGreenApplication {
 					LocalDate.now(),
 					company1
 			);
-			nuevoEmpleado.setRoles(Set.of(employeeRole));
+			nuevoEmpleado.setRole(employeeRole);
 			company1.addAccount(accountEmployee);
 			employeeRepository.save(nuevoEmpleado);
 
 			// Crear y guardar estación de carga
 			ChargingStation chargingStation = new ChargingStation(
 					"Estacion Clinica Vitacura",
-					BigDecimal.valueOf(0),
 					LocalDate.now());
 			chargingStation.setLocation(clinicaVitacura);
 			chargingStation.setAccount(accountCompany);

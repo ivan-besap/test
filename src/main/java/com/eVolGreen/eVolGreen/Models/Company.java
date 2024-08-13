@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Models;
 
+import com.eVolGreen.eVolGreen.Auth.Role;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
@@ -27,8 +28,11 @@ public class Company implements UserDetails {
     private LocalDate createdDay;
     private Boolean isActive = false;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "role_id")
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "role_id")
+//    private Job job;
+
+    @Enumerated(EnumType.STRING)
     private Role role;
 
     @OneToMany(mappedBy = "company", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
@@ -52,7 +56,7 @@ public class Company implements UserDetails {
         this.rut = rut;
         this.password = password;
         this.createdDay = createdDay;
-        this.role = role;
+        this.role = Role.COMPANY;
     }
 
     public Boolean getActive() {
@@ -140,13 +144,13 @@ public class Company implements UserDetails {
         this.employees.add(employee);
     }
 
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
+//    public Job getJob() {
+//        return job;
+//    }
+//
+//    public void setJob(Job job) {
+//        this.job = job;
+//    }
 
     public Set<Fee> getFees() {
         return fees;
@@ -166,9 +170,17 @@ public class Company implements UserDetails {
         this.fees.remove(fee);
     }
 
+    public void setRole(Role role) {
+        this.role = role;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority((role.getName())));
+        return List.of(new SimpleGrantedAuthority((role.name())));
     }
 
     public String getPassword() {
@@ -194,4 +206,5 @@ public class Company implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
+
 }

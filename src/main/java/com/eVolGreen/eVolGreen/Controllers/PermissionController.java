@@ -7,7 +7,7 @@ import com.eVolGreen.eVolGreen.Repositories.PermissionRepository;
 import com.eVolGreen.eVolGreen.Services.CompanyService;
 import com.eVolGreen.eVolGreen.Services.EmployeeService;
 import com.eVolGreen.eVolGreen.Services.PermissionService;
-import com.eVolGreen.eVolGreen.Services.RoleService;
+import com.eVolGreen.eVolGreen.Services.JobService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,7 +31,7 @@ public class PermissionController {
     private CompanyService companyService;
 
     @Autowired
-    private RoleService roleService;
+    private JobService jobService;
 
     @Autowired
     private PermissionService permissionService;

@@ -1,8 +1,9 @@
 package com.eVolGreen.eVolGreen.Models;
 
+
+import com.eVolGreen.eVolGreen.Auth.Role;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 import org.springframework.security.core.GrantedAuthority;
@@ -29,14 +30,17 @@ public class Client implements UserDetails {
     private String password;
     private Boolean isActive = false;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "role_id")
-    @JsonBackReference
-    private Role role;
+//    @ManyToOne(fetch = FetchType.LAZY)
+//    @JoinColumn(name = "role_id")
+//    @JsonBackReference
+//    private Job job;
 
     @OneToMany(mappedBy = "client", fetch = FetchType.LAZY)
     @JsonIgnore
     private Set<Account> accounts = new HashSet<>();
+
+    @Enumerated(EnumType.STRING)
+    private Role role;
 
     // Constructor vacío
     public Client() { }
@@ -49,7 +53,7 @@ public class Client implements UserDetails {
         this.email = email;
         this.phone = phone;
         this.password = password;
-        this.role = role;
+        this.role = Role.CLIENT;
     }
 
 
@@ -127,6 +131,14 @@ public class Client implements UserDetails {
         isActive = active;
     }
 
+//    public Job getJob() {
+//        return job;
+//    }
+//
+//    public void setJob(Job job) {
+//        this.job = job;
+//    }
+
     public Role getRole() {
         return role;
     }
@@ -137,7 +149,7 @@ public class Client implements UserDetails {
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
-        return List.of(new SimpleGrantedAuthority(role.getName()));
+        return List.of(new SimpleGrantedAuthority(role.name()));
     }
 
     @Override

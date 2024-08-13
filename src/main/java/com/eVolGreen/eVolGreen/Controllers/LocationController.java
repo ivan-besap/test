@@ -2,7 +2,7 @@ package com.eVolGreen.eVolGreen.Controllers;
 
 import com.eVolGreen.eVolGreen.DTOS.LocationDTO;
 import com.eVolGreen.eVolGreen.Models.Account;
-import com.eVolGreen.eVolGreen.Models.ChargingStation;
+
 import com.eVolGreen.eVolGreen.Models.Company;
 import com.eVolGreen.eVolGreen.Models.Location;
 import com.eVolGreen.eVolGreen.Services.CompanyService;
@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestBody;
 
 import java.util.List;
 
@@ -155,5 +156,30 @@ public class LocationController {
 ////            return ResponseEntity.status(500).body(message);
 ////        }
 //
+
+    @PostMapping("/locations")
+    public ResponseEntity<Object> createLocation(Authentication authentication,
+                                                 @RequestBody LocationDTO location) {
+        Company company = companyService.findByEmailCompany(authentication.getName());
+        String message;
+
+        if (company == null) {
+            System.out.println("No company found for the authenticated user.");
+            return ResponseEntity.status(403).body("No autorizado para realizar esta acción.");
+        }
+
+        if (location.getAddress().isBlank()) {
+            message = "La dirección no puede estar vacía.";
+            System.out.println(message);
+            return ResponseEntity.status(400).body(message);
+        }
+
+        Location newLocation = new Location(location.getAddress());
+        newLocation.setAccount(company.getAccounts().stream().findFirst().orElse(null));
+        locationRepository.save(newLocation);
+
+        message = "Ubicación creada correctamente";
+        return ResponseEntity.ok(message);
+    }
 
 }

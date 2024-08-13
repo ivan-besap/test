@@ -12,4 +12,6 @@ public interface LocationService {
     void saveLocation(Location location);
 
     Location findById(Long id);
+
+    LocationDTO getLocationDTO(Long id);
 }
