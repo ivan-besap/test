@@ -1,9 +1,15 @@
 package com.eVolGreen.eVolGreen;
 
-
-import com.eVolGreen.eVolGreen.Auth.Role;
-import com.eVolGreen.eVolGreen.Configurations.Ocpp.OcppClient;
-import com.eVolGreen.eVolGreen.Models.*;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Location;
+import com.eVolGreen.eVolGreen.Models.Account.PermissionCredential.Credential;
+import com.eVolGreen.eVolGreen.Models.Account.PermissionCredential.Permission;
+import com.eVolGreen.eVolGreen.Models.Account.PermissionCredential.PermissionCredential;
+import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountCompany;
+import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.TypeAccounts;
+import com.eVolGreen.eVolGreen.Models.Ocpp.OcppClient;
+import com.eVolGreen.eVolGreen.Models.User.Role;
+import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
 import com.eVolGreen.eVolGreen.Repositories.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
@@ -12,13 +18,12 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.math.BigDecimal;
 import java.net.URI;
-import java.sql.Time;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.LocalTime;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 @SpringBootApplication
@@ -32,281 +37,277 @@ public class EVolGreenApplication {
 	}
 
 	@Bean
-	public CommandLineRunner initData(LocationRepository locationRepository, CarRepository carRepository, DeviceIdentifierRepository deviceIdentifierRepository,
-									  TransactionRepository transactionRepository, FeeRepository feeRepository, AccountRepository accountRepository, ClientRepository clientRepository,
-									  CompanyRepository companyRepository, EmployeeRepository employeeRepository, ChargerRepository chargerRepository, ChargingStationRepository chargingStationRepository,
-									  ConnectorRepository connectorRepository, ChargingStationStatusRepository chargingStationStatusRepository, ChargingUnitRepository chargingUnitRepository,
-									  ReservationRepository reservationRepository, JobRepository jobRepository, PermissionRepository permissionRepository) {
+	public CommandLineRunner initData(CarRepository carRepository,
+									  DeviceIdentifierRepository deviceIdentifierRepository,
+									  TransactionRepository transactionRepository,
+									  FeeRepository feeRepository,
+									  AccountRepository accountRepository,
+									  CompanyUserRepository companyUserRepository,
+									  EmployeeUserRepository employeeUserRepository,
+									  ChargerRepository chargerRepository,
+									  ChargingStationRepository chargingStationRepository,
+									  ConnectorRepository connectorRepository,
+									  ChargingUnitRepository chargingUnitRepository,
+									  ReservationRepository reservationRepository,
+									  CredentialRepository credentialRepository,
+									  PermissionRepository permissionRepository,
+									  AccountEmployeeRepository accountEmployeeRepository,
+									  AccountCompanyRepository accountCompanyRepository,
+									  CompanyEmployeeRelationRepository companyEmployeeRelationRepository,
+									  CompanyClientRelationRepository companyClientRelationRepository, PermissionCredentialRepository permissionCredentialRepository,
+									  ClientUserRepository clientUserRepository,LocationRepository locationRepository) {
 		return args -> {
 
-			// Crear y guardar permisos
-			Permission chargerCreate = new Permission("charger_create", "Permitir crear un nuevo cargador");
-			permissionRepository.save(chargerCreate);
-			Permission chargerDelete = new Permission("charger_delete", "Permitir borrar un cargador");
-			permissionRepository.save(chargerDelete);
-			Permission chargerEdit = new Permission("charger_edit", "Permitir editar un cargador");
-			permissionRepository.save(chargerEdit);
-			Permission chargingStationView = new Permission("charging_station_view", "Permitir ver las cargas por terminal");
-			permissionRepository.save(chargingStationView);
-			Permission ocppChargerCommands = new Permission("ocpp_charger_commands", "Permitir comandos OCPP - Cargador");
-			permissionRepository.save(ocppChargerCommands);
-			Permission ocppConnectorCommands = new Permission("ocpp_connector_commands", "Permitir comandos OCPP - Conector");
-			permissionRepository.save(ocppConnectorCommands);
-			Permission ocppChargingStationCommands = new Permission("ocpp_charging_station_commands", "Permitir comandos OCPP - Carga por terminal");
-			permissionRepository.save(ocppChargingStationCommands);
-			Permission driverCreate = new Permission("driver_create", "Permitir crear conductores");
-			permissionRepository.save(driverCreate);
-			Permission driverDelete = new Permission("driver_delete", "Permitir borrar conductores");
-			permissionRepository.save(driverDelete);
-			Permission driverEdit = new Permission("driver_edit", "Permitir editar conductores");
-			permissionRepository.save(driverEdit);
-			Permission driverDisable = new Permission("driver_disable", "Permitir inhabilitar conductores");
-			permissionRepository.save(driverDisable);
-			Permission driverView = new Permission("driver_view", "Permitir ver conductores");
-			permissionRepository.save(driverView);
-			Permission chargerSettingsView = new Permission("charger_settings_view", "Permitir ver configuraciones de cargador");
-			permissionRepository.save(chargerSettingsView);
-			Permission powerControlCreate = new Permission("power_control_create", "Permitir crear control de potencia");
-			permissionRepository.save(powerControlCreate);
-			Permission powerControlEdit = new Permission("power_control_edit", "Permitir editar control de potencia");
-			permissionRepository.save(powerControlEdit);
-			Permission powerControlView = new Permission("power_control_view", "Permitir ver control de potencia");
-			permissionRepository.save(powerControlView);
-			Permission dashboardView = new Permission("dashboard_view", "Permitir ver el dashboard");
-			permissionRepository.save(dashboardView);
-			Permission scheduledDisablesCreate = new Permission("scheduled_disables_create", "Permitir crear inhabilitaciones programadas");
-			permissionRepository.save(scheduledDisablesCreate);
-			Permission scheduledDisablesEdit = new Permission("scheduled_disables_edit", "Permitir editar inhabilitaciones programadas");
-			permissionRepository.save(scheduledDisablesEdit);
-			Permission scheduledDisablesView = new Permission("scheduled_disables_view", "Permitir ver inhabilitaciones programadas");
-			permissionRepository.save(scheduledDisablesView);
-			Permission ocppEditSettings = new Permission("ocpp_edit_settings", "Permitir editar configuraciones OCPP");
-			permissionRepository.save(ocppEditSettings);
-			Permission ocppViewSettings = new Permission("ocpp_view_settings", "Permitir ver configuraciones OCPP");
-			permissionRepository.save(ocppViewSettings);
-			Permission peakShavingCreate = new Permission("peak_shaving_create", "Permitir crear peak shaving");
-			permissionRepository.save(peakShavingCreate);
-			Permission peakShavingEdit = new Permission("peak_shaving_edit", "Permitir editar peak shaving");
-			permissionRepository.save(peakShavingEdit);
-			Permission peakShavingView = new Permission("peak_shaving_view", "Permitir ver peak shaving");
-			permissionRepository.save(peakShavingView);
-			Permission chargeRecordsView = new Permission("charge_records_view", "Permitir ver registros de carga");
-			permissionRepository.save(chargeRecordsView);
-			Permission rolesDelete = new Permission("roles_delete", "Permitir borrar roles");
-			permissionRepository.save(rolesDelete);
-			Permission rolesCreate = new Permission("roles_create", "Permitir crear roles");
-			permissionRepository.save(rolesCreate);
-			Permission rolesEdit = new Permission("roles_edit", "Permitir editar roles");
-			permissionRepository.save(rolesEdit);
-			Permission rolesView = new Permission("roles_view", "Permitir ver roles");
-			permissionRepository.save(rolesView);
-			Permission terminalsView = new Permission("charging_station_view", "Permitir ver tecles");
-			permissionRepository.save(terminalsView);
-			Permission locationsCreate = new Permission("locations_create", "Permitir crear ubicaciones");
-			permissionRepository.save(locationsCreate);
-			Permission locationsView = new Permission("locations_view", "Permitir ver ubicaciones");
-			permissionRepository.save(locationsView);
-			Permission electricFirefighter = new Permission("electric_firefighter", "Permitir acceso de Electrobombero");
-			permissionRepository.save(electricFirefighter);
-			Permission chargersByUser = new Permission("chargers_by_user", "Permitir ver cargadores por usuario");
-			permissionRepository.save(chargersByUser);
-			Permission chargersByTerminal = new Permission("chargers_by_terminal", "Permitir ver cargadores por terminal");
-			permissionRepository.save(chargersByTerminal);
-			Permission clientView = new Permission("client_view", "Permitir vista clientes");
-			permissionRepository.save(clientView);
-			Permission employeeView = new Permission("employee_view", "Permitir vista encargado");
-			permissionRepository.save(employeeView);
 
-//			// Asociar permisos a roles
-//			Set<Permission> permissions = new HashSet<>();
-//			permissions.add(clientView);
-//			permissions.add(driverView);
-
-//			clientJob.setPermissions(permissions);
-//			companyJob.setPermissions(permissions);
-//			employeeJob.setPermissions(permissions);
+//			// Crear y guardar las credenciales
+//			Credential administrador = new Credential("Administrador", true);
+//			credentialRepository.save(administrador);
 //
-//			// Guardar roles
-//			jobRepository.save(clientJob);
-//			jobRepository.save(companyJob);
-//			jobRepository.save(employeeJob);
+//			Credential electroBombero = new Credential("ElectroBombero", true);
+//			credentialRepository.save(electroBombero);
+//
+//			Credential reportero = new Credential("Reportero", true);
+//			credentialRepository.save(reportero);
+//
+//
+//			// Crear instancia de PermissionCredential
+//			PermissionCredential administradorCredencial = new PermissionCredential(
+//					administrador, // Credential previamente creada y guardada
+//					LocalDateTime.now(),
+//					LocalDateTime.now().plusYears(1),
+//					true,
+//					"Sistema",
+//					"Credenciales de administrador"
+//			);
+//
+//			// Guardar PermissionCredential antes de añadir las Permissions
+//			permissionCredentialRepository.save(administradorCredencial);
+//
+//
+////			// Crear y guardar permisos
+//			Permission chargerCreate = new Permission("charger_create", "Permitir crear un nuevo cargador");
+//			chargerCreate.setPermisonCredencial(administradorCredencial); // Establecer relación bidireccional
+//			administradorCredencial.getPermiso().add(chargerCreate); // Agregar permiso a PermissionCredential
+//			permissionRepository.save(chargerCreate);
+//
+//			Permission chargerDelete = new Permission("charger_delete", "Permitir borrar un cargador");
+//			chargerDelete.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(chargerDelete);
+//			permissionRepository.save(chargerDelete);
+//			Permission chargerEdit = new Permission("charger_edit", "Permitir editar un cargador");
+//			chargerEdit.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(chargerEdit);
+//			permissionRepository.save(chargerEdit);
+//			Permission chargingStationView = new Permission("charging_station_view", "Permitir ver las cargas por terminal");
+//			chargingStationView.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(chargingStationView);
+//			permissionRepository.save(chargingStationView);
+//			Permission ocppChargerCommands = new Permission("ocpp_charger_commands", "Permitir comandos OCPP - Cargador");
+//			ocppChargerCommands.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(ocppChargerCommands);
+//			permissionRepository.save(ocppChargerCommands);
+//			Permission ocppConnectorCommands = new Permission("ocpp_connector_commands", "Permitir comandos OCPP - Conector");
+//			ocppConnectorCommands.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(ocppConnectorCommands);
+//			permissionRepository.save(ocppConnectorCommands);
+//			Permission ocppChargingStationCommands = new Permission("ocpp_charging_station_commands", "Permitir comandos OCPP - Carga por terminal");
+//			ocppChargingStationCommands.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(ocppChargingStationCommands);
+//			permissionRepository.save(ocppChargingStationCommands);
+//			Permission driverCreate = new Permission("driver_create", "Permitir crear conductores");
+//			driverCreate.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(driverCreate);
+//			permissionRepository.save(driverCreate);
+//			Permission driverDelete = new Permission("drive_delete", "Permitir borrar conductores");
+//			driverDelete.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(driverDelete);
+//			permissionRepository.save(driverDelete);
+//			Permission driverEdit = new Permission("driver_edit", "Permitir editar conductores");
+//			driverEdit.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(driverEdit);
+//			permissionRepository.save(driverEdit);
+//			Permission driverDisable = new Permission("driver_disable", "Permitir inhabilitar conductores");
+//			driverDisable.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(driverDisable);
+//			permissionRepository.save(driverDisable);
+//			Permission driverView = new Permission("driver_view", "Permitir ver conductores");
+//			driverView.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(driverView);
+//			permissionRepository.save(driverView);
+//			Permission chargerSettingsView = new Permission("charger_settings_view", "Permitir ver configuraciones de cargador");
+//			chargerSettingsView.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(chargerSettingsView);
+//			permissionRepository.save(chargerSettingsView);
+//			Permission powerControlCreate = new Permission("power_control_create", "Permitir crear control de potencia");
+//			powerControlCreate.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(powerControlCreate);
+//			permissionRepository.save(powerControlCreate);
+//			Permission powerControlEdit = new Permission("power_control_edit", "Permitir editar control de potencia");
+//			powerControlEdit.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(powerControlEdit);
+//			permissionRepository.save(powerControlEdit);
+//			Permission powerControlView = new Permission("power_control_view", "Permitir ver control de potencia");
+//			powerControlView.setPermisonCredencial(administradorCredencial);
+//			permissionRepository.save(powerControlView);
+//			Permission dashboardView = new Permission("dashboard_view", "Permitir ver el dashboard");
+//			dashboardView.setPermisonCredencial(administradorCredencial);
+//			permissionRepository.save(dashboardView);
+//			Permission scheduledDisablesCreate = new Permission("scheduled_disables_create", "Permitir crear inhabilitaciones programadas");
+//			scheduledDisablesCreate.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(scheduledDisablesCreate);
+//			permissionRepository.save(scheduledDisablesCreate);
+//			Permission scheduledDisablesEdit = new Permission("scheduled_disables_edit", "Permitir editar inhabilitaciones programadas");
+//			scheduledDisablesEdit.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(scheduledDisablesEdit);
+//			permissionRepository.save(scheduledDisablesEdit);
+//			Permission scheduledDisablesView = new Permission("scheduled_disables_view", "Permitir ver inhabilitaciones programadas");
+//			scheduledDisablesView.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(scheduledDisablesView);
+//			permissionRepository.save(scheduledDisablesView);
+//			Permission ocppEditSettings = new Permission("ocpp_edit_settings", "Permitir editar configuraciones OCPP");
+//			ocppEditSettings.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(ocppEditSettings);
+//			permissionRepository.save(ocppEditSettings);
+//			Permission ocppViewSettings = new Permission("ocpp_view_settings", "Permitir ver configuraciones OCPP");
+//			ocppViewSettings.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(ocppViewSettings);
+//			permissionRepository.save(ocppViewSettings);
+//			Permission peakShavingCreate = new Permission("peak_shaving_create", "Permitir crear peak shaving");
+//			peakShavingCreate.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(peakShavingCreate);
+//			permissionRepository.save(peakShavingCreate);
+//			Permission peakShavingEdit = new Permission("peak_shaving_edit", "Permitir editar peak shaving");
+//			peakShavingEdit.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(peakShavingEdit);
+//			permissionRepository.save(peakShavingEdit);
+//			Permission peakShavingView = new Permission("peak_shaving_view", "Permitir ver peak shaving");
+//			peakShavingView.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(peakShavingView);
+//			permissionRepository.save(peakShavingView);
+//			Permission chargeRecordsView = new Permission("charge_records_view", "Permitir ver registros de carga");
+//			chargeRecordsView.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(chargeRecordsView);
+//			permissionRepository.save(chargeRecordsView);
+//			Permission rolesDelete = new Permission("roles_delete", "Permitir borrar roles");
+//			rolesDelete.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(rolesDelete);
+//			permissionRepository.save(rolesDelete);
+//			Permission rolesCreate = new Permission("roles_create", "Permitir crear roles");
+//			rolesCreate.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(rolesCreate);
+//			permissionRepository.save(rolesCreate);
+//			Permission rolesEdit = new Permission("roles_edit", "Permitir editar roles");
+//			rolesEdit.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(rolesEdit);
+//			permissionRepository.save(rolesEdit);
+//			Permission rolesView = new Permission("roles_view", "Permitir ver roles");
+//			rolesView.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(rolesView);
+//			permissionRepository.save(rolesView);
+//			Permission terminalsView = new Permission("charging_station_view", "Permitir ver tecles");
+//			terminalsView.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(terminalsView);
+//			permissionRepository.save(terminalsView);
+//			Permission locationsCreate = new Permission("locations_create", "Permitir crear ubicaciones");
+//			locationsCreate.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(locationsCreate);
+//			permissionRepository.save(locationsCreate);
+//			Permission locationsView = new Permission("locations_view", "Permitir ver ubicaciones");
+//			locationsView.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(locationsView);
+//			permissionRepository.save(locationsView);
+//			Permission electricFirefighter = new Permission("electric_firefighter", "Permitir acceso de Electrobombero");
+//			electricFirefighter.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(electricFirefighter);
+//			permissionRepository.save(electricFirefighter);
+//			Permission chargersByUser = new Permission("chargers_by_user", "Permitir ver cargadores por usuario");
+//			chargersByUser.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(chargersByUser);
+//			permissionRepository.save(chargersByUser);
+//			Permission chargersByTerminal = new Permission("chargers_by_terminal", "Permitir ver cargadores por terminal");
+//			chargersByTerminal.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(chargersByTerminal);
+//			permissionRepository.save(chargersByTerminal);
+//			Permission clientView = new Permission("client_view", "Permitir vista clientes");
+//			clientView.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(clientView);
+//			permissionRepository.save(clientView);
+//			Permission employeeView = new Permission("employee_view", "Permitir vista encargado");
+//			employeeView.setPermisonCredencial(administradorCredencial);
+//			administradorCredencial.getPermiso().add(employeeView);
+//			permissionRepository.save(employeeView);
+//
+//			// Guardar PermissionCredential junto con sus Permissions
+//			permissionCredentialRepository.save(administradorCredencial);
+//
+//			Location Default = new Location("Default");
+//			locationRepository.save(Default);
 
-			// Crear y guardar cliente
-			Role clientRole = Role.CLIENT;
-			Client client = new Client(
-					"John",
-					"Doe",
-					123456789-9,
-					"correo@cliente.com",
-					12345678,
-					passwordEncoder.encode("password"),
-					clientRole);
-			clientRepository.save(client);
 
-			Account account = new Account("Client-12345",
-					LocalDate.now(),
-					TypeAccounts.Client);
-			account.setClient(client);
-			accountRepository.save(account);
 
-			Location casaCliente = new Location(
-					"Calle Ejemplo 123 Vitacura"
-			);
-			casaCliente.setAccount(account);
-			locationRepository.save(casaCliente);
+;
 
-			Car car = new Car(
-					"ABC123",
-					"Tesla Model S",
-					"123456789",
-					"Negro",
-					"Tesla",
-					"2024",
-					new BigDecimal("100"));
-			car.setAccount(account);
-			carRepository.save(car);
 
-			DeviceIdentifier cardIdentifier = new DeviceIdentifier(
-					"Tarjeta1-VIN123456789",
-					987654,
-					"Tarjeta",
-					car);
-			deviceIdentifierRepository.save(cardIdentifier);
-
-			LocalDate currentDate = LocalDate.now();
-			LocalDateTime startDateTime = currentDate.atTime(9, 0);
-			LocalDateTime endDateTime = currentDate.atTime(11, 0);
-
-			// Crear y guardar compañía
-			Role companyRole = Role.COMPANY;
-			LocalDate fechaCreacion = LocalDate.now();
-			Company company1 = new Company(
-					"Mi Empresa S.A.",
-					"correo@miempresa.com",
-					123456789,
-					1234567890,
-					passwordEncoder.encode("password"),
-					fechaCreacion,
-					companyRole
-			);
-			companyRepository.save(company1);
-
-			Account accountCompany = new Account("Company-12345",
-					LocalDate.now(),
-					TypeAccounts.Company);
-			accountCompany.setCompany(company1);
-			accountRepository.save(accountCompany);
-
-			Location clinicaVitacura = new Location(
-					"Av. Vitacura 5951Vitacura"
-			);
-			clinicaVitacura.setAccount(accountCompany);
-			locationRepository.save(clinicaVitacura);
-
-			Account accountEmployee = new Account("Employee-12345",
-					LocalDate.now(),
-					TypeAccounts.Employee);
-			accountEmployee.addLocation(clinicaVitacura);
-			accountEmployee.setCompany(company1);
-			accountRepository.save(accountEmployee);
-
-			// Crear y guardar empleado
-			Role employeeRole = Role.EMPLOYEE;
-			Employee nuevoEmpleado = new Employee(
-					"Juan",
-					"Pérez",
-					"González",
-					"juan@example.com",
-					passwordEncoder.encode("password"),
-					LocalDate.now(),
-					company1
-			);
-			nuevoEmpleado.setRole(employeeRole);
-			company1.addAccount(accountEmployee);
-			employeeRepository.save(nuevoEmpleado);
-
-			// Crear y guardar estación de carga
-			ChargingStation chargingStation = new ChargingStation(
-					"Estacion Clinica Vitacura",
-					LocalDate.now());
-			chargingStation.setLocation(clinicaVitacura);
-			chargingStation.setAccount(accountCompany);
-			chargingStation.setAccount(accountEmployee);
-			chargingStation.setAccount(account);
-			chargingStationRepository.save(chargingStation);
-
-			// Crear y guardar transacción
-			Transaction chargeTransaction = new Transaction(
-					TransactionType.CREDIT,
-					"Carga de energía para el vehículo",
-					LocalDateTime.now(),
-					startDateTime,
-					endDateTime,
-					new BigDecimal("80.00"),
-					20000
-			);
-			chargeTransaction.setAccount(account);
-			chargeTransaction.setChargingStation(chargingStation);
-			transactionRepository.save(chargeTransaction);
-
-			// Crear y guardar tarifas
-			Fee fee1 = new Fee(
-					"Tarifa 1",
-					LocalDate.parse("2024-08-04"),
-					LocalDate.parse("2024-08-10"),
-					LocalTime.parse("13:00"),
-					LocalTime.parse("18:00"),
-					Set.of("Lunes", "Martes"),
-					new BigDecimal("350")
-			);
-			fee1.setCompany(company1);
-			feeRepository.save(fee1);
-
-			Fee fee2 = new Fee(
-					"Tarifa 2",
-					LocalDate.parse("2024-09-01"),
-					LocalDate.parse("2024-09-30"),
-					LocalTime.parse("08:00"),
-					LocalTime.parse("20:00"),
-					Set.of("Martes", "Miércoles"),
-					new BigDecimal("500")
-			);
-			fee2.setCompany(company1);
-			feeRepository.save(fee2);
-
-			// Crear y guardar cargador
-			Charger charger = new Charger(
-					"Modelo X",
-					Time.valueOf("01:30:00"),
-					BigDecimal.valueOf(50),
-					true,
-					LocalDate.now(),
-					TypeOfLoad.AC,
-					chargingStation
-			);
-			chargingStation.addCharger(charger);
-			chargingStationRepository.save(chargingStation);
-			chargerRepository.save(charger);
-
-			ChargingUnit chargingUnit = new ChargingUnit("kWh", charger);
-			chargingUnit.setCharger(charger);
-			chargingUnitRepository.save(chargingUnit);
-
-			ChargingStationStatus status = new ChargingStationStatus("Enabled");
-			chargingStation.addChargingStationStatus(status);
-			chargingStationRepository.save(chargingStation);
-			chargingStationStatusRepository.save(status);
-
-			Connector connector = new Connector(
-					"Conector Tipo A",
-					BigDecimal.valueOf(50),
-					ConnectorStatus.CONNECTED,
-					BigDecimal.valueOf(80),
-					charger
-			);
-			connector.setCharger(charger);
-			connectorRepository.save(connector);
+//			// Crear un usuario de compañía
+//			CompanyUser company = new CompanyUser(
+//					"correo@miempresa.com",
+//					passwordEncoder.encode("password"),
+//					"Mi Empresa S.A.",
+//					"123456789",
+//					Role.COMPANY,
+//					true,
+//					123456789
+//			);
+//			companyUserRepository.save(company);
+//
+//			// Crear la cuenta principal de la compañía
+//			String numeroDeCuenta = "admin-" + getStringRandomNumber();
+//			Account account = new Account(
+//					numeroDeCuenta,
+//					"Cuenta Principal de " + company.getNombreCompañia(),
+//					LocalDate.now(),
+//					company.getEmail(),
+//					company.getPassword(),
+//					company,
+//					null
+//			);
+//			account.setActivo(true);
+//			accountRepository.save(account);
+//
+//			// Crear la cuenta de la compañía
+//			String numeroDeCuentaCompañia = "Compañia-" + getStringRandomNumber();
+//			AccountCompany accountCompany = new AccountCompany(
+//					numeroDeCuentaCompañia,
+//					company.getNombreCompañia(),
+//					company.getRut(),
+//					company.getEmail(),
+//					company.getPassword(),
+//					Role.COMPANY,
+//					TypeAccounts.Company,
+//					new Location("Default Location Address")
+//			);
+//			accountCompany.setCuentaPrincipal(account.getId());
+//			accountCompany.setCompañia(company);
+//			accountCompany.setActivo(true);
+//
+//			// Asignar credenciales a la cuenta de la compañía
+//			Set<Credential> credentials = new HashSet<>();
+//			credentials.add(administrador);
+//			credentials.add(electroBombero);
+//			credentials.add(reportero);
+//			accountCompany.setCredenciales(credentials);
+//
+//			accountCompanyRepository.save(accountCompany);
+//
+//			System.out.println("Company Account created successfully with ID: " + accountCompany.getId());
 		};
+	}
+
+	private String getStringRandomNumber() {
+		int min = 10000000;
+		int max = 99999999;
+		int randomNumber = (int) ((Math.random() * (max - min)) + min);
+		return String.valueOf(randomNumber);
 	}
 
 	@Bean

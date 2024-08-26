@@ -1,14 +1,16 @@
 package com.eVolGreen.eVolGreen.DTOS;
 
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.LocationDTO.LocationChargingStationDTO;
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargingStationsDTO;
+
 public class ChargingStationRequestDTO {
 
     private ChargingStationsDTO chargingStationsDTO;
-    private LocationDTO locationDTO;
 
-    public ChargingStationRequestDTO() {
-    }
+    private LocationChargingStationDTO locationDTO;
 
-    public ChargingStationRequestDTO(ChargingStationsDTO chargingStationsDTO, LocationDTO locationDTO) {
+
+    public ChargingStationRequestDTO(ChargingStationsDTO chargingStationsDTO, LocationChargingStationDTO locationDTO) {
         this.chargingStationsDTO = chargingStationsDTO;
         this.locationDTO = locationDTO;
     }
@@ -21,11 +23,19 @@ public class ChargingStationRequestDTO {
         this.chargingStationsDTO = chargingStationsDTO;
     }
 
-    public LocationDTO getLocationDTO() {
+    public LocationChargingStationDTO getLocationDTO() {
         return locationDTO;
     }
 
-    public void setLocationDTO(LocationDTO locationDTO) {
+    public void setLocationDTO(LocationChargingStationDTO locationDTO) {
         this.locationDTO = locationDTO;
+    }
+
+    @Override
+    public String toString() {
+        return "ChargingStationRequestDTO{" +
+                "chargingStationsDTO=" + chargingStationsDTO +
+                ", locationDTO=" + locationDTO +
+                '}';
     }
 }

@@ -20,7 +20,7 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-data-rest'
-	runtimeOnly 'com.h2database:h2'
+//	runtimeOnly 'com.h2database:h2'
 //	runtimeOnly 'org.postgresql:postgresql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 
@@ -39,7 +39,7 @@ dependencies {
 	implementation 'com.amazonaws:aws-java-sdk-cognitoidp:1.12.725'
 
 	// MySQL Connector
-	//runtimeOnly 'mysql:mysql-connector-java:8.0.33'
+	runtimeOnly 'mysql:mysql-connector-java:8.0.33'
 
 	// Dependencias de activemq
 	implementation 'org.springframework.boot:spring-boot-starter-activemq'
@@ -55,6 +55,8 @@ dependencies {
 
 	// Jakarta Validation API
 	implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+
+	//	runtimeOnly 'org.springframework.boot:spring-boot-devtools'
 
 //	providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
 }
