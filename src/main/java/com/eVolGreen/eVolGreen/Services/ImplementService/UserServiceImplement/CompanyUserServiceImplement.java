@@ -38,7 +38,6 @@ public class CompanyUserServiceImplement implements CompanyUserService {
     }
 
     @Override
-    @Transactional
     public CompanyUserDTO getCompanyDTOByEmailCurrent(String email) {
         CompanyUser company = companyUserRepository.findByEmail(email);
         if (company != null) {

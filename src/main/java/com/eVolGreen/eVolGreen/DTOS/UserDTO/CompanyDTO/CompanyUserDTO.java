@@ -46,7 +46,7 @@ public class CompanyUserDTO {
 
     private List<FeeDTO> Tarifas;
 
-    private List<AccountCompanyDTO> CuentaCompañia;
+    private List<AccountCompany> CuentaCompañia;
 
     private List<Long> CuentaPrincipal ;
 
@@ -80,7 +80,7 @@ public class CompanyUserDTO {
                 .collect(Collectors.toList());
         CuentaCompañia = Compañia.getCuentaCompañia()
                 .stream()
-                .map(AccountCompanyDTO -> new AccountCompanyDTO(AccountCompanyDTO))
+                .map(AccountCompany -> new AccountCompany())
                 .collect(Collectors.toList());
         CuentaPrincipal = Compañia.getCuentaPrincipal()
                 .stream()
@@ -126,7 +126,7 @@ public class CompanyUserDTO {
         return Tarifas;
     }
 
-    public List<AccountCompanyDTO> getCuentaCompañia() {
+    public List<AccountCompany> getCuentaCompañia() {
         return CuentaCompañia;
     }
 
