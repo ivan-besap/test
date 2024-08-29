@@ -38,7 +38,7 @@ public class CompanyUser implements UserDetails {
 
     private String rut;
 
-    @OneToMany(mappedBy = "Compañia", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "company", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("Compañia-RelacionCompañiaEmpleado")
     private Set<CompanyEmployeeRelation> RelacionCompañiaEmpleado = new HashSet<>();
 

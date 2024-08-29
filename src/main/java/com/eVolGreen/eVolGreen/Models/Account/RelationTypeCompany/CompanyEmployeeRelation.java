@@ -18,7 +18,7 @@ public class CompanyEmployeeRelation {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "Compañia_id", nullable = false)
     @JsonBackReference("Compañia-RelacionCompañiaEmpleado")
-    private CompanyUser Compañia;
+    private CompanyUser company;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "Trabajador_id", nullable = false)
@@ -31,11 +31,11 @@ public class CompanyEmployeeRelation {
 
     public CompanyEmployeeRelation() {}
 
-    public CompanyEmployeeRelation(CompanyUser Compañia, EmployeeUser Trabajador, RelationType Relacion) {
-        this.Compañia = Compañia;
+    public CompanyEmployeeRelation(CompanyUser company, EmployeeUser Trabajador, RelationType Relacion) {
+        this.company = company;
         this.Trabajador = Trabajador;
         this.Relacion = Relacion;
-        this.Compañia.getRelacionCompañiaEmpleado().add(this);
+        this.company.getRelacionCompañiaEmpleado().add(this);
         this.Trabajador.getRelacionCompañiaEmpleado().add(this);
     }
 
@@ -48,11 +48,11 @@ public class CompanyEmployeeRelation {
     }
 
     public CompanyUser getCompañia() {
-        return Compañia;
+        return company;
     }
 
     public void setCompañia(CompanyUser compañia) {
-        Compañia = compañia;
+        company = compañia;
     }
 
     public EmployeeUser getTrabajador() {
@@ -75,7 +75,7 @@ public class CompanyEmployeeRelation {
     public String toString() {
         return "CompanyEmployeeRelation{" +
                 "id=" + id +
-                ", Compañia=" + Compañia +
+                ", Compañia=" + company +
                 ", Trabajador=" + Trabajador +
                 ", Relacion=" + Relacion +
                 '}';
