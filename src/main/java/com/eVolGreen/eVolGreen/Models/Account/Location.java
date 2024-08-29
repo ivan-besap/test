@@ -4,6 +4,7 @@ import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
 import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountClient;
 import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountCompany;
 import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountEmployee;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.GenericGenerator;
@@ -17,26 +18,23 @@ public class Location {
     @GeneratedValue(strategy = GenerationType.AUTO, generator = "native")
     private long id;
 
-//    private String latitude;
-//    private String longitude;
-
     @NotNull(message = "La Direccion es obligatoria")
     private String direccion;
 
-//    private String city;
-//    private String region;
-//    private String country;
-
     @OneToOne(mappedBy = "UbicacionCuentaTrabajador")
+    @JsonBackReference
     private AccountEmployee CuentaEmpleado;
 
     @OneToOne(mappedBy = "UbicacionCuentaCliente")
+    @JsonBackReference
     private AccountClient CuentaCliente;
 
     @OneToOne(mappedBy = "UbicacionCuentaCompañia")
+    @JsonBackReference
     private AccountCompany CuentaCompania;
 
     @OneToOne(mappedBy = "UbicacionTerminal")
+    @JsonBackReference
     private ChargingStation Terminal;
 
     public Location() { }
@@ -63,7 +61,7 @@ public class Location {
     }
 
     public void setDireccion(@NotNull(message = "La Direccion es obligatoria") String direccion) {
-        direccion = direccion;
+        this.direccion = direccion;
     }
 
     public AccountEmployee getCuentaEmpleado() {
@@ -102,11 +100,7 @@ public class Location {
     public String toString() {
         return "Location{" +
                 "id=" + id +
-                ", Direccion='" + direccion + '\'' +
-                ", CuentaEmpleado=" + CuentaEmpleado +
-                ", CuentaCliente=" + CuentaCliente +
-                ", CuentaCompania=" + CuentaCompania +
-                ", Terminal=" + Terminal +
+                ", direccion='" + direccion + '\'' +
                 '}';
     }
 }

@@ -183,7 +183,7 @@ public class Connector {
         this.id = id;
     }
 
-    public boolean isActivo() {
+    public boolean getActivo() {
         return Activo;
     }
 

@@ -3,8 +3,14 @@ package com.eVolGreen.eVolGreen.Controllers.ChargingStationController;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.NewChargerDTO;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargerManufacturer;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargerModel;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStationStatus;
 import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
+import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerManufacturerService;
+import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerModelService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargingStationsService;
 import com.eVolGreen.eVolGreen.Services.DUserService.CompanyUserService;
@@ -30,9 +36,15 @@ public class ChargerController {
     @Autowired
     private CompanyUserService companyUserService;
 
+    @Autowired
+    private ChargerManufacturerService chargerManufacturerService;
+
+    @Autowired
+    private ChargerModelService chargerModelService;
+
     @GetMapping("/chargers")
     public List<ChargerDTO> getChargers() {
-        return chargerService.getChargersDTO();
+         return chargerService.getActiveChargersDTO();
     }
 
     @GetMapping("/chargers/{id}")
@@ -64,11 +76,11 @@ public class ChargerController {
             mensaje = "El alias del cargador no puede estar vacío";
             return ResponseEntity.status(400).body(mensaje);
         }
-        if (chargerDTO.getFabricante() == null) {
+        if (chargerDTO.getManufacturerId() == null) {
             mensaje = "El fabricante del cargador no puede estar vacío";
             return ResponseEntity.status(400).body(mensaje);
         }
-        if (chargerDTO.getModelo() == null) {
+        if (chargerDTO.getModeloId() == null) {
             mensaje = "El modelo del cargador no puede estar vacío";
             return ResponseEntity.status(400).body(mensaje);
         }
@@ -79,22 +91,30 @@ public class ChargerController {
 
         ChargingStation chargingStation = chargingStationsService.findById(chargerDTO.getTerminal());
 
+        ChargerManufacturer manufacturer = chargerManufacturerService.findById(chargerDTO.getManufacturerId());
+        if (manufacturer == null) {
+            mensaje = "El fabricante no existe";
+            return ResponseEntity.status(400).body(mensaje);
+        }
+
+        ChargerModel model = chargerModelService.findById(chargerDTO.getModeloId());
+        if (model == null) {
+            mensaje = "El modelo no existe";
+            return ResponseEntity.status(400).body(mensaje);
+        }
+
         Charger charger = new Charger(
                 chargerDTO.getoCPPid(),
                 chargerDTO.getNombre(),
                 chargerDTO.getAlias(),
-                chargerDTO.getFabricante(),
-                chargerDTO.getModelo(),
-                false,
+                model,
+                true,
                 LocalDate.now(),
-                chargingStation
-
+                chargingStation,
+                manufacturer
         );
 
-
-
         chargerService.saveCharger(charger);
-
 
         return ResponseEntity.status(201).body("Charger created successfully and associated with the charging station.");
     }
@@ -133,11 +153,11 @@ public class ChargerController {
             mensaje = "El alias del cargador no puede estar vacío";
             return ResponseEntity.status(400).body(mensaje);
         }
-        if (chargerDTO.getFabricante() == null) {
-            mensaje = "El fabricante del cargador no puede estar vacío";
+        if (chargerDTO.getManufacturerId() == null) {
+            mensaje = "El ID del fabricante no puede estar vacío";
             return ResponseEntity.status(400).body(mensaje);
         }
-        if (chargerDTO.getModelo() == null) {
+        if (chargerDTO.getModeloId() == null) {
             mensaje = "El modelo del cargador no puede estar vacío";
             return ResponseEntity.status(400).body(mensaje);
         }
@@ -145,7 +165,6 @@ public class ChargerController {
             mensaje = "La terminal del cargador no puede estar vacío";
             return ResponseEntity.status(400).body(mensaje);
         }
-
         // Buscar y validar la terminal asociada
         ChargingStation chargingStation = chargingStationsService.findById(chargerDTO.getTerminal());
         if (chargingStation == null) {
@@ -153,12 +172,24 @@ public class ChargerController {
             return ResponseEntity.status(400).body(mensaje);
         }
 
+        ChargerManufacturer manufacturer = chargerManufacturerService.findById(chargerDTO.getManufacturerId());
+        if (manufacturer == null) {
+            mensaje = "El fabricante no existe";
+            return ResponseEntity.status(400).body(mensaje);
+        }
+
+        ChargerModel model = chargerModelService.findById(chargerDTO.getModeloId());
+        if (model == null) {
+            mensaje = "El modelo no existe";
+            return ResponseEntity.status(400).body(mensaje);
+        }
+
         // Actualizar los campos del cargador existente
         existingCharger.setoCPPid(chargerDTO.getoCPPid());
         existingCharger.setNombre(chargerDTO.getNombre());
         existingCharger.setAlias(chargerDTO.getAlias());
-        existingCharger.setFabricante(chargerDTO.getFabricante());
-        existingCharger.setModelo(chargerDTO.getModelo());
+        existingCharger.setManufacturer(manufacturer);
+        existingCharger.setModel(model);
         existingCharger.setTerminal(chargingStation);
 
         // Guardar los cambios en la base de datos
@@ -198,6 +229,16 @@ public class ChargerController {
 
         mensaje = "Cargador desactivado correctamente";
         return ResponseEntity.ok(mensaje);
+    }
+
+    @PatchMapping("/chargerStatus/change-active-status")
+    public ResponseEntity<String> changeChargerStatus(@RequestParam Long id, @RequestParam ChargerStatus activeStatus) {
+        boolean result = chargerService.updateChargerStatus(id, activeStatus);
+        if (result) {
+            return ResponseEntity.ok("Estado de la estación actualizado correctamente.");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Estación no encontrada.");
+        }
     }
 
 }

@@ -4,8 +4,10 @@ import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ConnectorDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.NewConnectorDTO;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStationStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.ConnectorStatus;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.TypeConnector;
 import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
 import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
@@ -41,7 +43,7 @@ public class ConnectorController {
 
     @GetMapping("/connectors")
     public List<ConnectorDTO> getConnectors() {
-        return connectorService.getConnectorsDTO();
+         return connectorService.getActiveConnectorsDTO();
     }
 
     @GetMapping("/connectors/{id}")
@@ -112,7 +114,7 @@ public class ConnectorController {
                 cargador,
                 terminal,
                 ConnectorStatus.DISCONNECTED,
-                false
+                true
         );
 
 
@@ -228,7 +230,7 @@ public class ConnectorController {
         }
 
         // Verificar si el conector ya está desactivado
-        if (!connector.isActivo()) {
+        if (!connector.getActivo()) {
             mensaje = "El conector ya está desactivado";
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(mensaje);
         }
@@ -241,4 +243,18 @@ public class ConnectorController {
         return ResponseEntity.ok(mensaje);
     }
 
+    @GetMapping("/connector-types")
+    public TypeConnector[] getAllTypeConnectors() {
+        return connectorService.getAllTypeConnectors();
+    }
+
+    @PatchMapping("/connectorStatus/change-active-status")
+    public ResponseEntity<String> changeChargingStationStatus(@RequestParam Long id, @RequestParam ConnectorStatus activeStatus) {
+        boolean result = connectorService.updateConnectorStatus(id, activeStatus);
+        if (result) {
+            return ResponseEntity.ok("Estado de la estación actualizado correctamente.");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Estación no encontrada.");
+        }
+    }
 }

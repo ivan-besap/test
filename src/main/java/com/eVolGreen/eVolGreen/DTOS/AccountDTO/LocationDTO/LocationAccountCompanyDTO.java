@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.DTOS.AccountDTO.LocationDTO;
 
 import com.eVolGreen.eVolGreen.Models.Account.Location;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.validation.constraints.NotNull;
 
 public class LocationAccountCompanyDTO {
@@ -36,7 +37,6 @@ public class LocationAccountCompanyDTO {
         return "LocationAccountCompanyDTO{" +
                 "id=" + id +
                 ", Direccion='" + Direccion + '\'' +
-                ", CuentaCompania=" + CuentaCompania +
                 '}';
     }
 }

@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.ChargingStation.Charger;
 
+import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.eVolGreen.eVolGreen.Models.Account.Reservation;
@@ -30,11 +31,11 @@ public class Charger {
     @NotNull(message = "El Alias es obligatorio")
     private String alias;
 
-    @NotNull(message = "El Fabricante es obligatorio")
-    private String fabricante;
+    /*@NotNull(message = "El Fabricante es obligatorio")
+    private String fabricante;*/
 
-    @NotNull(message = "El Modelo es obligatorio")
-    private String modelo;
+//    @NotNull(message = "El Modelo es obligatorio")
+//    private String modelo;
 
     private Boolean activo = false;
 
@@ -42,11 +43,17 @@ public class Charger {
     @Column(name = "Fecha_Creacion")
     private LocalDate fechaCreacion;
 
+    @NotNull(message = "El estado del cargador no puede ser nulo.")
+    @Enumerated(EnumType.STRING)
+    @Column(name = "estado_cargador")
+    private ChargerStatus estadoCargador = ChargerStatus.ACTIVE;
+
     @NotNull(message = "El Terminal es obligatorio")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "Terminal_id")
     @JsonBackReference("Terminal-Cargador")
     private ChargingStation Terminal;
+
 
     @OneToMany(mappedBy = "Cargador", fetch = FetchType.LAZY)
     @JsonManagedReference("Cargador-UnidadCarga")
@@ -59,18 +66,29 @@ public class Charger {
     @OneToMany(mappedBy = "Cargador", fetch = FetchType.LAZY)
     @JsonManagedReference("Cargador-Reservacion")
     private Set<Reservation> Reservacion = new HashSet<>();
+    @NotNull(message = "El Fabricante es obligatorio")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "fabricante_id")
+    private ChargerManufacturer fabricante;
+    @NotNull(message = "El Modelo es obligatorio")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "modelo_id")
+    private ChargerModel modelo;
 
     public Charger() { }
 
-    public Charger(String oCPPid, String nombre, String alias, String fabricante, String modelo, Boolean activo, LocalDate fechaCreacion, ChargingStation Terminal) {
+    public Charger(String oCPPid, String nombre, String alias, ChargerModel model, Boolean activo, LocalDate fechaCreacion, ChargingStation Terminal, ChargerManufacturer manufacturer) {
         this.oCPPid = oCPPid;
         this.nombre = nombre;
         this.alias = alias;
-        this.fabricante = fabricante;
-        this.modelo = modelo;
+//        this.fabricante = fabricante;
+//        this.modelo = modelo;
+        this.modelo = model;
         this.activo = activo;
         this.fechaCreacion = fechaCreacion;
         this.Terminal = Terminal;
+        this.fabricante = manufacturer;
+        this.estadoCargador = ChargerStatus.ACTIVE;
     }
 
     public Long getId() {
@@ -105,21 +123,24 @@ public class Charger {
         this.alias = alias;
     }
 
-    public @NotNull(message = "El Fabricante es obligatorio") String getFabricante() {
-        return fabricante;
-    }
+//    public @NotNull(message = "El Fabricante es obligatorio") String getFabricante() {
+//        return fabricante;
+//    }
 
-    public void setFabricante(@NotNull(message = "El Fabricante es obligatorio") String fabricante) {
+    /*public void setFabricante(@NotNull(message = "El Fabricante es obligatorio") String fabricante) {
         this.fabricante = fabricante;
-    }
+    }*/
 
-    public @NotNull(message = "El Modelo es obligatorio") String getModelo() {
+
+    // Método para establecer el modelo
+    public ChargerModel getModel() {
         return modelo;
     }
 
-    public void setModelo(@NotNull(message = "El Modelo es obligatorio") String modelo) {
-        this.modelo = modelo;
+    public void setModel(ChargerModel model) {
+        this.modelo = model;
     }
+
 
     public Boolean getActivo() {
         return activo;
@@ -167,5 +188,21 @@ public class Charger {
 
     public void setReservacion(Set<Reservation> reservacion) {
         Reservacion = reservacion;
+    }
+
+    public ChargerManufacturer getManufacturer() {
+        return fabricante;
+    }
+
+    public void setManufacturer(ChargerManufacturer manufacturer) {
+        this.fabricante = manufacturer;
+    }
+
+    public ChargerStatus getEstadoCargador() {
+        return estadoCargador;
+    }
+
+    public void setEstadoCargador(ChargerStatus estadoCargador) {
+        this.estadoCargador = estadoCargador;
     }
 }

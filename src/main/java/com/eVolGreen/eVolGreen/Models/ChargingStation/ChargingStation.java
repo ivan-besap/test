@@ -9,6 +9,7 @@ import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountCompany;
 import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountEmployee;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -157,6 +158,7 @@ public class ChargingStation {
         Cargadores = cargadores;
     }
 
+
     public @NotNull(message = "La ubicación de la terminal no puede ser nula.") Location getUbicacionTerminal() {
         return UbicacionTerminal;
     }
@@ -188,6 +190,8 @@ public class ChargingStation {
     public void setCuentaCliente(AccountClient cuentaCliente) {
         CuentaCliente = cuentaCliente;
     }
+
+
 
     @Override
     public String toString() {

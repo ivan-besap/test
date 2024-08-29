@@ -6,11 +6,13 @@ import com.eVolGreen.eVolGreen.Repositories.LocationRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.LocationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class LocationServiceImplement implements LocationService {
     @Autowired
     private LocationRepository locationRepository;

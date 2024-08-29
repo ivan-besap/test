@@ -1,5 +1,7 @@
 package com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO;
 
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.LocationDTO.LocationChargingStationDTO;
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Location;
 import com.eVolGreen.eVolGreen.Models.Account.Reservation;
 import com.eVolGreen.eVolGreen.Models.Account.Transaction.Transaction;
@@ -10,7 +12,9 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 
 public class ChargingStationsDTO {
@@ -31,10 +35,10 @@ public class ChargingStationsDTO {
 
     private Set<Transaction> Transacciones;
 
-    private Set<Charger> Cargadores;
+    private List<ChargerDTO> Cargadores;
 
     @NotNull(message = "La ubicación de la terminal no puede ser nula.")
-    private Location UbicacionTerminal;
+    private LocationChargingStationDTO UbicacionTerminal;
 
     private long CuentaCompañia;
 
@@ -50,8 +54,10 @@ public class ChargingStationsDTO {
         EstadoTerminal = Terminal.getEstadoTerminal();
         Reservaciones = Terminal.getReservaciones();
         Transacciones = Terminal.getTransacciones();
-        Cargadores = Terminal.getCargadores();
-        UbicacionTerminal = Terminal.getUbicacionTerminal();
+        Cargadores = Terminal.getCargadores().stream()
+                .map(ChargerDTO::new)
+                .collect(Collectors.toList());
+        this.UbicacionTerminal = new LocationChargingStationDTO(Terminal.getUbicacionTerminal());
         CuentaCompañia = Terminal.getCuentaCompañia().getId();
         activo = Terminal.getActivo();
     }
@@ -84,11 +90,11 @@ public class ChargingStationsDTO {
         return Transacciones;
     }
 
-    public Set<Charger> getCargadores() {
+    public List<ChargerDTO> getCargadores() { // Usar el DTO existente
         return Cargadores;
     }
 
-    public @NotNull(message = "La ubicación de la terminal no puede ser nula.") Location getUbicacionTerminal() {
+    public LocationChargingStationDTO getUbicacionTerminal() {
         return UbicacionTerminal;
     }
 

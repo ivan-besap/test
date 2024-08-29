@@ -1,7 +1,12 @@
 package com.eVolGreen.eVolGreen.Services.ImplementService.ChargingStationServiceImplement;
 
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ConnectorDTO;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.ConnectorStatus;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.TypeConnector;
 import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ConnectorService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,6 +41,32 @@ public class ConnectorServiceImplement implements ConnectorService {
     @Override
     public ConnectorDTO getConnectorDTO(Long id) {
             return new ConnectorDTO(this.findById(id));
+    }
+
+    @Override
+    public TypeConnector[] getAllTypeConnectors() {
+        return TypeConnector.values();
+    }
+
+    @Override
+    public boolean updateConnectorStatus(Long id, ConnectorStatus activeStatus) {
+        Optional<Connector> optionalStation = connectorRepository.findById(id);
+        if (optionalStation.isPresent()) {
+            Connector connector = optionalStation.get();
+            connector.setEstadoConector(activeStatus);
+            connectorRepository.save(connector);
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public List<ConnectorDTO> getActiveConnectorsDTO() {
+        return connectorRepository.findAll()
+                .stream()
+                .filter(Connector::getActivo) // Filtra las estaciones activas
+                .map(ConnectorDTO::new)
+                .collect(Collectors.toList());
     }
 
 }

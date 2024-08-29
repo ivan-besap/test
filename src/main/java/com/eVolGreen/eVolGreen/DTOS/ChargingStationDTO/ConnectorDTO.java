@@ -49,6 +49,8 @@ public class ConnectorDTO {
 
     private Set<FeeConnector> TarifaConector;
 
+    private String IdCargador;
+
     public ConnectorDTO(Connector Conector) {
 
         id = Conector.getId();
@@ -63,6 +65,7 @@ public class ConnectorDTO {
         Terminal = Conector.getTerminal().getId();
         Reservaciones = Conector.getReservaciones();
         TarifaConector = Conector.getTarifaConector();
+        IdCargador = Conector.getCargador().getoCPPid();
     }
 
     public long getId() {
@@ -101,6 +104,10 @@ public class ConnectorDTO {
         return Cargador;
     }
 
+    public String getIdCargador() {
+        return IdCargador;
+    }
+
     public Set<Reservation> getReservaciones() {
         return Reservaciones;
     }
@@ -127,6 +134,7 @@ public class ConnectorDTO {
                 ", Cargador=" + Cargador +
                 ", Reservaciones=" + Reservaciones +
                 ", TarifaConector=" + TarifaConector +
+                ", IdCargador=" + IdCargador +
                 '}';
     }
 }

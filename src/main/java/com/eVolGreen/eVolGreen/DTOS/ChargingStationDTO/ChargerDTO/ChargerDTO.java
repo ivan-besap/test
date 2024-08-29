@@ -1,15 +1,21 @@
 package com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO;
 
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ConnectorDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Car.Car;
 import com.eVolGreen.eVolGreen.Models.Account.Reservation;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargingUnit;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 
 import jakarta.validation.constraints.NotNull;
 
+import java.net.ConnectException;
 import java.time.LocalDate;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class ChargerDTO {
 
@@ -24,25 +30,29 @@ public class ChargerDTO {
     @NotNull(message = "El Alias es obligatorio")
     private String Alias;
 
-    @NotNull(message = "El Fabricante es obligatorio")
-    private String Fabricante;
-
-    @NotNull(message = "El Modelo es obligatorio")
-    private String Modelo;
-
     private Boolean Activo = false;
 
     @NotNull(message = "La Fecha de Creacion es obligatoria")
     private LocalDate FechaCreacion;
 
     @NotNull(message = "El Terminal es obligatorio")
-    private long Terminal;
+    private Long terminalId;
+
+    private String terminalName;
 
     private Set<ChargingUnit> UnidadCarga = new HashSet<>();
 
-    private Set<Connector> Conectores = new HashSet<>();
+    private List<ConnectorDTO> Conectores;
 
     private Set<Reservation> Reservacion = new HashSet<>();
+
+    private Long manufacturerId;
+    private String manufacturerName;
+
+    private Long modelId;
+    private String modelName;
+
+    private ChargerStatus estadoCargador;
 
     public ChargerDTO(Charger Cargador) {
 
@@ -50,14 +60,20 @@ public class ChargerDTO {
         OCPPid = Cargador.getoCPPid();
         Nombre = Cargador.getNombre();
         Alias = Cargador.getAlias();
-        Fabricante = Cargador.getFabricante();
-        Modelo = Cargador.getModelo();
+        manufacturerId = Cargador.getManufacturer() != null ? Cargador.getManufacturer().getId() : null;
+        manufacturerName = Cargador.getManufacturer() != null ? Cargador.getManufacturer().getName() : null;
+        modelId = Cargador.getModel() != null ? Cargador.getModel().getId() : null;
+        modelName = Cargador.getModel() != null ? Cargador.getModel().getName() : null;
         Activo = Cargador.getActivo();
         FechaCreacion = Cargador.getFechaCreacion();
-        Terminal = Cargador.getTerminal().getId();
+        terminalId = Cargador.getTerminal().getId();
         UnidadCarga = Cargador.getUnidadCarga();
-        Conectores = Cargador.getConectores();
+        Conectores = Cargador.getConectores().stream()
+                .map(ConnectorDTO::new)
+                .collect(Collectors.toList());
         Reservacion = Cargador.getReservacion();
+        terminalName = Cargador.getTerminal().getNombreTerminal();
+        this.estadoCargador = Cargador.getEstadoCargador();
     }
 
     public Long getId() {
@@ -76,14 +92,6 @@ public class ChargerDTO {
         return Alias;
     }
 
-    public @NotNull(message = "El Fabricante es obligatorio") String getFabricante() {
-        return Fabricante;
-    }
-
-    public @NotNull(message = "El Modelo es obligatorio") String getModelo() {
-        return Modelo;
-    }
-
     public Boolean getActivo() {
         return Activo;
     }
@@ -93,20 +101,64 @@ public class ChargerDTO {
     }
 
     @NotNull(message = "El Terminal es obligatorio")
-    public long getTerminal() {
-        return Terminal;
+    public Long getTerminalId() { // Cambiado a terminalId
+        return terminalId;
+    }
+
+    public String getTerminalName() {  // Nuevo getter para el nombre del terminal
+        return terminalName;
     }
 
     public Set<ChargingUnit> getUnidadCarga() {
         return UnidadCarga;
     }
 
-    public Set<Connector> getConectores() {
+    public List<ConnectorDTO> getConectores() {
         return Conectores;
     }
 
     public Set<Reservation> getReservacion() {
         return Reservacion;
+    }
+
+    public Long getManufacturerId() {
+        return manufacturerId;
+    }
+
+    public void setManufacturerId(Long manufacturerId) {
+        this.manufacturerId = manufacturerId;
+    }
+
+    public String getManufacturerName() {
+        return manufacturerName;
+    }
+
+    public void setManufacturerName(String manufacturerName) {
+        this.manufacturerName = manufacturerName;
+    }
+
+    public Long getModelId() {
+        return modelId;
+    }
+
+    public void setModelId(Long modelId) {
+        this.modelId = modelId;
+    }
+
+    public String getModelName() {
+        return modelName;
+    }
+
+    public void setModelName(String modelName) {
+        this.modelName = modelName;
+    }
+
+    public ChargerStatus getEstadoCargador() {
+        return estadoCargador;
+    }
+
+    public void setEstadoCargador(ChargerStatus estadoCargador) {
+        this.estadoCargador = estadoCargador;
     }
 
     @Override
@@ -116,14 +168,16 @@ public class ChargerDTO {
                 ", OCPPid='" + OCPPid + '\'' +
                 ", Nombre='" + Nombre + '\'' +
                 ", Alias='" + Alias + '\'' +
-                ", Fabricante='" + Fabricante + '\'' +
-                ", Modelo='" + Modelo + '\'' +
+                ", Fabricante='" + manufacturerName + '\'' +
+                ", Modelo='" + modelName + '\'' +
                 ", Activo=" + Activo +
                 ", FechaCreacion=" + FechaCreacion +
-                ", Terminal=" + Terminal +
+                ", TerminalId=" + terminalId +
+                ", TerminalName=" + terminalName +
                 ", UnidadCarga=" + UnidadCarga +
                 ", Conectores=" + Conectores +
                 ", Reservacion=" + Reservacion +
+                ", EstadoCargador=" + estadoCargador +
                 '}';
     }
 }

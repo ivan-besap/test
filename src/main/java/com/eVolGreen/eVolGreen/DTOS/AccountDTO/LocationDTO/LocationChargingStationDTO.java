@@ -1,45 +1,46 @@
 package com.eVolGreen.eVolGreen.DTOS.AccountDTO.LocationDTO;
 
 import com.eVolGreen.eVolGreen.Models.Account.Location;
-import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
-import jakarta.persistence.OneToOne;
 import jakarta.validation.constraints.NotNull;
 
 public class LocationChargingStationDTO {
 
     private long id;
 
-    @NotNull(message = "La Direccion es obligatoria")
-    private String Direccion;
+    @NotNull(message = "La Dirección es obligatoria")
+    private String direccion;
 
-    @OneToOne(mappedBy = "UbicacionTerminal")
-    private ChargingStation Terminal;
+    // Constructor por defecto
+    public LocationChargingStationDTO() {}
 
-    public LocationChargingStationDTO(Location Ubicacion) {
-
-        id = Ubicacion.getId();
-        Direccion = Ubicacion.getDireccion();
-        Terminal = Ubicacion.getTerminal();
+    // Constructor con parámetros
+    public LocationChargingStationDTO(Location ubicacion) {
+        this.id = ubicacion.getId();
+        this.direccion = ubicacion.getDireccion();
     }
 
+    // Getters y Setters
     public long getId() {
         return id;
     }
 
-    public @NotNull(message = "La Direccion es obligatoria") String getDireccion() {
-        return Direccion;
+    public void setId(long id) {
+        this.id = id;
     }
 
-    public ChargingStation getTerminal() {
-        return Terminal;
+    public String getDireccion() {
+        return direccion;
+    }
+
+    public void setDireccion(String direccion) {
+        this.direccion = direccion;
     }
 
     @Override
     public String toString() {
         return "LocationChargingStationDTO{" +
                 "id=" + id +
-                ", Direccion='" + Direccion + '\'' +
-                ", Terminal=" + Terminal +
+                ", direccion='" + direccion + '\'' +
                 '}';
     }
 }

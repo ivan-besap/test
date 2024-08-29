@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.DTOS.AccountDTO.TypeOfAccountDTO;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.CarCompanyDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.FeeDTO.FeeDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.LocationDTO.LocationAccountCompanyDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.PermissionCredentialDTO.CredentialDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.PermissionCredentialDTO.PermissionDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO;
@@ -81,8 +82,7 @@ public class AccountCompanyDTO {
     @Enumerated(EnumType.STRING)
     private TypeAccounts TipoCuenta = TypeAccounts.Company;
 
-    @NotNull(message = "La ubicación de la compañia no puede ser nula.")
-    private Location UbicacionCuentaCompañia;
+    private LocationAccountCompanyDTO UbicacionCuentaCompañia;
 
     private Boolean Activo = false;
 
@@ -108,7 +108,7 @@ public class AccountCompanyDTO {
         Transacciones = CuentaCompañia.getTransacciones().stream().map(TransactionDTO::new).collect(Collectors.toList());
         Rol = CuentaCompañia.getRol();
         TipoCuenta = CuentaCompañia.getTipoCuenta();
-        UbicacionCuentaCompañia = CuentaCompañia.getUbicacionCuentaCompañia();
+        UbicacionCuentaCompañia = new LocationAccountCompanyDTO(CuentaCompañia.getUbicacionCuentaCompañia());
         Activo = CuentaCompañia.getActivo();
 
     }
@@ -193,7 +193,7 @@ public class AccountCompanyDTO {
         return TipoCuenta;
     }
 
-    public @NotNull(message = "La ubicación de la compañia no puede ser nula.") Location getUbicacionCuentaCompañia() {
+    public LocationAccountCompanyDTO getUbicacionCuentaCompañia() {
         return UbicacionCuentaCompañia;
     }
 
