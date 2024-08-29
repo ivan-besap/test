@@ -11,7 +11,7 @@ public class CompanyEmployeeRelationDTO {
 
     private long id;
 
-    private CompanyUser Compañia;
+    private CompanyUser company;
 
     private EmployeeUser Trabajador;
 
@@ -21,7 +21,7 @@ public class CompanyEmployeeRelationDTO {
     public CompanyEmployeeRelationDTO(CompanyEmployeeRelation RelacionCompañiaTrabajador) {
 
         id = RelacionCompañiaTrabajador.getId();
-        Compañia = RelacionCompañiaTrabajador.getCompañia();
+        company = RelacionCompañiaTrabajador.getCompañia();
         Trabajador = RelacionCompañiaTrabajador.getTrabajador();
         Relacion = RelacionCompañiaTrabajador.getRelacion();
     }
@@ -31,7 +31,7 @@ public class CompanyEmployeeRelationDTO {
     }
 
     public CompanyUser getCompañia() {
-        return Compañia;
+        return company;
     }
 
     public EmployeeUser getTrabajador() {
@@ -46,7 +46,7 @@ public class CompanyEmployeeRelationDTO {
     public String toString() {
         return "CompanyEmployeeRelationDTO{" +
                 "id=" + id +
-                ", Compañia=" + Compañia +
+                ", Compañia=" + company +
                 ", Trabajador=" + Trabajador +
                 ", Relacion=" + Relacion +
                 '}';

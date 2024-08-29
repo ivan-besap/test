@@ -29,8 +29,10 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -72,6 +74,30 @@ public class EmployeeController {
     public EmployeeUserDTO getEmployee(@PathVariable Long id){
         return employeeUserService.getEmployeeUserDTO(id);
     }
+
+    @GetMapping("/companies/current/employees")
+    public ResponseEntity<List<EmployeeUserDTO>> getEmployees(Authentication authentication) {
+        // Buscar la empresa autenticada usando el email del usuario autenticado
+        CompanyUser company = companyUserRepository.findByEmail(authentication.getName());
+
+        // Verificar si la empresa existe
+        if (company == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        // Obtener todas las relaciones de empleados para la empresa autenticada
+        List<CompanyEmployeeRelation> companyEmployeeRelations = companyEmployeeRelationRepository
+                .findAllByCompany(company);
+
+        // Convertir las relaciones en una lista de EmployeeUserDTO
+        List<EmployeeUserDTO> employees = companyEmployeeRelations.stream()
+                .map(relation -> new EmployeeUserDTO(relation.getTrabajador()))
+                .collect(Collectors.toList());
+
+        // Devolver la lista de EmployeeUserDTO
+        return new ResponseEntity<>(employees, HttpStatus.OK);
+    }
+
 
     @GetMapping("/employees/logins")
     public List<EmployeeUserLoginDTO> getEmployeesLogin() {
