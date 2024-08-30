@@ -48,6 +48,12 @@ public class CarController {
         return carService.getCarsCompanyDTO();
     }
 
+    @GetMapping("/companies/current/cars")
+    public List<CarCompanyDTO> getCars(Authentication authentication) {
+        CompanyUser company = companyService.findByEmailCompanyUser(authentication.getName());
+        return carService.getCarsCompanyDTOByCompany(company);
+    }
+
     @GetMapping("/companies/current/cars/{id}")
     public CarCompanyDTO getCardDTO(@PathVariable Long id) {
         return carService.getCardCompanyDTO(id);

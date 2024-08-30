@@ -2,6 +2,8 @@ package com.eVolGreen.eVolGreen.Services.AccountService;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.CarCompanyDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Car.Car;
+import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountCompany;
+import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
 
 import java.util.List;
 
@@ -17,7 +19,7 @@ public interface CarService {
 
     List<CarCompanyDTO> getCarsCompanyDTO();
 
-
     CarCompanyDTO getCardCompanyDTO (Long id);
 
+    List<CarCompanyDTO> getCarsCompanyDTOByCompany(CompanyUser company);
 }
