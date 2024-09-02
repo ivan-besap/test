@@ -6,41 +6,30 @@ import com.eVolGreen.eVolGreen.Auth.Jwt.JwtService;
 import com.eVolGreen.eVolGreen.Auth.Request.AuthResquest;
 import com.eVolGreen.eVolGreen.Auth.Request.LoginRequest;
 import com.eVolGreen.eVolGreen.Configurations.Web.WebAuthentication;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.AdminCompanyUser;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.ClientUser;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.EmployeeUser;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
 //import com.eVolGreen.eVolGreen.Repositories.ClientUserRepository;
-import com.eVolGreen.eVolGreen.Repositories.ClientUserRepository;
-import com.eVolGreen.eVolGreen.Repositories.CompanyUserRepository;
+import com.eVolGreen.eVolGreen.Repositories.AccountRepository;
 //import com.eVolGreen.eVolGreen.Repositories.EmployeeUserRepository;
-import com.eVolGreen.eVolGreen.Repositories.EmployeeUserRepository;
-import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
-import com.eVolGreen.eVolGreen.Services.DUserService.AdminCompanyUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.security.core.GrantedAuthority;
 
-import java.util.Optional;
+import java.util.List;
+import java.util.stream.Collectors;
+
 
 @Service
 @RequiredArgsConstructor
 public class AuthService {
+
     @Autowired
-    private CompanyUserRepository companyUserRepository;
-    @Autowired
-    private EmployeeUserRepository employeeUserRepository;
-    @Autowired
-    private ClientUserRepository clientUserRepository;
-    @Autowired
-    private AdminCompanyUserService adminCompanyUserService;
-    @Autowired
-    private AccountService accountService;
+    private AccountRepository accountRepository;
     @Autowired
     private JwtService jwtService;
     @Autowired
@@ -54,45 +43,31 @@ public class AuthService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getUsername(), request.getPassword()));
 
-        UserDetails user = webAuthentication.loadUserByUsername(request.getUsername());
-        String token = jwtService.getToken(user);
-        String role = user.getAuthorities().stream()
-                .map(GrantedAuthority::getAuthority)
-                .findFirst()
-                .orElse(null);
+        Account account = accountRepository.findByEmail(request.getUsername())
+                .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-        Boolean isActive = null;
-        switch (role) {
-            case "COMPANY":
-                CompanyUser Compañia = companyUserRepository.findByEmail(request.getUsername());
-                if (Compañia != null) {
-                    isActive = Compañia.getActivo();
-                }
-                break;
-            case "EMPLOYEE":
-                EmployeeUser Trabajador = employeeUserRepository.findByEmail(request.getUsername());
-                if (Trabajador != null) {
-                    isActive = Trabajador.getActivo();
-                }
-                break;
-            case "CLIENT":
-                ClientUser Cliente = clientUserRepository.findByEmail(request.getUsername());
-                if (Cliente != null) {
-                    isActive = Cliente.getActivo();
-                }
-                break;
-            case "ADMIN_COMPANY":
-                AdminCompanyUser adminCompanyUser = adminCompanyUserService.findByEmail(request.getUsername());
-                if (adminCompanyUser != null) {
-                    isActive = adminCompanyUser.getActivo();
-                }
-                break;
-        }
+        // Obtener el nombre del rol desde la entidad Role
+        String roleName = account.getRol().getNombre();
+
+        // Crear una lista de permisos desde la entidad Role
+        List<SimpleGrantedAuthority> authorities = account.getRol().getPermisos().stream()
+                .map(permisoId -> new SimpleGrantedAuthority("PERMISO_" + permisoId))
+                .collect(Collectors.toList());
+
+        // Crear el token JWT
+        String token = jwtService.getToken(new org.springframework.security.core.userdetails.User(
+                account.getEmail(),
+                account.getPassword(),
+                authorities));
+
+        // Incluir el tipo de cuenta en la respuesta
+        String accountType = account.getTipoCuenta().name();
 
         return AuthResquest.builder()
                 .token(token)
-                .role(role)
-                .isActive(isActive)
+                .role(roleName)
+                .isActive(account.getActivo())
+                .accountType(accountType) // Añadir el tipo de cuenta a la respuesta
                 .build();
     }
 //    public AuthResponse register(RegisterClientRequest request) {

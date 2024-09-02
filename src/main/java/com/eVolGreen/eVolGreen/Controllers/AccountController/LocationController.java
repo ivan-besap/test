@@ -1,13 +1,12 @@
 package com.eVolGreen.eVolGreen.Controllers.AccountController;
 
 
-import com.eVolGreen.eVolGreen.DTOS.AccountDTO.LocationDTO.LocationAccountCompanyDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.LocationDTO.LocationDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Location;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
 import com.eVolGreen.eVolGreen.Repositories.LocationRepository;
-import com.eVolGreen.eVolGreen.Services.DUserService.CompanyUserService;
 import com.eVolGreen.eVolGreen.Services.AccountService.LocationService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -24,17 +23,35 @@ public class LocationController {
     @Autowired
     private LocationRepository locationRepository;
 
-    @Autowired
-    private CompanyUserService companyUserService;
-
     @GetMapping("/locations")
-    public List<LocationAccountCompanyDTO> getLocations() {
-        return locationService.getLocationsCompanyDTO();
+    public List<LocationDTO> getLocations() {
+        return locationService.getLocationsDTO();
     }
 
     @GetMapping("/locations/{id}")
-    public LocationAccountCompanyDTO getLocation(@PathVariable Long id) {
-        return locationService.getLocationCompanyDTO(id);
+    public ResponseEntity<LocationDTO> getLocation(@PathVariable Long id) {
+        Location location = locationService.findById(id);
+        if (location == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(new LocationDTO(location), HttpStatus.OK);
+    }
+
+    @PostMapping("/locations")
+    public ResponseEntity<Object> createLocation(Authentication authentication,
+                                                 @RequestBody Location locationDTO) {
+        String message;
+
+        if (locationDTO.getDireccion() == null || locationDTO.getDireccion().isBlank()) {
+            message = "La dirección no puede estar vacía.";
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+        }
+
+        Location newLocation = new Location(locationDTO.getDireccion());
+        locationService.saveLocation(newLocation);
+
+        message = "Ubicación creada correctamente";
+        return ResponseEntity.ok(message);
     }
 
 //    @PostMapping("/locations")
@@ -156,29 +173,5 @@ public class LocationController {
 ////        }
 //
 
-    @PostMapping("/locations")
-    public ResponseEntity<Object> createLocation(Authentication authentication,
-                                                 @RequestBody LocationAccountCompanyDTO location) {
-        CompanyUser company = companyUserService.findByEmailCompanyUser(authentication.getName());
-        String message;
-
-        if (company == null) {
-            System.out.println("No company found for the authenticated user.");
-            return ResponseEntity.status(403).body("No autorizado para realizar esta acción.");
-        }
-
-        if (location.getDireccion().isBlank()) {
-            message = "La dirección no puede estar vacía.";
-            System.out.println(message);
-            return ResponseEntity.status(400).body(message);
-        }
-
-        Location newLocation = new Location(location.getDireccion());
-        newLocation.setCuentaCompania(company.getCuentaCompañia().stream().findFirst().orElse(null));
-        locationRepository.save(newLocation);
-
-        message = "Ubicación creada correctamente";
-        return ResponseEntity.ok(message);
-    }
 
 }

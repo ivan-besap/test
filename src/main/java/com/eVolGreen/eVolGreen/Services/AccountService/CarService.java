@@ -1,15 +1,14 @@
 package com.eVolGreen.eVolGreen.Services.AccountService;
 
-import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.CarCompanyDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.CarDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Car.Car;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountCompany;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
 
 import java.util.List;
 
 public interface CarService {
 
-//    List<CarDTO> getCarsDTO();
+    List<CarDTO> getCarsDTO();
 
     void saveCar(Car car);
 
@@ -17,9 +16,7 @@ public interface CarService {
 
     void deleteCar(Long id);
 
-    List<CarCompanyDTO> getCarsCompanyDTO();
+    List<CarDTO> getCarsDTOByAccount(Account account);
 
-    CarCompanyDTO getCardCompanyDTO (Long id);
-
-    List<CarCompanyDTO> getCarsCompanyDTOByCompany(CompanyUser company);
+    CarDTO getCarDTO(Long id);
 }

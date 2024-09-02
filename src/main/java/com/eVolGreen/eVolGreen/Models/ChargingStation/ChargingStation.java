@@ -1,15 +1,12 @@
 package com.eVolGreen.eVolGreen.Models.ChargingStation;
 
+import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.Account.Location;
 import com.eVolGreen.eVolGreen.Models.Account.Reservation;
 import com.eVolGreen.eVolGreen.Models.Account.Transaction.Transaction;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountClient;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountCompany;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountEmployee;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -28,61 +25,52 @@ public class ChargingStation {
     private Long id;
 
     @NotNull(message = "El nombre de la terminal no puede ser nulo.")
-    private String NombreTerminal;
+    private String nombreTerminal;
 
     @NotNull(message = "La fecha de creación no puede ser nula.")
-    private LocalDate FechaDeCreacion = LocalDate.now();
+    private LocalDate fechaDeCreacion = LocalDate.now();
 
     @NotNull(message = "El estado de la terminal no puede ser nulo.")
     @Enumerated(EnumType.STRING)
-    private ChargingStationStatus EstadoTerminal;
+    private ChargingStationStatus estadoTerminal;
 
-    @OneToMany(mappedBy = "Terminal", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "terminal", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("Terminal-Reservacion")
-    private Set<Reservation> Reservaciones = new HashSet<>();
+    private Set<Reservation> reservaciones = new HashSet<>();
 
-    @OneToMany(mappedBy = "Terminal", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "terminal", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("Terminal-Transaction")
-    private Set<Transaction> Transacciones = new HashSet<>();
+    private Set<Transaction> transacciones = new HashSet<>();
 
     @OneToMany(mappedBy = "Terminal", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("Terminal-Cargador")
-    private Set<Charger> Cargadores = new HashSet<>();
+    private Set<Charger> cargadores = new HashSet<>();
 
     @OneToMany(mappedBy = "Terminal", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("Terminal-Connector")
-    private Set<Connector> Conectores = new HashSet<>();
+    private Set<Connector> conectores = new HashSet<>();
 
     @NotNull(message = "La ubicación de la terminal no puede ser nula.")
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
-    @JoinColumn(name = "Ubicacion_id")
+    @JoinColumn(name = "ubicacion_id")
     @JsonManagedReference("Terminal-Ubicacion")
-    private Location UbicacionTerminal;
+    private Location ubicacionTerminal;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CuentaCompañia_id")
-    @JsonBackReference("Terminal-CuentaCompañia")
-    private AccountCompany CuentaCompañia;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CuentaTrabajador_id")
-    @JsonBackReference("CuentaTrabajador-Terminal")
-    private AccountEmployee CuentaTrabajador;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CuentaCliente_id")
-    @JsonBackReference("CuentaCliente-Terminal")
-    private AccountClient CuentaCliente;
+    @JoinColumn(name = "account_id")
+    @JsonBackReference("Account-Terminal")
+    private Account account;
 
     private Boolean activo = false;
 
-    public ChargingStation() { }
+    public ChargingStation() {}
 
-    public ChargingStation(String nombreTerminal, LocalDate fechaDeCreacion, ChargingStationStatus estadoTerminal, Location ubicacionTerminal, Boolean activo) {
-        this.NombreTerminal = nombreTerminal;
-        this.FechaDeCreacion = fechaDeCreacion;
-        this.EstadoTerminal = estadoTerminal;
-        this.UbicacionTerminal = ubicacionTerminal;
+    public ChargingStation(String nombreTerminal, LocalDate fechaDeCreacion, ChargingStationStatus estadoTerminal, Location ubicacionTerminal, Account account, Boolean activo) {
+        this.nombreTerminal = nombreTerminal;
+        this.fechaDeCreacion = fechaDeCreacion;
+        this.estadoTerminal = estadoTerminal;
+        this.ubicacionTerminal = ubicacionTerminal;
+        this.account = account;
         this.activo = activo;
     }
 
@@ -94,20 +82,76 @@ public class ChargingStation {
         this.id = id;
     }
 
-    public @NotNull(message = "El nombre de la terminal no puede ser nulo.") String getNombreTerminal() {
-        return NombreTerminal;
+    public String getNombreTerminal() {
+        return nombreTerminal;
     }
 
-    public void setNombreTerminal(@NotNull(message = "El nombre de la terminal no puede ser nulo.") String nombreTerminal) {
-        NombreTerminal = nombreTerminal;
+    public void setNombreTerminal(String nombreTerminal) {
+        this.nombreTerminal = nombreTerminal;
+    }
+
+    public LocalDate getFechaDeCreacion() {
+        return fechaDeCreacion;
+    }
+
+    public void setFechaDeCreacion(LocalDate fechaDeCreacion) {
+        this.fechaDeCreacion = fechaDeCreacion;
+    }
+
+    public ChargingStationStatus getEstadoTerminal() {
+        return estadoTerminal;
+    }
+
+    public void setEstadoTerminal(ChargingStationStatus estadoTerminal) {
+        this.estadoTerminal = estadoTerminal;
+    }
+
+    public Set<Reservation> getReservaciones() {
+        return reservaciones;
+    }
+
+    public void setReservaciones(Set<Reservation> reservaciones) {
+        this.reservaciones = reservaciones;
+    }
+
+    public Set<Transaction> getTransacciones() {
+        return transacciones;
+    }
+
+    public void setTransacciones(Set<Transaction> transacciones) {
+        this.transacciones = transacciones;
+    }
+
+    public Set<Charger> getCargadores() {
+        return cargadores;
+    }
+
+    public void setCargadores(Set<Charger> cargadores) {
+        this.cargadores = cargadores;
     }
 
     public Set<Connector> getConectores() {
-        return Conectores;
+        return conectores;
     }
 
     public void setConectores(Set<Connector> conectores) {
-        Conectores = conectores;
+        this.conectores = conectores;
+    }
+
+    public Location getUbicacionTerminal() {
+        return ubicacionTerminal;
+    }
+
+    public void setUbicacionTerminal(Location ubicacionTerminal) {
+        this.ubicacionTerminal = ubicacionTerminal;
+    }
+
+    public Account getAccount() {
+        return account;
+    }
+
+    public void setAccount(Account account) {
+        this.account = account;
     }
 
     public Boolean getActivo() {
@@ -118,95 +162,20 @@ public class ChargingStation {
         this.activo = activo;
     }
 
-    public @NotNull(message = "La fecha de creación no puede ser nula.") LocalDate getFechaDeCreacion() {
-        return FechaDeCreacion;
-    }
-
-    public void setFechaDeCreacion(@NotNull(message = "La fecha de creación no puede ser nula.") LocalDate fechaDeCreacion) {
-        FechaDeCreacion = fechaDeCreacion;
-    }
-
-    public @NotNull(message = "El estado de la terminal no puede ser nulo.") ChargingStationStatus getEstadoTerminal() {
-        return EstadoTerminal;
-    }
-
-    public void setEstadoTerminal(@NotNull(message = "El estado de la terminal no puede ser nulo.") ChargingStationStatus estadoTerminal) {
-        EstadoTerminal = estadoTerminal;
-    }
-
-    public Set<Reservation> getReservaciones() {
-        return Reservaciones;
-    }
-
-    public void setReservaciones(Set<Reservation> reservaciones) {
-        Reservaciones = reservaciones;
-    }
-
-    public Set<Transaction> getTransacciones() {
-        return Transacciones;
-    }
-
-    public void setTransacciones(Set<Transaction> transacciones) {
-        Transacciones = transacciones;
-    }
-
-    public Set<Charger> getCargadores() {
-        return Cargadores;
-    }
-
-    public void setCargadores(Set<Charger> cargadores) {
-        Cargadores = cargadores;
-    }
-
-
-    public @NotNull(message = "La ubicación de la terminal no puede ser nula.") Location getUbicacionTerminal() {
-        return UbicacionTerminal;
-    }
-
-    public void setUbicacionTerminal(@NotNull(message = "La ubicación de la terminal no puede ser nula.") Location ubicacionTerminal) {
-        UbicacionTerminal = ubicacionTerminal;
-    }
-
-    public AccountCompany getCuentaCompañia() {
-        return CuentaCompañia;
-    }
-
-    public void setCuentaCompañia(AccountCompany cuentaCompañia) {
-        CuentaCompañia = cuentaCompañia;
-    }
-
-    public AccountEmployee getCuentaTrabajador() {
-        return CuentaTrabajador;
-    }
-
-    public void setCuentaTrabajador(AccountEmployee cuentaTrabajador) {
-        CuentaTrabajador = cuentaTrabajador;
-    }
-
-    public AccountClient getCuentaCliente() {
-        return CuentaCliente;
-    }
-
-    public void setCuentaCliente(AccountClient cuentaCliente) {
-        CuentaCliente = cuentaCliente;
-    }
-
-
-
     @Override
     public String toString() {
         return "ChargingStation{" +
                 "id=" + id +
-                ", NombreTerminal='" + NombreTerminal + '\'' +
-                ", FechaDeCreacion=" + FechaDeCreacion +
-                ", EstadoTerminal=" + EstadoTerminal +
-                ", Reservaciones=" + Reservaciones +
-                ", Transacciones=" + Transacciones +
-                ", Cargadores=" + Cargadores +
-                ", UbicacionTerminal=" + UbicacionTerminal +
-                ", CuentaCompañia=" + CuentaCompañia +
-                ", CuentaTrabajador=" + CuentaTrabajador +
-                ", CuentaCliente=" + CuentaCliente +
+                ", nombreTerminal='" + nombreTerminal + '\'' +
+                ", fechaDeCreacion=" + fechaDeCreacion +
+                ", estadoTerminal=" + estadoTerminal +
+                ", reservaciones=" + reservaciones +
+                ", transacciones=" + transacciones +
+                ", cargadores=" + cargadores +
+                ", conectores=" + conectores +
+                ", ubicacionTerminal=" + ubicacionTerminal +
+                ", account=" + account +
+                ", activo=" + activo +
                 '}';
     }
 }

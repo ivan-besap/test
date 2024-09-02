@@ -26,36 +26,29 @@ public class TransactionDTO {
     @NotNull(message = "La hora de fin es obligatoria")
     private LocalDateTime HoraFin;
 
-    @NotNull(message = "La energia entregada es obligatoria")
+    @NotNull(message = "La energía entregada es obligatoria")
     private BigDecimal EnergiaEntregada;
 
     @NotNull(message = "El costo es obligatorio")
     private Integer Costo;
 
-    @NotNull(message = "La Cuenta de la Compañia es obligatoria")
-    private long CuentaCompañia;
+    @NotNull(message = "La cuenta es obligatoria")
+    private long CuentaId;
 
-    private long CuentaCliente;
-
-    private long CuentaTrabajador;
-
-    @NotNull(message = "El Terminal es obligatorio")
-    private long Terminal;
+    @NotNull(message = "El terminal es obligatorio")
+    private long TerminalId;
 
     public TransactionDTO(Transaction Transaccion) {
-
-        id = Transaccion.getId();
-        TipoTransaction = Transaccion.getTipoTransaction();
-        Descripcion = Transaccion.getDescripcion();
-        FechaCreacion = Transaccion.getFechaCreacion();
-        HoraInicio = Transaccion.getHoraInicio();
-        HoraFin = Transaccion.getHoraFin();
-        EnergiaEntregada = Transaccion.getEnergiaEntregada();
-        Costo = Transaccion.getCosto();
-        CuentaCompañia = Transaccion.getCuentaCompañia().getId();
-        CuentaCliente = Transaccion.getCuentaCliente().getId();
-        CuentaTrabajador = Transaccion.getCuentaTrabajador().getId();
-        Terminal = Transaccion.getTerminal().getId();
+        this.id = Transaccion.getId();
+        this.TipoTransaction = Transaccion.getTipoTransaction();
+        this.Descripcion = Transaccion.getDescripcion();
+        this.FechaCreacion = Transaccion.getFechaCreacion();
+        this.HoraInicio = Transaccion.getHoraInicio();
+        this.HoraFin = Transaccion.getHoraFin();
+        this.EnergiaEntregada = Transaccion.getEnergiaEntregada();
+        this.Costo = Transaccion.getCosto();
+        this.CuentaId = Transaccion.getAccount().getId();
+        this.TerminalId = Transaccion.getTerminal().getId();
     }
 
     public long getId() {
@@ -82,7 +75,7 @@ public class TransactionDTO {
         return HoraFin;
     }
 
-    public @NotNull(message = "La energia entregada es obligatoria") BigDecimal getEnergiaEntregada() {
+    public @NotNull(message = "La energía entregada es obligatoria") BigDecimal getEnergiaEntregada() {
         return EnergiaEntregada;
     }
 
@@ -90,22 +83,12 @@ public class TransactionDTO {
         return Costo;
     }
 
-    @NotNull(message = "La Cuenta de la Compañia es obligatoria")
-    public long getCuentaCompañia() {
-        return CuentaCompañia;
+    public long getCuentaId() {
+        return CuentaId;
     }
 
-    public long getCuentaCliente() {
-        return CuentaCliente;
-    }
-
-    public long getCuentaTrabajador() {
-        return CuentaTrabajador;
-    }
-
-    @NotNull(message = "El Terminal es obligatorio")
-    public long getTerminal() {
-        return Terminal;
+    public long getTerminalId() {
+        return TerminalId;
     }
 
     @Override
@@ -119,10 +102,8 @@ public class TransactionDTO {
                 ", HoraFin=" + HoraFin +
                 ", EnergiaEntregada=" + EnergiaEntregada +
                 ", Costo=" + Costo +
-                ", CuentaCompañia=" + CuentaCompañia +
-                ", CuentaCliente=" + CuentaCliente +
-                ", CuentaTrabajador=" + CuentaTrabajador +
-                ", Terminal=" + Terminal +
+                ", CuentaId=" + CuentaId +
+                ", TerminalId=" + TerminalId +
                 '}';
     }
 }

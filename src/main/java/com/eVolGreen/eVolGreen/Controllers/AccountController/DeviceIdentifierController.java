@@ -2,13 +2,13 @@ package com.eVolGreen.eVolGreen.Controllers.AccountController;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.DeviceIdentifierDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.NewDeviceIdentifierDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Car.Car;
 import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
 import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
+import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.CarService;
 import com.eVolGreen.eVolGreen.Services.AccountService.DeviceIdentifierService;
-import com.eVolGreen.eVolGreen.Services.DUserService.CompanyUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +16,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
@@ -28,7 +29,7 @@ public class DeviceIdentifierController {
     private DeviceIdentifierRepository deviceIdentifierRepository;
 
     @Autowired
-    private CompanyUserService companyService;
+    private AccountService accountService;
 
     @Autowired
     private CarService carService;
@@ -38,29 +39,33 @@ public class DeviceIdentifierController {
         return deviceIdentifierService.getDeviceIdentifiersDTO();
     }
 
-    @GetMapping("/companies/current/deviceIdentifiers/{id}")
-    public DeviceIdentifierDTO getDeviceIdentifier(@PathVariable Long id) {
-        return new DeviceIdentifierDTO(deviceIdentifierService.findById(id));
+    @GetMapping("/accounts/current/deviceIdentifiers/{id}")
+    public ResponseEntity<DeviceIdentifierDTO> getDeviceIdentifier(@PathVariable Long id) {
+        DeviceIdentifier deviceIdentifier = deviceIdentifierService.findById(id);
+        if (deviceIdentifier == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(new DeviceIdentifierDTO(deviceIdentifier), HttpStatus.OK);
     }
 
-    @PostMapping("/companies/current/device-identifiers")
+    @PostMapping("/accounts/current/device-identifiers")
     public ResponseEntity<Object> createDeviceIdentifier(Authentication authentication,
                                                          @RequestBody NewDeviceIdentifierDTO deviceIdentifierDTO) {
 
-        CompanyUser companyUser = companyService.findByEmailCompanyUser(authentication.getName());
+        Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
+        if (accountOptional.isEmpty()) {
+            return new ResponseEntity<>("La cuenta no se encontró", HttpStatus.NOT_FOUND);
+        }
+        Account account = accountOptional.get();
+
         String mensaje = " ";
 
-        if (companyUser == null) {
-            mensaje = "La compañia no se encontro";
-            return new ResponseEntity<>(mensaje, HttpStatus.NOT_FOUND);
-        }
-
         if (deviceIdentifierDTO.getNombreDeIdentificador() == null){
-            mensaje = " El nombre de la tarjeta RFID es necesario";
+            mensaje = "El nombre de la tarjeta RFID es necesario";
             return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
         }
         if (deviceIdentifierDTO.getRfid() == null){
-            mensaje = "El codigo RFID es necesario";
+            mensaje = "El código RFID es necesario";
             return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
         }
 
@@ -79,90 +84,68 @@ public class DeviceIdentifierController {
         );
 
         deviceIdentifierService.saveDeviceIdentifier(newDeviceIdentifier);
-        return new ResponseEntity<>("Device Identifier created successfully", HttpStatus.CREATED);
+        return new ResponseEntity<>("Identificador de dispositivo creado exitosamente", HttpStatus.CREATED);
     }
 
-    @PutMapping("/companies/current/device-identifiers/{id}")
+    @PutMapping("/accounts/current/device-identifiers/{id}")
     public ResponseEntity<Object> updateDeviceIdentifier(Authentication authentication,
                                                          @PathVariable Long id,
                                                          @RequestBody NewDeviceIdentifierDTO deviceIdentifierDTO) {
 
-        // Obtener la compañía del usuario autenticado
-        CompanyUser companyUser = companyService.findByEmailCompanyUser(authentication.getName());
-        String mensaje = " ";
-
-        if (companyUser == null) {
-            mensaje = "La compañía no se encontró";
-            return new ResponseEntity<>(mensaje, HttpStatus.NOT_FOUND);
+        Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
+        if (accountOptional.isEmpty()) {
+            return new ResponseEntity<>("La cuenta no se encontró", HttpStatus.NOT_FOUND);
         }
+        Account account = accountOptional.get();
 
-        // Buscar el DeviceIdentifier por su ID
         DeviceIdentifier existingDeviceIdentifier = deviceIdentifierService.findById(id);
         if (existingDeviceIdentifier == null) {
-            mensaje = "El identificador del dispositivo no se encontró";
-            return new ResponseEntity<>(mensaje, HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>("El identificador del dispositivo no se encontró", HttpStatus.NOT_FOUND);
         }
 
-        // Validar los campos necesarios
         if (deviceIdentifierDTO.getNombreDeIdentificador() == null) {
-            mensaje = "El nombre de la tarjeta RFID es necesario";
-            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>("El nombre de la tarjeta RFID es necesario", HttpStatus.FORBIDDEN);
         }
         if (deviceIdentifierDTO.getRfid() == null) {
-            mensaje = "El código RFID es necesario";
-            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>("El código RFID es necesario", HttpStatus.FORBIDDEN);
         }
 
-        // Buscar el auto por su ID
         Car car = carService.findById(deviceIdentifierDTO.getAuto());
         if (car == null) {
-            mensaje = "El auto es necesario para asociar la tarjeta RFID";
-            return new ResponseEntity<>(mensaje, HttpStatus.NOT_FOUND);
+            return new ResponseEntity<>("El auto es necesario para asociar la tarjeta RFID", HttpStatus.NOT_FOUND);
         }
 
-        // Actualizar los campos del DeviceIdentifier existente
         existingDeviceIdentifier.setNombreDeIdentificador(deviceIdentifierDTO.getNombreDeIdentificador());
         existingDeviceIdentifier.setRFID(deviceIdentifierDTO.getRfid());
         existingDeviceIdentifier.setFechaExpiracion(deviceIdentifierDTO.getFechaExpiracion());
         existingDeviceIdentifier.setAuto(car);
 
-        // Guardar los cambios en la base de datos
         deviceIdentifierService.saveDeviceIdentifier(existingDeviceIdentifier);
 
-        return new ResponseEntity<>("Device Identifier updated successfully", HttpStatus.OK);
+        return new ResponseEntity<>("Identificador de dispositivo actualizado exitosamente", HttpStatus.OK);
     }
 
-    @PatchMapping("companies/current/device-identifiers/{id}/delete")
+    @PatchMapping("/accounts/current/device-identifiers/{id}/delete")
     public ResponseEntity<Object> deleteDeviceIdentifier(Authentication authentication,
                                                          @PathVariable Long id) {
-        // Obtener la compañía del usuario autenticado
-        CompanyUser companyUser = companyService.findByEmailCompanyUser(authentication.getName());
-        String mensaje = " ";
-
-        if (companyUser == null) {
-            mensaje = "La compañía no se encontró";
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mensaje);
+        Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
+        if (accountOptional.isEmpty()) {
+            return new ResponseEntity<>("La cuenta no se encontró", HttpStatus.NOT_FOUND);
         }
+        Account account = accountOptional.get();
 
-        // Buscar el DeviceIdentifier por su ID
         DeviceIdentifier deviceIdentifier = deviceIdentifierService.findById(id);
         if (deviceIdentifier == null) {
-            mensaje = "El identificador del dispositivo no se encontró";
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mensaje);
+            return new ResponseEntity<>("El identificador del dispositivo no se encontró", HttpStatus.NOT_FOUND);
         }
 
-        // Verificar si el DeviceIdentifier ya está desactivado
         if (!deviceIdentifier.getActivo()) {
-            mensaje = "El identificador del dispositivo ya está desactivado";
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(mensaje);
+            return new ResponseEntity<>("El identificador del dispositivo ya está desactivado", HttpStatus.BAD_REQUEST);
         }
 
-        // Desactivar el DeviceIdentifier
         deviceIdentifier.setActivo(false);
         deviceIdentifierService.saveDeviceIdentifier(deviceIdentifier);
 
-        mensaje = "Identificador del dispositivo desactivado correctamente";
-        return ResponseEntity.ok(mensaje);
+        return ResponseEntity.ok("Identificador del dispositivo desactivado correctamente.");
     }
-
 }

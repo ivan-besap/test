@@ -1,19 +1,14 @@
 package com.eVolGreen.eVolGreen.Models.Account;
 
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountCompany;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.AdminCompanyUser;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
+import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.TypeAccounts;
+import com.eVolGreen.eVolGreen.Models.User.Role;
 import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import org.hibernate.annotations.GenericGenerator;
 import java.time.LocalDate;
-import java.util.HashSet;
-import java.util.Set;
 
 @Entity
 public class Account{
@@ -27,46 +22,53 @@ public class Account{
     private String numeroDeCuenta;
 
     @NotBlank(message = "El nombre de la cuenta no puede estar vacío")
-    private String NombreCuenta;
+    private String nombreCuenta;
 
     @NotNull(message = "La fecha de creación no puede ser nula.")
-    private LocalDate FechaDeCreacion;
+    private LocalDate fechaDeCreacion;
 
     @NotNull(message = "El email no puede ser nulo.")
-    private String Email;
+    private String email;
 
     @NotNull(message = "El password no puede ser nulo.")
-    private String Password;
+    private String password;
 
     @NotNull(message = "El estado de la cuenta no puede ser nulo.")
-    private Boolean Activo = false;
+    private Boolean activo = false;
 
-    @OneToMany(mappedBy = "cuentaPrincipal", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference ("CuentaPrincipal-CuentaCompañia")
-    private Set<AccountCompany> cuentaCompañia = new HashSet<>();
-
-
-    //revizar
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "compañia_id")
-    @JsonIgnore
-    private CompanyUser Compañia;
+    @Enumerated(EnumType.STRING)
+    @NotNull(message = "El tipo de cuenta no puede ser nulo.")
+    private TypeAccounts tipoCuenta;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "adminCompañia_id")
-    @JsonIgnore
-    private AdminCompanyUser adminCompañia;
+    @JoinColumn(name = "role_id", nullable = false)
+    private Role role;
+
+    @NotNull(message = "El teléfono no puede ser nulo.")
+    private String telefono;
+
+    @NotNull(message = "El RUT no puede ser nulo.")
+    private String rut;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empresa_id", nullable = false)
+    @JsonBackReference
+    private Empresa empresa;
+
 
     public Account() {}
 
-    public Account(String numeroDeCuenta, String nombreCuenta, LocalDate fechaDeCreacion, String email, String password, CompanyUser compañia, AdminCompanyUser adminCompañia) {
+    public Account(String numeroDeCuenta, String nombreCuenta, LocalDate fechaDeCreacion, String email, String password, TypeAccounts tipoCuenta, Role role, String telefono, String rut, Empresa empresa) {
         this.numeroDeCuenta = numeroDeCuenta;
-        this.NombreCuenta = nombreCuenta;
-        this.FechaDeCreacion = fechaDeCreacion;
-        this.Email = email;
-        this.Password = password;
-        this.Compañia = compañia;
-        this.adminCompañia = adminCompañia;
+        this.nombreCuenta = nombreCuenta;
+        this.fechaDeCreacion = fechaDeCreacion;
+        this.email = email;
+        this.password = password;
+        this.tipoCuenta = tipoCuenta;
+        this.role = role;
+        this.telefono = telefono;
+        this.rut = rut;
+        this.empresa = empresa;
     }
 
     public long getId() {
@@ -77,76 +79,92 @@ public class Account{
         this.id = id;
     }
 
-    public @NotNull(message = "El número de cuenta no puede ser nulo.") String getNumeroDeCuenta() {
+    public String getNumeroDeCuenta() {
         return numeroDeCuenta;
     }
 
-    public void setNumeroDeCuenta(@NotNull(message = "El número de cuenta no puede ser nulo.") String numeroDeCuenta) {
+    public void setNumeroDeCuenta(String numeroDeCuenta) {
         this.numeroDeCuenta = numeroDeCuenta;
     }
 
-    public @NotBlank(message = "El nombre de la cuenta no puede estar vacío") String getNombreCuenta() {
-        return NombreCuenta;
+    public String getNombreCuenta() {
+        return nombreCuenta;
     }
 
-    public void setNombreCuenta(@NotBlank(message = "El nombre de la cuenta no puede estar vacío") String nombreCuenta) {
-        NombreCuenta = nombreCuenta;
+    public void setNombreCuenta(String nombreCuenta) {
+        this.nombreCuenta = nombreCuenta;
     }
 
-    public @NotNull(message = "La fecha de creación no puede ser nula.") LocalDate getFechaDeCreacion() {
-        return FechaDeCreacion;
+    public LocalDate getFechaDeCreacion() {
+        return fechaDeCreacion;
     }
 
-    public void setFechaDeCreacion(@NotNull(message = "La fecha de creación no puede ser nula.") LocalDate fechaDeCreacion) {
-        FechaDeCreacion = fechaDeCreacion;
+    public void setFechaDeCreacion(LocalDate fechaDeCreacion) {
+        this.fechaDeCreacion = fechaDeCreacion;
     }
 
-    public @NotNull(message = "El email no puede ser nulo.") String getEmail() {
-        return Email;
+    public String getEmail() {
+        return email;
     }
 
-    public void setEmail(@NotNull(message = "El email no puede ser nulo.") String email) {
-        Email = email;
+    public void setEmail(String email) {
+        this.email = email;
     }
 
-    public @NotNull(message = "El password no puede ser nulo.") String getPassword() {
-        return Password;
+    public String getPassword() {
+        return password;
     }
 
-    public void setPassword(@NotNull(message = "El password no puede ser nulo.") String password) {
-        Password = password;
+    public void setPassword(String password) {
+        this.password = password;
     }
 
-    public @NotNull(message = "El estado de la cuenta no puede ser nulo.") Boolean getActivo() {
-        return Activo;
+    public Boolean getActivo() {
+        return activo;
     }
 
-    public void setActivo(@NotNull(message = "El estado de la cuenta no puede ser nulo.") Boolean activo) {
-        Activo = activo;
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
     }
 
-    public Set<AccountCompany> getCuentaCompañia() {
-        return cuentaCompañia;
+    public TypeAccounts getTipoCuenta() {
+        return tipoCuenta;
     }
 
-    public void setCuentaCompañia(Set<AccountCompany> cuentaCompañia) {
-        this.cuentaCompañia = cuentaCompañia;
+    public void setTipoCuenta(TypeAccounts tipoCuenta) {
+        this.tipoCuenta = tipoCuenta;
     }
 
-    public CompanyUser getCompañia() {
-        return Compañia;
+    public Role getRol() {
+        return role;
     }
 
-    public void setCompañia(CompanyUser compañia) {
-        Compañia = compañia;
+    public void setRol(Role rol) {
+        this.role = rol;
     }
 
-    public AdminCompanyUser getAdminCompañia() {
-        return adminCompañia;
+    public String getTelefono() {
+        return telefono;
     }
 
-    public void setAdminCompañia(AdminCompanyUser adminCompañia) {
-        this.adminCompañia = adminCompañia;
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
+    public String getRut() {
+        return rut;
+    }
+
+    public void setRut(String rut) {
+        this.rut = rut;
+    }
+
+    public Empresa getEmpresa() {
+        return empresa;
+    }
+
+    public void setEmpresa(Empresa empresa) {
+        this.empresa = empresa;
     }
 
 
@@ -155,13 +173,16 @@ public class Account{
         return "Account{" +
                 "id=" + id +
                 ", numeroDeCuenta='" + numeroDeCuenta + '\'' +
-                ", NombreCuenta='" + NombreCuenta + '\'' +
-                ", FechaDeCreacion=" + FechaDeCreacion +
-                ", Email='" + Email + '\'' +
-                ", Password='" + Password + '\'' +
-                ", Activo=" + Activo +
-                ", cuentaCompañia=" + cuentaCompañia +
-                ", Compañia=" + Compañia +
+                ", nombreCuenta='" + nombreCuenta + '\'' +
+                ", fechaDeCreacion=" + fechaDeCreacion +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", activo=" + activo +
+                ", tipoCuenta=" + tipoCuenta +
+                ", role=" + role +
+                ", telefono='" + telefono + '\'' +
+                ", rut='" + rut + '\'' +
+                ", empresa=" + empresa +
                 '}';
     }
 }

@@ -2,18 +2,17 @@ package com.eVolGreen.eVolGreen.Controllers.ChargingStationController;
 
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.NewChargerDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargerManufacturer;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargerModel;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
-import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStationStatus;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
+import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerManufacturerService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerModelService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargingStationsService;
-import com.eVolGreen.eVolGreen.Services.DUserService.CompanyUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -22,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
@@ -34,7 +34,7 @@ public class ChargerController {
     private ChargingStationsService chargingStationsService;
 
     @Autowired
-    private CompanyUserService companyUserService;
+    private AccountService accountService;
 
     @Autowired
     private ChargerManufacturerService chargerManufacturerService;
@@ -56,14 +56,13 @@ public class ChargerController {
     public ResponseEntity<Object> createCharger(Authentication authentication,
                                                 @RequestBody NewChargerDTO chargerDTO) {
 
-        CompanyUser company = companyUserService.findByEmailCompanyUser(authentication.getName());
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
         String mensaje = " ";
 
-        if (company == null) {
-            mensaje = "No se encontró la empresa";
+        if (account.isEmpty()) {
+            mensaje = "No se encontró la cuenta";
             return ResponseEntity.status(400).body(mensaje);
         }
-
         if (chargerDTO.getoCPPid() == null) {
             mensaje = "El Id del cargador es obligatorio";
             return ResponseEntity.status(400).body(mensaje);
@@ -124,12 +123,11 @@ public class ChargerController {
                                                 @PathVariable Long id,
                                                 @RequestBody NewChargerDTO chargerDTO) {
 
-        // Obtener la compañía del usuario autenticado
-        CompanyUser company = companyUserService.findByEmailCompanyUser(authentication.getName());
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
         String mensaje = " ";
 
-        if (company == null) {
-            mensaje = "No se encontró la empresa";
+        if (account.isEmpty()) {
+            mensaje = "No se encontró la cuenta";
             return ResponseEntity.status(400).body(mensaje);
         }
 
@@ -202,11 +200,11 @@ public class ChargerController {
     public ResponseEntity<Object> deleteCharger(Authentication authentication,
                                                 @PathVariable Long id) {
         // Obtener el usuario autenticado
-        CompanyUser companyUser = companyUserService.findByEmailCompanyUser(authentication.getName());
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
         String mensaje = " ";
 
-        if (companyUser == null) {
-            mensaje = "La compañía no se encontró";
+        if (account.isEmpty()) {
+            mensaje = "La cuenta no se encontró";
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mensaje);
         }
 

@@ -15,27 +15,27 @@ public class ReservationClientDTO {
     @NotNull(message = "La hora de fin es obligatoria")
     private LocalDateTime HoraFin;
 
-    @NotNull(message = "La Cuenta del Cliente es obligatoria")
-    private long CuentaCliente;
+    @NotNull(message = "La cuenta es obligatoria")
+    private long CuentaId;
 
     @NotNull(message = "El Terminal es obligatorio")
-    private long Terminal;
+    private long TerminalId;
 
     @NotNull(message = "El Cargador es obligatorio")
-    private long Cargador;
+    private long CargadorId;
 
     @NotNull(message = "El Conector es obligatorio")
-    private long Conector;
+    private long ConectorId;
 
     public ReservationClientDTO(Reservation Reservacion) {
 
         id = Reservacion.getId();
         HoraInicio = Reservacion.getHoraInicio();
         HoraFin = Reservacion.getHoraFin();
-        CuentaCliente = Reservacion.getCuentaCliente().getId();
-        Terminal = Reservacion.getTerminal().getId();
-        Cargador = Reservacion.getCargador().getId();
-        Conector = Reservacion.getConector().getId();
+        CuentaId = Reservacion.getAccount().getId();
+        TerminalId = Reservacion.getTerminal().getId();
+        CargadorId = Reservacion.getCargador().getId();
+        ConectorId = Reservacion.getConector().getId();
     }
 
     public Long getId() {
@@ -50,36 +50,36 @@ public class ReservationClientDTO {
         return HoraFin;
     }
 
-    @NotNull(message = "La Cuenta del Cliente es obligatoria")
-    public long getCuentaCliente() {
-        return CuentaCliente;
+    @NotNull(message = "La cuenta es obligatoria")
+    public long getCuentaId() {
+        return CuentaId;
     }
 
     @NotNull(message = "El Terminal es obligatorio")
-    public long getTerminal() {
-        return Terminal;
+    public long getTerminalId() {
+        return TerminalId;
     }
 
     @NotNull(message = "El Cargador es obligatorio")
-    public long getCargador() {
-        return Cargador;
+    public long getCargadorId() {
+        return CargadorId;
     }
 
     @NotNull(message = "El Conector es obligatorio")
-    public long getConector() {
-        return Conector;
+    public long getConectorId() {
+        return ConectorId;
     }
 
     @Override
     public String toString() {
-        return "ReservationDTO{" +
+        return "ReservationClientDTO{" +
                 "id=" + id +
                 ", HoraInicio=" + HoraInicio +
                 ", HoraFin=" + HoraFin +
-                ", CuentaCliente=" + CuentaCliente +
-                ", Terminal=" + Terminal +
-                ", Cargador=" + Cargador +
-                ", Conector=" + Conector +
+                ", CuentaId=" + CuentaId +
+                ", TerminalId=" + TerminalId +
+                ", CargadorId=" + CargadorId +
+                ", ConectorId=" + ConectorId +
                 '}';
     }
 }

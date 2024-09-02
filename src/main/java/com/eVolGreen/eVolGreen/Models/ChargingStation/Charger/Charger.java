@@ -31,12 +31,6 @@ public class Charger {
     @NotNull(message = "El Alias es obligatorio")
     private String alias;
 
-    /*@NotNull(message = "El Fabricante es obligatorio")
-    private String fabricante;*/
-
-//    @NotNull(message = "El Modelo es obligatorio")
-//    private String modelo;
-
     private Boolean activo = false;
 
     @NotNull(message = "La Fecha de Creacion es obligatoria")
@@ -54,22 +48,23 @@ public class Charger {
     @JsonBackReference("Terminal-Cargador")
     private ChargingStation Terminal;
 
-
     @OneToMany(mappedBy = "Cargador", fetch = FetchType.LAZY)
     @JsonManagedReference("Cargador-UnidadCarga")
     private Set<ChargingUnit> UnidadCarga = new HashSet<>();
 
-    @OneToMany(mappedBy = "Cargador", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "cargador", fetch = FetchType.LAZY)
     @JsonManagedReference("Cargador-Conector")
     private Set<Connector> Conectores = new HashSet<>();
 
-    @OneToMany(mappedBy = "Cargador", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "cargador", fetch = FetchType.LAZY)
     @JsonManagedReference("Cargador-Reservacion")
     private Set<Reservation> Reservacion = new HashSet<>();
+
     @NotNull(message = "El Fabricante es obligatorio")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fabricante_id")
     private ChargerManufacturer fabricante;
+
     @NotNull(message = "El Modelo es obligatorio")
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "modelo_id")
@@ -81,8 +76,6 @@ public class Charger {
         this.oCPPid = oCPPid;
         this.nombre = nombre;
         this.alias = alias;
-//        this.fabricante = fabricante;
-//        this.modelo = modelo;
         this.modelo = model;
         this.activo = activo;
         this.fechaCreacion = fechaCreacion;
@@ -90,7 +83,6 @@ public class Charger {
         this.fabricante = manufacturer;
         this.estadoCargador = ChargerStatus.ACTIVE;
     }
-
     public Long getId() {
         return id;
     }

@@ -3,7 +3,6 @@ package com.eVolGreen.eVolGreen.Controllers.AccountController;
 import com.eVolGreen.eVolGreen.Repositories.TransactionRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.TransactionService;
-import com.eVolGreen.eVolGreen.Services.DUserService.ClientUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
@@ -14,8 +13,8 @@ public class TransactionController {
     private TransactionService transactionService;
     @Autowired
     private TransactionRepository transactionRepository;
-    @Autowired
-    private ClientUserService clientUserService;
+//    @Autowired
+//    private ClientUserService clientUserService;
     @Autowired
     private AccountService accountService;
 

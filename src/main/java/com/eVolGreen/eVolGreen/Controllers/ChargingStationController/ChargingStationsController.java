@@ -2,18 +2,17 @@ package com.eVolGreen.eVolGreen.Controllers.ChargingStationController;
 
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargingStationsDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.NewChargingStationsDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Location;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountCompany;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStationStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
 import com.eVolGreen.eVolGreen.Repositories.ChargingStationRepository;
+import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargingStationsService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ConnectorService;
-import com.eVolGreen.eVolGreen.Services.DUserService.CompanyUserService;
 import com.eVolGreen.eVolGreen.Services.AccountService.LocationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -36,7 +35,7 @@ public class ChargingStationsController {
     private ChargingStationRepository chargingStationsRepository;
 
     @Autowired
-    private CompanyUserService companyUserService;
+    private AccountService accountService;
 
     @Autowired
     private LocationService  locationService;
@@ -59,11 +58,11 @@ public class ChargingStationsController {
     public ResponseEntity<Object> registerChargingStation(Authentication authentication,
                                                           @RequestBody NewChargingStationsDTO chargingStationsDTO) {
 
-        CompanyUser company = companyUserService.findByEmailCompanyUser(authentication.getName());
-        String message;
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
+        String message = " ";
 
-        if (company == null) {
-            message = "No se encontró la empresa";
+        if (account.isEmpty()) {
+            message = "No se encontró la cuenta";
             return ResponseEntity.status(400).body(message);
         }
 
@@ -80,27 +79,19 @@ public class ChargingStationsController {
         // Crear una nueva ubicación a partir del DTO
         Location ubicacionTerminal = new Location(
                 chargingStationsDTO.getUbicacionTerminal().getDireccion());
-        locationService.saveLocationCompany(ubicacionTerminal);
+        locationService.saveLocation(ubicacionTerminal);
 
-        // Crear una nueva estación de carga con la ubicación
         ChargingStation newChargingStation = new ChargingStation(
                 chargingStationsDTO.getNombreTerminal(),
                 LocalDate.now(),
                 ChargingStationStatus.INACTIVE,
                 ubicacionTerminal,
+                account.get(), // Asocia directamente la cuenta obtenida
                 true
         );
 
-        Optional<AccountCompany> optionalAccount = company.getCuentaCompañia()
-                .stream()
-                .findFirst();
-        if (optionalAccount.isEmpty()) {
-            message = "No se encontró una cuenta asociada a la empresa";
-            return ResponseEntity.status(400).body(message);
-        }
-
-        newChargingStation.setCuentaCompañia(optionalAccount.get());
         chargingStationsService.saveChargingStations(newChargingStation);
+
 
         return ResponseEntity.status(201).body(new ChargingStationsDTO(newChargingStation));
     }
@@ -110,11 +101,11 @@ public class ChargingStationsController {
                                                         @PathVariable Long id,
                                                         @RequestBody NewChargingStationsDTO chargingStationsDTO) {
 
-        CompanyUser company = companyUserService.findByEmailCompanyUser(authentication.getName());
-        String message;
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
+        String message = " ";
 
-        if (company == null) {
-            message = "No se encontró la empresa";
+        if (account.isEmpty()) {
+            message = "No se encontró la cuenta";
             return ResponseEntity.status(400).body(message);
         }
 
@@ -136,7 +127,7 @@ public class ChargingStationsController {
 
         Location ubicacionTerminal = existingChargingStation.getUbicacionTerminal();
         ubicacionTerminal.setDireccion(chargingStationsDTO.getUbicacionTerminal().getDireccion());
-        locationService.saveLocationCompany(ubicacionTerminal);
+        locationService.saveLocation(ubicacionTerminal);
 
         existingChargingStation.setNombreTerminal(chargingStationsDTO.getNombreTerminal());
         chargingStationsService.saveChargingStations(existingChargingStation);
@@ -149,12 +140,12 @@ public class ChargingStationsController {
                                                         @PathVariable Long id) {
 
         // Obtener el usuario autenticado
-        CompanyUser companyUser = companyUserService.findByEmailCompanyUser(authentication.getName());
-        String message = "";
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
+        String message = " ";
 
-        if (companyUser == null) {
-            message = "No se encontró la empresa";
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(message);
+        if (account.isEmpty()) {
+            message = "No se encontró la cuenta";
+            return ResponseEntity.status(400).body(message);
         }
 
         // Buscar la estación de carga por su ID

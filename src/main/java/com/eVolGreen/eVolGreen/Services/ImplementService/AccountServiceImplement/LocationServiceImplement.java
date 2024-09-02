@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Services.ImplementService.AccountServiceImplement;
 
-import com.eVolGreen.eVolGreen.DTOS.AccountDTO.LocationDTO.LocationAccountCompanyDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.LocationDTO.LocationDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Location;
 import com.eVolGreen.eVolGreen.Repositories.LocationRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.LocationService;
@@ -14,16 +14,18 @@ import java.util.stream.Collectors;
 @Service
 @Transactional
 public class LocationServiceImplement implements LocationService {
+
     @Autowired
     private LocationRepository locationRepository;
 
     @Override
-    public List<LocationAccountCompanyDTO> getLocationsCompanyDTO() {
+    public List<LocationDTO> getLocationsDTO() {
         return locationRepository.findAll()
                 .stream()
-                .map(LocationAccountCompanyDTO::new)
+                .map(LocationDTO::new)
                 .collect(Collectors.toList());
     }
+
     @Override
     public void saveLocation(Location location) {
         locationRepository.save(location);
@@ -35,12 +37,7 @@ public class LocationServiceImplement implements LocationService {
     }
 
     @Override
-    public LocationAccountCompanyDTO getLocationCompanyDTO(Long id) {
-        return new LocationAccountCompanyDTO(this.findById(id));
-    }
-
-    @Override
-    public void saveLocationCompany(Location location) {
-        locationRepository.save(location);
+    public LocationDTO getLocationDTO(Long id) {
+        return new LocationDTO(this.findById(id));
     }
 }

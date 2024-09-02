@@ -20,7 +20,7 @@ public class FeeConnector {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "Tarifa_id", nullable = false)
     @JsonBackReference("Tarifa-TarifaConector")
-    private Fee Tarifa;
+    private Fee tarifa;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "Conector_id", nullable = false)
@@ -35,8 +35,8 @@ public class FeeConnector {
 
     public FeeConnector() {}
 
-    public FeeConnector(Fee Tarifa, Connector Conector, LocalDateTime fechaActivacion,Boolean activo) {
-        this.Tarifa = Tarifa;
+    public FeeConnector(Fee tarifa, Connector Conector, LocalDateTime fechaActivacion,Boolean activo) {
+        this.tarifa = tarifa;
         this.Conector = Conector;
         this.fechaActivacion = fechaActivacion;
         this.activo = activo;
@@ -51,11 +51,11 @@ public class FeeConnector {
     }
 
     public Fee getTarifa() {
-        return Tarifa;
+        return tarifa;
     }
 
     public void setTarifa(Fee tarifa) {
-        Tarifa = tarifa;
+        tarifa = tarifa;
     }
 
     public void setId(long id) {
@@ -90,7 +90,7 @@ public class FeeConnector {
     public String toString() {
         return "FeeConnector{" +
                 "id=" + id +
-                ", Tarifa=" + Tarifa +
+                ", Tarifa=" + tarifa +
                 ", Conector=" + Conector +
                 ", FechaActivacion=" + fechaActivacion +
                 '}';

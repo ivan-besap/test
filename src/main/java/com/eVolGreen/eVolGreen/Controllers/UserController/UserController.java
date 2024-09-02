@@ -1,11 +1,8 @@
 package com.eVolGreen.eVolGreen.Controllers.UserController;
 
-import com.eVolGreen.eVolGreen.DTOS.UserDTO.ClientDTO.ClientUserDTO;
-import com.eVolGreen.eVolGreen.DTOS.UserDTO.CompanyDTO.CompanyUserDTO;
-import com.eVolGreen.eVolGreen.DTOS.UserDTO.EmployeeDTO.EmployeeUserDTO;
-import com.eVolGreen.eVolGreen.Services.DUserService.ClientUserService;
-import com.eVolGreen.eVolGreen.Services.DUserService.CompanyUserService;
-import com.eVolGreen.eVolGreen.Services.DUserService.EmployeeUserService;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.AccountDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,44 +11,24 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
 public class UserController {
 
     @Autowired
-    private ClientUserService clientUserService;
-
-    @Autowired
-    private CompanyUserService companyUserService;
-
-    @Autowired
-    private EmployeeUserService employeeUserService;
-
+    private AccountService accountService;
 
     @GetMapping("/user/current")
-    public ResponseEntity<?> getCurrentUser(Authentication authentication) {
-        // Primero intentamos obtener el usuario como cliente
-        ClientUserDTO client = clientUserService.getClientDTOByEmailCurrent(authentication.getName());
-        if (client != null) {
-            return ResponseEntity.ok(new UserResponse("client", client));
-        }
-
-        // Si no es cliente, intentamos como compañía
-        CompanyUserDTO company = companyUserService.getCompanyDTOByEmailCurrent(authentication.getName());
-        if (company != null) {
-            return ResponseEntity.ok(new UserResponse("company", company));
-        }
-
-        // Finalmente intentamos como empleado
-        EmployeeUserDTO employee = employeeUserService.getEmployeeDTOByEmailCurrent(authentication.getName());
-        if (employee != null) {
-            return ResponseEntity.ok(new UserResponse("employee", employee));
-        }
-
-        // Si no se encuentra el usuario, devolvemos un error
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+    public ResponseEntity<UserResponse> getCurrentUser(Authentication authentication) {
+        return accountService.findByEmail(authentication.getName())
+                .map(account -> {
+                    AccountDTO accountDTO = new AccountDTO(account); // Adaptar a tu DTO si es necesario
+                    return ResponseEntity.ok(new UserResponse(account.getTipoCuenta().name(), accountDTO));
+                })
+                .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new UserResponse("NOT_FOUND", null)));
     }
 
     // Clase para la respuesta

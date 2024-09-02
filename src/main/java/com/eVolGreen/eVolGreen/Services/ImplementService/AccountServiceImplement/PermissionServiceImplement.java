@@ -1,7 +1,6 @@
 package com.eVolGreen.eVolGreen.Services.ImplementService.AccountServiceImplement;
 
-import com.eVolGreen.eVolGreen.Models.Account.PermissionCredential.Permission;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountCompany;
+import com.eVolGreen.eVolGreen.Models.Account.Permission.Permission;
 import com.eVolGreen.eVolGreen.Repositories.PermissionRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.PermissionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,13 +15,22 @@ public class PermissionServiceImplement implements PermissionService {
     private PermissionRepository permissionRepository;
 
     @Override
-    public List<Permission> getPermissionsForCompany(Long companyId) {
-        return permissionRepository.findByCuentaCompañia_Id(companyId);
+    public List<Permission> getPermissions() {
+        return permissionRepository.findAll();
     }
 
     @Override
-    public Permission createPermissionForCompany(Permission permission, AccountCompany company) {
-        permission.setCuentaCompañia(company);
+    public Permission savePermission(Permission permission) {
         return permissionRepository.save(permission);
+    }
+
+    @Override
+    public Permission findById(Long id) {
+        return permissionRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    public void deletePermission(Long id) {
+        permissionRepository.deleteById(id);
     }
 }

@@ -3,28 +3,26 @@ package com.eVolGreen.eVolGreen.Services.AccountService;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.AccountDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 public interface AccountService {
 
-    List<AccountDTO> getAccountsDTO();
+    List<AccountDTO> getAccountsDTO(); // Retorna todas las cuentas como DTO
 
-    AccountDTO getAccountDTOCurrent (long id);
+    AccountDTO getAccountDTOCurrent(long id); // Retorna una cuenta específica como DTO
 
-    List<Account> accounts (CompanyUser client);
+    void saveAccount(Account account); // Guarda o actualiza una cuenta
 
-    void saveAccount(Account account);
+    Account findByNumber(String number); // Busca una cuenta por su número
 
-    List<Account> findByClientList (CompanyUser client);
+    boolean existsByNumber(String number); // Verifica si existe una cuenta por su número
 
-    Account findByNumber(String number);
+    Account findById(Long id); // Encuentra una cuenta por su ID
 
-    boolean existsByNumber(String number);
+    List<AccountDTO> findAll(); // Retorna todas las cuentas como DTO
 
-    Account findById(Long id);
-
-    List<AccountDTO> findAll();
+    Optional<Account> findByEmail(String email); // Busca una cuenta por su email
 }

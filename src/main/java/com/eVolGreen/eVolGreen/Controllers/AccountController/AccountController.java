@@ -3,12 +3,9 @@ package com.eVolGreen.eVolGreen.Controllers.AccountController;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.AccountDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.TypeAccounts;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.ClientUser;
 import com.eVolGreen.eVolGreen.Repositories.AccountRepository;
 
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
-import com.eVolGreen.eVolGreen.Services.DUserService.ClientUserService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -16,9 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDate;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -27,8 +22,8 @@ public class AccountController {
     @Autowired
     private AccountService accountService;
 
-    @Autowired
-    private ClientUserService clientUserService;
+//    @Autowired
+//    private ClientUserService clientUserService;
 //
 //    @Autowired
 //    private EmailService emailService;
@@ -36,14 +31,26 @@ public class AccountController {
     @Autowired
     private AccountRepository accountRepository;
 
-//    @GetMapping("/accounts")
-//    public List<AccountDTO> getAccounts() {
-//        return accountService.getAccountsDTO();
-//    }
-//    @GetMapping("/accounts/{id}")
-//    public AccountDTO getAccount(@PathVariable Long id){
-//        return accountService.getAccountDTOCurrent(id);
-//    }
+    @GetMapping("/accounts")
+    public List<AccountDTO> getAccounts() {
+        return accountService.getAccountsDTO();
+    }
+    @GetMapping("/accounts/{id}")
+    public AccountDTO getAccount(@PathVariable Long id){
+        return accountService.getAccountDTOCurrent(id);
+    }
+
+    @PatchMapping("/update-active-status")
+    public ResponseEntity<String> updateActiveStatus(@RequestParam("activeStatus") boolean activeStatus, @RequestParam("accountId") Long accountId) {
+        Account account = accountService.findById(accountId);
+        if (account != null) {
+            account.setActivo(activeStatus);
+            accountService.saveAccount(account);
+            return ResponseEntity.ok("El estado activo de la cuenta ha sido actualizado.");
+        } else {
+            return ResponseEntity.status(404).body("Cuenta no encontrada.");
+        }
+    }
 //    @GetMapping("/clients/current/accounts/true")
 //    public List<AccountDTO> getAccountDtoTrue(){
 //        List<AccountDTO> accountDTOList= accountRepository.findAll().stream().map(AccountDTO::new).collect(Collectors.toList());
@@ -86,33 +93,33 @@ public class AccountController {
 //            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid email or check digit.");
 //        }
 //    }
-    @PatchMapping("/clients/current/accounts/delete/{id}")
-    public ResponseEntity<Object> deleteAccount (Authentication authentication,
-                                                 @PathVariable Long id){
-        ClientUser client = clientUserService.findByEmail(authentication.getName());
-        Account account = accountService.findById(id);
-        Boolean exists = client.getCuentaCliente().contains(account);
-        String message = " ";
-
-        if (account == null) {
-            message = "Account not found";
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(message);
-        }
-        if (!exists) {
-            message = "Account not found";
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(message);
-        }
-        if(!account.getActivo()){
-            message = "Account already deleted";
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
-        }
-
-        account.setActivo(false);
-        accountService.saveAccount(account);
-
-        message = "Account deleted successfully";
-        return ResponseEntity.ok(message);
-    }
+//    @PatchMapping("/clients/current/accounts/delete/{id}")
+//    public ResponseEntity<Object> deleteAccount (Authentication authentication,
+//                                                 @PathVariable Long id){
+//        ClientUser client = clientUserService.findByEmail(authentication.getName());
+//        Account account = accountService.findById(id);
+//        Boolean exists = client.getCuentaCliente().contains(account);
+//        String message = " ";
+//
+//        if (account == null) {
+//            message = "Account not found";
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(message);
+//        }
+//        if (!exists) {
+//            message = "Account not found";
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(message);
+//        }
+//        if(!account.getActivo()){
+//            message = "Account already deleted";
+//            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+//        }
+//
+//        account.setActivo(false);
+//        accountService.saveAccount(account);
+//
+//        message = "Account deleted successfully";
+//        return ResponseEntity.ok(message);
+//    }
 
 //    @PostMapping("/clients/current/accounts")
 //    public ResponseEntity<Object> registerAccount(Authentication authentication,

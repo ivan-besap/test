@@ -5,41 +5,34 @@ import com.eVolGreen.eVolGreen.DTOS.AccountDTO.FeeDTO.NewFeeDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Fee.Fee;
 import com.eVolGreen.eVolGreen.Models.Account.Fee.FeeConnector;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
-import com.eVolGreen.eVolGreen.Repositories.FeeConnectorRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.FeeConnectorService;
 import com.eVolGreen.eVolGreen.Services.AccountService.FeeService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ConnectorService;
-import com.eVolGreen.eVolGreen.Services.DUserService.CompanyUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+@RestController
+@RequestMapping("/api")
 public class FeeConnectorController {
 
     @Autowired
     private FeeService feeService;
+
     @Autowired
     private ConnectorService connectorService;
-    @Autowired
-    private CompanyUserService companyService;
+
     @Autowired
     private FeeConnectorService feeConnectorService;
 
+    @PostMapping("/fee-connectors")
+    public ResponseEntity<Object> createFeeConnector(
+            Authentication authentication,
+            @RequestBody NewFeeConnectorDTO feeConnectorDTO) {
 
-    @PostMapping("/companies/current/fee-connector")
-    public ResponseEntity<Object> createFeeConnector(Authentication authentication,
-                                                     @RequestBody NewFeeConnectorDTO feeConnectorDTO) {
-        // Obtener la compañía del usuario autenticado
-        CompanyUser companyUser = companyService.findByEmailCompanyUser(authentication.getName());
-        String mensaje = " ";
-
-        if (companyUser == null) {
-            mensaje = "La compañía no se encontró";
-            return new ResponseEntity<>(mensaje, HttpStatus.NOT_FOUND);
-        }
+        String mensaje;
 
         // Validar si la tarifa existe
         Fee tarifa = feeService.findById(feeConnectorDTO.getTarifa());
@@ -70,19 +63,12 @@ public class FeeConnectorController {
         return new ResponseEntity<>(mensaje, HttpStatus.CREATED);
     }
 
-    @PutMapping("/companies/current/feeConnector/{id}")
-    public ResponseEntity<Object> updateFee(Authentication authentication,
-                                            @PathVariable Long id,
-                                            @RequestBody NewFeeDTO feeDTO) {
+    @PutMapping("/fee-connectors/{id}")
+    public ResponseEntity<Object> updateFee(
+            @PathVariable Long id,
+            @RequestBody NewFeeDTO feeDTO) {
 
-        // Obtener la compañía del usuario autenticado
-        CompanyUser company = companyService.findByEmailCompanyUser(authentication.getName());
-        String mensaje = " ";
-
-        if (company == null) {
-            mensaje = "La compañía no se encontró";
-            return new ResponseEntity<>(mensaje, HttpStatus.NOT_FOUND);
-        }
+        String mensaje;
 
         // Buscar la tarifa existente por su ID
         Fee existingFee = feeService.findById(id);
@@ -138,16 +124,10 @@ public class FeeConnectorController {
     }
 
     @PatchMapping("/fee-connectors/{id}/deactivate")
-    public ResponseEntity<Object> deactivateFeeConnector(Authentication authentication,
-                                                         @PathVariable Long id) {
-        // Obtener el usuario autenticado (en este caso, de la compañía)
-        CompanyUser companyUser = companyService.findByEmailCompanyUser(authentication.getName());
-        String mensaje = " ";
+    public ResponseEntity<Object> deactivateFeeConnector(
+            @PathVariable Long id) {
 
-        if (companyUser == null) {
-            mensaje = "La compañía no se encontró";
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mensaje);
-        }
+        String mensaje;
 
         // Buscar el FeeConnector por su ID
         FeeConnector feeConnector = feeConnectorService.findById(id);
@@ -169,6 +149,4 @@ public class FeeConnectorController {
         mensaje = "FeeConnector desactivado correctamente";
         return ResponseEntity.ok(mensaje);
     }
-
-
 }

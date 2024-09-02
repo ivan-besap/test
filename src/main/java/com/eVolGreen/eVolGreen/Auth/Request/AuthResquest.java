@@ -13,4 +13,5 @@ public class AuthResquest {
     private String token;
     private String role;
     private Boolean isActive;
+    private String accountType;
 }

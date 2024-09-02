@@ -25,20 +25,19 @@ public class DeviceIdentifier {
     private LocalDate fechaExpiracion;
 
     @NotNull(message = "El Auto es obligatorio")
-    @ManyToOne (fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "Auto_id")
-    @JsonBackReference ("Auto-RFID")
-    private Car Auto;
-
+    @JsonBackReference("Auto-RFID")
+    private Car auto; // Cambiado a "auto" en minúsculas
     private Boolean activo = false;
 
     public DeviceIdentifier() { }
 
-    public DeviceIdentifier(String NombreDeIdentificador, Integer RFID, LocalDate fechaExpiracion, Car Auto, Boolean activo) {
+    public DeviceIdentifier(String NombreDeIdentificador, Integer RFID, LocalDate fechaExpiracion, Car auto, Boolean activo) {
         this.NombreDeIdentificador = NombreDeIdentificador;
         this.RFID = RFID;
         this.fechaExpiracion = fechaExpiracion;
-        this.Auto = Auto;
+        this.auto = auto;
         this.activo = activo;
     }
 
@@ -75,11 +74,11 @@ public class DeviceIdentifier {
     }
 
     public @NotNull(message = "El Auto es obligatorio") Car getAuto() {
-        return Auto;
+        return auto;
     }
 
     public void setAuto(@NotNull(message = "El Auto es obligatorio") Car auto) {
-        Auto = auto;
+        auto = auto;
     }
 
     public @NotNull(message = "La fecha de expiración es obligatoria") LocalDate getFechaExpiracion() {
@@ -96,7 +95,7 @@ public class DeviceIdentifier {
                 "id=" + id +
                 ", NombreDeIdentificador='" + NombreDeIdentificador + '\'' +
                 ", RFID=" + RFID +
-                ", Auto=" + Auto +
+                ", Auto=" + auto +
                 '}';
     }
 }

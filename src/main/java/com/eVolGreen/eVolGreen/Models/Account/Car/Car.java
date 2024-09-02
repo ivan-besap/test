@@ -1,8 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Account.Car;
 
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountClient;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountCompany;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountEmployee;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -36,30 +34,20 @@ public class Car {
     @NotNull(message = "La Marca es obligatoria")
     private String marca;
 
-    @NotNull(message = "El Año de Fabricacion es obligatorio")
+    @NotNull(message = "El Año de Fabricación es obligatorio")
     private String añoFabricacion;
 
     @NotNull(message = "La Capacidad de Potencia es obligatoria")
     private BigDecimal capacidadPotencia;
 
-    @OneToMany(mappedBy = "Auto", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "auto", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("Auto-RFID")
-    private Set<DeviceIdentifier> RFID = new HashSet<>();
+    private Set<DeviceIdentifier> rfid = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CuentaCliente_id")
-    @JsonBackReference("CuentaCliente-Auto")
-    private AccountClient CuentaCliente;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CuentaTrabajador_id")
-    @JsonBackReference("CuentaTrabajador-Auto")
-    private AccountEmployee CuentaTrabajador;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CuentaCompañia_id")
-    @JsonBackReference("CuentaCompañia-Auto")
-    private AccountCompany CuentaCompañia;
+    @JoinColumn(name = "account_id")
+    @JsonBackReference("Account-Car")
+    private Account account;
 
     private Boolean activo = false;
 
@@ -84,8 +72,76 @@ public class Car {
         this.id = id;
     }
 
-    public @NotNull(message = "La Patente es obligatoria") String getPatente() {
+    public String getPatente() {
         return patente;
+    }
+
+    public void setPatente(String patente) {
+        this.patente = patente;
+    }
+
+    public String getModelo() {
+        return modelo;
+    }
+
+    public void setModelo(String modelo) {
+        this.modelo = modelo;
+    }
+
+    public String getVin() {
+        return vin;
+    }
+
+    public void setVin(String vin) {
+        this.vin = vin;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    public String getMarca() {
+        return marca;
+    }
+
+    public void setMarca(String marca) {
+        this.marca = marca;
+    }
+
+    public String getAñoFabricacion() {
+        return añoFabricacion;
+    }
+
+    public void setAñoFabricacion(String añoFabricacion) {
+        this.añoFabricacion = añoFabricacion;
+    }
+
+    public BigDecimal getCapacidadPotencia() {
+        return capacidadPotencia;
+    }
+
+    public void setCapacidadPotencia(BigDecimal capacidadPotencia) {
+        this.capacidadPotencia = capacidadPotencia;
+    }
+
+    public Set<DeviceIdentifier> getRfid() {
+        return rfid;
+    }
+
+    public void setRfid(Set<DeviceIdentifier> rfid) {
+        this.rfid = rfid;
+    }
+
+    public Account getAccount() {
+        return account;
+    }
+
+    public void setAccount(Account account) {
+        this.account = account;
     }
 
     public Boolean getActivo() {
@@ -96,87 +152,20 @@ public class Car {
         this.activo = activo;
     }
 
-    public void setPatente(@NotNull(message = "La Patente es obligatoria") String patente) {
-        this.patente = patente;
-    }
-
-    public @NotNull(message = "El modelo es obligatorio") String getModelo() {
-        return modelo;
-    }
-
-    public void setModelo(@NotNull(message = "El modelo es obligatorio") String modelo) {
-        this.modelo = modelo;
-    }
-
-    public @NotNull(message = "El VIN es obligatorio") String getVin() {
-        return vin;
-    }
-
-    public void setVin(@NotNull(message = "El VIN es obligatorio") String vin) {
-        this.vin = vin;
-    }
-
-    public @NotNull(message = "El Color es obligatorio") String getColor() {
-        return color;
-    }
-
-    public void setColor(@NotNull(message = "El Color es obligatorio") String color) {
-        this.color = color;
-    }
-
-    public @NotNull(message = "La Marca es obligatoria") String getMarca() {
-        return marca;
-    }
-
-    public void setMarca(@NotNull(message = "La Marca es obligatoria") String marca) {
-        this.marca = marca;
-    }
-
-    public @NotNull(message = "El Año de Fabricacion es obligatorio") String getAñoFabricacion() {
-        return añoFabricacion;
-    }
-
-    public void setAñoFabricacion(@NotNull(message = "El Año de Fabricacion es obligatorio") String añoFabricacion) {
-        this.añoFabricacion = añoFabricacion;
-    }
-
-    public @NotNull(message = "La Capacidad de Potencia es obligatoria") BigDecimal getCapacidadPotencia() {
-        return capacidadPotencia;
-    }
-
-    public void setCapacidadPotencia(@NotNull(message = "La Capacidad de Potencia es obligatoria") BigDecimal capacidadPotencia) {
-        this.capacidadPotencia = capacidadPotencia;
-    }
-
-    public Set<DeviceIdentifier> getRFID() {
-        return RFID;
-    }
-
-    public void setRFID(Set<DeviceIdentifier> RFID) {
-        this.RFID = RFID;
-    }
-
-    public AccountClient getCuentaCliente() {
-        return CuentaCliente;
-    }
-
-    public void setCuentaCliente(AccountClient cuentaCliente) {
-        CuentaCliente = cuentaCliente;
-    }
-
-    public AccountEmployee getCuentaTrabajador() {
-        return CuentaTrabajador;
-    }
-
-    public void setCuentaTrabajador(AccountEmployee cuentaTrabajador) {
-        CuentaTrabajador = cuentaTrabajador;
-    }
-
-    public AccountCompany getCuentaCompañia() {
-        return CuentaCompañia;
-    }
-
-    public void setCuentaCompañia(AccountCompany cuentaCompañia) {
-        CuentaCompañia = cuentaCompañia;
+    @Override
+    public String toString() {
+        return "Car{" +
+                "id=" + id +
+                ", patente='" + patente + '\'' +
+                ", modelo='" + modelo + '\'' +
+                ", vin='" + vin + '\'' +
+                ", color='" + color + '\'' +
+                ", marca='" + marca + '\'' +
+                ", añoFabricacion='" + añoFabricacion + '\'' +
+                ", capacidadPotencia=" + capacidadPotencia +
+                ", rfid=" + rfid +
+                ", account=" + account +
+                ", activo=" + activo +
+                '}';
     }
 }

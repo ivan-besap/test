@@ -51,14 +51,14 @@ public class Connector {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "Cargador_id")
     @JsonBackReference("Cargador-Conector")
-    private Charger Cargador;
+    private Charger cargador;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "Terminal_id")
     @JsonBackReference("Terminal-Conector")
     private ChargingStation Terminal;
 
-    @OneToMany(mappedBy = "Conector", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "conector", fetch = FetchType.LAZY)
     @JsonManagedReference("Conector-Reservacion")
     private Set<Reservation> Reservaciones = new HashSet<>();
 
@@ -70,16 +70,16 @@ public class Connector {
 
     public Connector() { }
 
-    public Connector(String Alias, TypeConnector TipoConector, String NConector, BigDecimal VoltajeMaximo, BigDecimal PotenciaMaxima, BigDecimal CorrienteMaxima, Charger charger, ChargingStation terminal ,ConnectorStatus EstadoConector, boolean Activo) {
+    public Connector(String Alias, TypeConnector TipoConector, String NConector, BigDecimal VoltajeMaximo, BigDecimal PotenciaMaxima, BigDecimal CorrienteMaxima, Charger charger, ChargingStation terminal, ConnectorStatus EstadoConector, boolean Activo) {
         this.Alias = Alias;
         this.TipoConector = TipoConector;
-        this.EstadoConector = EstadoConector;
         this.NConector = NConector;
         this.VoltajeMaximo = VoltajeMaximo;
         this.PotenciaMaxima = PotenciaMaxima;
         this.CorrienteMaxima = CorrienteMaxima;
-        this.Cargador = charger;
+        this.cargador = charger;
         this.Terminal = terminal;
+        this.EstadoConector = EstadoConector;
         this.Activo = Activo;
     }
 
@@ -156,11 +156,11 @@ public class Connector {
     }
 
     public Charger getCargador() {
-        return Cargador;
+        return cargador;
     }
 
     public void setCargador(Charger cargador) {
-        Cargador = cargador;
+        cargador = cargador;
     }
 
     public Set<Reservation> getReservaciones() {
@@ -202,7 +202,7 @@ public class Connector {
                 ", PotenciaMaxima=" + PotenciaMaxima +
                 ", CorrienteMaxima=" + CorrienteMaxima +
                 ", EstadoConector=" + EstadoConector +
-                ", Cargador=" + Cargador +
+                ", Cargador=" + cargador +
                 ", Reservaciones=" + Reservaciones +
                 ", TarifaConector=" + TarifaConector +
                 '}';

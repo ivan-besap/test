@@ -1,9 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Account.Transaction;
 
+import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountClient;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountCompany;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountEmployee;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -21,62 +19,52 @@ public class Transaction {
     private long id;
 
     @NotNull(message = "El tipo de transacción es obligatorio")
-    private TransactionType TipoTransaction;
+    private TransactionType tipoTransaction;
 
     @NotNull(message = "La descripción es obligatoria")
-    private String Descripcion;
+    private String descripcion;
 
     @NotNull(message = "La fecha de creación es obligatoria")
-    private LocalDateTime FechaCreacion;
+    private LocalDateTime fechaCreacion;
 
     @NotNull(message = "La hora de inicio es obligatoria")
-    private LocalDateTime HoraInicio;
+    private LocalDateTime horaInicio;
 
     @NotNull(message = "La hora de fin es obligatoria")
-    private LocalDateTime HoraFin;
+    private LocalDateTime horaFin;
 
-    @NotNull(message = "La energia entregada es obligatoria")
-    private BigDecimal EnergiaEntregada;
+    @NotNull(message = "La energía entregada es obligatoria")
+    private BigDecimal energiaEntregada;
 
     @NotNull(message = "El costo es obligatorio")
-    private Integer Costo;
+    private Integer costo;
 
-    @NotNull(message = "La Cuenta de la Compañia es obligatoria")
+    @NotNull(message = "La cuenta es obligatoria")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CuentaCompañia_id")
-    @JsonBackReference ("Transacciones-CuentaCompañia")
-    private AccountCompany CuentaCompañia;
+    @JoinColumn(name = "account_id")
+    @JsonBackReference("Account-Transaction")
+    private Account account;
 
+    @NotNull(message = "El terminal es obligatorio")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CuentaCliente_id")
-    @JsonBackReference ("CuentaCliente-Transaccion")
-    private AccountClient CuentaCliente;
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "CuentaTrabajador_id")
-    @JsonBackReference ("Transacciones-CuentaTrabajador")
-    private AccountEmployee CuentaTrabajador;
-
-    @NotNull(message = "El Terminal es obligatorio")
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "Terminal_id")
-    @JsonBackReference ("Terminal-Transaction")
-    private ChargingStation Terminal;
+    @JoinColumn(name = "terminal_id")
+    @JsonBackReference("Terminal-Transaction")
+    private ChargingStation terminal;
 
     public Transaction() {
     }
 
-    public Transaction(long id, TransactionType tipoTransaction, String descripcion, LocalDateTime fechaCreacion, LocalDateTime horaInicio, LocalDateTime horaFin, BigDecimal energiaEntregada, Integer costo, AccountCompany cuentaCompañia, ChargingStation terminal) {
+    public Transaction(long id, TransactionType tipoTransaction, String descripcion, LocalDateTime fechaCreacion, LocalDateTime horaInicio, LocalDateTime horaFin, BigDecimal energiaEntregada, Integer costo, Account account, ChargingStation terminal) {
         this.id = id;
-        TipoTransaction = tipoTransaction;
-        Descripcion = descripcion;
-        FechaCreacion = fechaCreacion;
-        HoraInicio = horaInicio;
-        HoraFin = horaFin;
-        EnergiaEntregada = energiaEntregada;
-        Costo = costo;
-        CuentaCompañia = cuentaCompañia;
-        Terminal = terminal;
+        this.tipoTransaction = tipoTransaction;
+        this.descripcion = descripcion;
+        this.fechaCreacion = fechaCreacion;
+        this.horaInicio = horaInicio;
+        this.horaFin = horaFin;
+        this.energiaEntregada = energiaEntregada;
+        this.costo = costo;
+        this.account = account;
+        this.terminal = terminal;
     }
 
     public long getId() {
@@ -87,109 +75,91 @@ public class Transaction {
         this.id = id;
     }
 
-    public @NotNull(message = "El tipo de transacción es obligatorio") TransactionType getTipoTransaction() {
-        return TipoTransaction;
+    public TransactionType getTipoTransaction() {
+        return tipoTransaction;
     }
 
-    public void setTipoTransaction(@NotNull(message = "El tipo de transacción es obligatorio") TransactionType tipoTransaction) {
-        TipoTransaction = tipoTransaction;
+    public void setTipoTransaction(TransactionType tipoTransaction) {
+        this.tipoTransaction = tipoTransaction;
     }
 
-    public @NotNull(message = "La descripción es obligatoria") String getDescripcion() {
-        return Descripcion;
+    public String getDescripcion() {
+        return descripcion;
     }
 
-    public void setDescripcion(@NotNull(message = "La descripción es obligatoria") String descripcion) {
-        Descripcion = descripcion;
+    public void setDescripcion(String descripcion) {
+        this.descripcion = descripcion;
     }
 
-    public @NotNull(message = "La fecha de creación es obligatoria") LocalDateTime getFechaCreacion() {
-        return FechaCreacion;
+    public LocalDateTime getFechaCreacion() {
+        return fechaCreacion;
     }
 
-    public void setFechaCreacion(@NotNull(message = "La fecha de creación es obligatoria") LocalDateTime fechaCreacion) {
-        FechaCreacion = fechaCreacion;
+    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+        this.fechaCreacion = fechaCreacion;
     }
 
-    public @NotNull(message = "La hora de inicio es obligatoria") LocalDateTime getHoraInicio() {
-        return HoraInicio;
+    public LocalDateTime getHoraInicio() {
+        return horaInicio;
     }
 
-    public void setHoraInicio(@NotNull(message = "La hora de inicio es obligatoria") LocalDateTime horaInicio) {
-        HoraInicio = horaInicio;
+    public void setHoraInicio(LocalDateTime horaInicio) {
+        this.horaInicio = horaInicio;
     }
 
-    public @NotNull(message = "La hora de fin es obligatoria") LocalDateTime getHoraFin() {
-        return HoraFin;
+    public LocalDateTime getHoraFin() {
+        return horaFin;
     }
 
-    public void setHoraFin(@NotNull(message = "La hora de fin es obligatoria") LocalDateTime horaFin) {
-        HoraFin = horaFin;
+    public void setHoraFin(LocalDateTime horaFin) {
+        this.horaFin = horaFin;
     }
 
-    public @NotNull(message = "La energia entregada es obligatoria") BigDecimal getEnergiaEntregada() {
-        return EnergiaEntregada;
+    public BigDecimal getEnergiaEntregada() {
+        return energiaEntregada;
     }
 
-    public void setEnergiaEntregada(@NotNull(message = "La energia entregada es obligatoria") BigDecimal energiaEntregada) {
-        EnergiaEntregada = energiaEntregada;
+    public void setEnergiaEntregada(BigDecimal energiaEntregada) {
+        this.energiaEntregada = energiaEntregada;
     }
 
-    public @NotNull(message = "El costo es obligatorio") Integer getCosto() {
-        return Costo;
+    public Integer getCosto() {
+        return costo;
     }
 
-    public void setCosto(@NotNull(message = "El costo es obligatorio") Integer costo) {
-        Costo = costo;
+    public void setCosto(Integer costo) {
+        this.costo = costo;
     }
 
-    public @NotNull(message = "La Cuenta de la Compañia es obligatoria") AccountCompany getCuentaCompañia() {
-        return CuentaCompañia;
+    public Account getAccount() {
+        return account;
     }
 
-    public void setCuentaCompañia(@NotNull(message = "La Cuenta de la Compañia es obligatoria") AccountCompany cuentaCompañia) {
-        CuentaCompañia = cuentaCompañia;
+    public void setAccount(Account account) {
+        this.account = account;
     }
 
-    public AccountClient getCuentaCliente() {
-        return CuentaCliente;
+    public ChargingStation getTerminal() {
+        return terminal;
     }
 
-    public void setCuentaCliente(AccountClient cuentaCliente) {
-        CuentaCliente = cuentaCliente;
-    }
-
-    public AccountEmployee getCuentaTrabajador() {
-        return CuentaTrabajador;
-    }
-
-    public void setCuentaTrabajador(AccountEmployee cuentaTrabajador) {
-        CuentaTrabajador = cuentaTrabajador;
-    }
-
-    public @NotNull(message = "El Terminal es obligatorio") ChargingStation getTerminal() {
-        return Terminal;
-    }
-
-    public void setTerminal(@NotNull(message = "El Terminal es obligatorio") ChargingStation terminal) {
-        Terminal = terminal;
+    public void setTerminal(ChargingStation terminal) {
+        this.terminal = terminal;
     }
 
     @Override
     public String toString() {
         return "Transaction{" +
                 "id=" + id +
-                ", TipoTransaction=" + TipoTransaction +
-                ", Descripcion='" + Descripcion + '\'' +
-                ", FechaCreacion=" + FechaCreacion +
-                ", HoraInicio=" + HoraInicio +
-                ", HoraFin=" + HoraFin +
-                ", EnergiaEntregada=" + EnergiaEntregada +
-                ", Costo=" + Costo +
-                ", CuentaCompañia=" + CuentaCompañia +
-                ", CuentaCliente=" + CuentaCliente +
-                ", CuentaTrabajador=" + CuentaTrabajador +
-                ", Terminal=" + Terminal +
+                ", tipoTransaction=" + tipoTransaction +
+                ", descripcion='" + descripcion + '\'' +
+                ", fechaCreacion=" + fechaCreacion +
+                ", horaInicio=" + horaInicio +
+                ", horaFin=" + horaFin +
+                ", energiaEntregada=" + energiaEntregada +
+                ", costo=" + costo +
+                ", account=" + account +
+                ", terminal=" + terminal +
                 '}';
     }
 }

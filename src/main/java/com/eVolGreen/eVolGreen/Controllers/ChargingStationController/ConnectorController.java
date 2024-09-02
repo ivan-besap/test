@@ -2,18 +2,17 @@ package com.eVolGreen.eVolGreen.Controllers.ChargingStationController;
 
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ConnectorDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.NewConnectorDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
-import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStationStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.ConnectorStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.TypeConnector;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
 import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
+import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargingStationsService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ConnectorService;
-import com.eVolGreen.eVolGreen.Services.DUserService.CompanyUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,6 +20,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
@@ -36,7 +36,7 @@ public class ConnectorController {
     private ConnectorRepository connectorRepository;
 
     @Autowired
-    private CompanyUserService companyService;
+    private AccountService accountService;
 
     @Autowired
     private ChargingStationsService chargingStationsService;
@@ -56,8 +56,13 @@ public class ConnectorController {
     public ResponseEntity<Object> createConnector(Authentication authentication,
                                                   @RequestBody NewConnectorDTO connectorDTO) {
 
-        CompanyUser company = companyService.findByEmailCompanyUser(authentication.getName());
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
         String mensaje = " ";
+
+        if (account.isEmpty()) {
+            mensaje = "No se encontró la cuenta";
+            return ResponseEntity.status(400).body(mensaje);
+        }
 
         if (connectorDTO.getAlias() == null) {
             mensaje = "El alias del cargador no puede estar vacío";
@@ -128,13 +133,12 @@ public class ConnectorController {
                                                   @PathVariable Long id,
                                                   @RequestBody NewConnectorDTO connectorDTO) {
 
-        // Obtener la compañía del usuario autenticado
-        CompanyUser company = companyService.findByEmailCompanyUser(authentication.getName());
-        String mensaje = "";
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
+        String mensaje = " ";
 
-        if (company == null) {
-            mensaje = "La compañía no se encontró";
-            return ResponseEntity.status(404).body(mensaje);
+        if (account.isEmpty()) {
+            mensaje = "No se encontró la cuenta";
+            return ResponseEntity.status(400).body(mensaje);
         }
 
         // Buscar el conector existente
@@ -213,13 +217,12 @@ public class ConnectorController {
     @PatchMapping("/companies/current/connectors/{id}/delete")
     public ResponseEntity<Object> deleteConnector(Authentication authentication,
                                                   @PathVariable Long id) {
-        // Obtener el usuario autenticado
-        CompanyUser companyUser = companyService.findByEmailCompanyUser(authentication.getName());
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
         String mensaje = " ";
 
-        if (companyUser == null) {
-            mensaje = "La compañía no se encontró";
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mensaje);
+        if (account.isEmpty()) {
+            mensaje = "No se encontró la cuenta";
+            return ResponseEntity.status(400).body(mensaje);
         }
 
         // Buscar el conector por su ID

@@ -40,26 +40,25 @@ public class ChargingStationsDTO {
     @NotNull(message = "La ubicación de la terminal no puede ser nula.")
     private LocationChargingStationDTO UbicacionTerminal;
 
-    private long CuentaCompañia;
+    private long Cuenta;
 
     private Boolean activo;
 
     public ChargingStationsDTO() {}
 
     public ChargingStationsDTO(ChargingStation Terminal) {
-
-        id = Terminal.getId();
-        NombreTerminal = Terminal.getNombreTerminal();
-        FechaDeCreacion = Terminal.getFechaDeCreacion();
-        EstadoTerminal = Terminal.getEstadoTerminal();
-        Reservaciones = Terminal.getReservaciones();
-        Transacciones = Terminal.getTransacciones();
-        Cargadores = Terminal.getCargadores().stream()
+        this.id = Terminal.getId();
+        this.NombreTerminal = Terminal.getNombreTerminal();
+        this.FechaDeCreacion = Terminal.getFechaDeCreacion();
+        this.EstadoTerminal = Terminal.getEstadoTerminal();
+        this.Reservaciones = Terminal.getReservaciones();
+        this.Transacciones = Terminal.getTransacciones();
+        this.Cargadores = Terminal.getCargadores().stream()
                 .map(ChargerDTO::new)
                 .collect(Collectors.toList());
         this.UbicacionTerminal = new LocationChargingStationDTO(Terminal.getUbicacionTerminal());
-        CuentaCompañia = Terminal.getCuentaCompañia().getId();
-        activo = Terminal.getActivo();
+        this.Cuenta = Terminal.getAccount().getId();
+        this.activo = Terminal.getActivo();
     }
 
     public Long getId() {
@@ -98,8 +97,8 @@ public class ChargingStationsDTO {
         return UbicacionTerminal;
     }
 
-    public long getCuentaCompañia() {
-        return CuentaCompañia;
+    public long getCuenta() {
+        return Cuenta;
     }
 
     @Override
@@ -113,7 +112,8 @@ public class ChargingStationsDTO {
                 ", Transacciones=" + Transacciones +
                 ", Cargadores=" + Cargadores +
                 ", UbicacionTerminal=" + UbicacionTerminal +
-                ", CuentaCompañia=" + CuentaCompañia +
+                ", Cuenta=" + Cuenta +
+                ", activo=" + activo +
                 '}';
     }
 }

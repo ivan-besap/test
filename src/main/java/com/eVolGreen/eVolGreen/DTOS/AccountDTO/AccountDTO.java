@@ -1,122 +1,131 @@
 package com.eVolGreen.eVolGreen.DTOS.AccountDTO;
 
-import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TypeOfAccountDTO.AccountCompanyDTO;
-import com.eVolGreen.eVolGreen.DTOS.UserDTO.AdminCompanyDTO;
-import com.eVolGreen.eVolGreen.DTOS.UserDTO.CompanyDTO.CompanyUserDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountCompany;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.AdminCompanyUser;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
+import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.TypeAccounts;
+import com.eVolGreen.eVolGreen.Models.User.Role;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 public class AccountDTO {
 
     private long id;
 
     @NotNull(message = "El número de cuenta no puede ser nulo.")
-    private String NumeroDeCuenta;
+    private String numeroDeCuenta;
 
     @NotBlank(message = "El nombre de la cuenta no puede estar vacío")
-    private String NombreCuenta;
+    private String nombreCuenta;
 
     @NotNull(message = "La fecha de creación no puede ser nula.")
-    private LocalDate FechaDeCreacion;
+    private LocalDate fechaDeCreacion;
 
     @NotNull(message = "El email no puede ser nulo.")
-    private String Email;
+    private String email;
 
     @NotNull(message = "El password no puede ser nulo.")
-    private String Password;
+    private String password;
 
     @NotNull(message = "El estado de la cuenta no puede ser nulo.")
-    private Boolean Activo = false;
+    private Boolean activo = false;
 
-    private List<Long> CuentaCompañiaIds;
+    @NotNull(message = "El tipo de cuenta no puede ser nulo.")
+    private TypeAccounts tipoCuenta;
 
-    private Long CompañiaId;
+    @NotNull(message = "El rol no puede ser nulo.")
+    private Role rol;
 
-    private Long adminCompañiaId;
 
-    public AccountDTO() { }
+    @NotNull(message = "El teléfono no puede ser nulo.")
+    private String telefono;
+
+    @NotNull(message = "El RUT no puede ser nulo.")
+    private String rut;
+
+    private EmpresaDTO empresa;
+
+    public AccountDTO() {}
 
     public AccountDTO(Account account) {
-
-        id = account.getId();
-        NumeroDeCuenta = account.getNumeroDeCuenta();
-        NombreCuenta = account.getNombreCuenta();
-        FechaDeCreacion = account.getFechaDeCreacion();
-        Email = account.getEmail();
-        Password = account.getPassword();
-        Activo = account.getActivo();
-        CuentaCompañiaIds = account.getCuentaCompañia()
-                .stream()
-                .map(AccountCompanyDTO -> new AccountCompanyDTO(AccountCompanyDTO).getId())
-                .collect(Collectors.toList());
-        CompañiaId = account.getCompañia() != null ? account.getCompañia().getId() : null;
-        adminCompañiaId = account.getAdminCompañia() != null ? account.getAdminCompañia().getId() : null;
+        this.id = account.getId();
+        this.numeroDeCuenta = account.getNumeroDeCuenta();
+        this.nombreCuenta = account.getNombreCuenta();
+        this.fechaDeCreacion = account.getFechaDeCreacion();
+        this.email = account.getEmail();
+        this.password = account.getPassword();
+        this.activo = account.getActivo();
+        this.tipoCuenta = account.getTipoCuenta();
+        this.rol = account.getRol();
+        this.telefono = account.getTelefono();
+        this.rut = account.getRut();
+        this.empresa = new EmpresaDTO(account.getEmpresa());
     }
 
     public long getId() {
         return id;
     }
 
-    public @NotNull(message = "El número de cuenta no puede ser nulo.") String getNumeroDeCuenta() {
-        return NumeroDeCuenta;
+    public String getNumeroDeCuenta() {
+        return numeroDeCuenta;
     }
 
-    public @NotBlank(message = "El nombre de la cuenta no puede estar vacío") String getNombreCuenta() {
-        return NombreCuenta;
+    public String getNombreCuenta() {
+        return nombreCuenta;
     }
 
-    public @NotNull(message = "La fecha de creación no puede ser nula.") LocalDate getFechaDeCreacion() {
-        return FechaDeCreacion;
+    public LocalDate getFechaDeCreacion() {
+        return fechaDeCreacion;
     }
 
-    public @NotNull(message = "El email no puede ser nulo.") String getEmail() {
-        return Email;
+    public String getEmail() {
+        return email;
     }
 
-    public @NotNull(message = "El password no puede ser nulo.") String getPassword() {
-        return Password;
+    public String getPassword() {
+        return password;
     }
 
-    public @NotNull(message = "El estado de la cuenta no puede ser nulo.") Boolean getActivo() {
-        return Activo;
+    public Boolean getActivo() {
+        return activo;
     }
 
-    public List<Long> getCuentaCompañiaIds() {
-        return CuentaCompañiaIds;
+    public TypeAccounts getTipoCuenta() {
+        return tipoCuenta;
     }
 
-    public Long getCompañiaId() {
-        return CompañiaId;
+    public Role getRol() {
+        return rol;
     }
 
-    public Long getAdminCompañiaId() {
-        return adminCompañiaId;
+    public String getTelefono() {
+        return telefono;
+    }
+
+    public String getRut() {
+        return rut;
+    }
+
+    public EmpresaDTO getEmpresa() {
+        return empresa;
     }
 
     @Override
     public String toString() {
         return "AccountDTO{" +
                 "id=" + id +
-                ", NumeroDeCuenta='" + NumeroDeCuenta + '\'' +
-                ", NombreCuenta='" + NombreCuenta + '\'' +
-                ", FechaDeCreacion=" + FechaDeCreacion +
-                ", Email='" + Email + '\'' +
-                ", Password='" + Password + '\'' +
-                ", Activo=" + Activo +
-                ", CuentaCompañiaIds=" + CuentaCompañiaIds +
-                ", CompañiaId=" + CompañiaId +
-                ", adminCompañiaId=" + adminCompañiaId +
+                ", numeroDeCuenta='" + numeroDeCuenta + '\'' +
+                ", nombreCuenta='" + nombreCuenta + '\'' +
+                ", fechaDeCreacion=" + fechaDeCreacion +
+                ", email='" + email + '\'' +
+                ", password='" + password + '\'' +
+                ", activo=" + activo +
+                ", tipoCuenta=" + tipoCuenta +
+                ", rol=" + rol +
+                ", telefono='" + telefono + '\'' +
+                ", rut='" + rut + '\'' +
+                ", empresa=" + (empresa != null ? empresa.getNombre() : "null") +
                 '}';
     }
 }
-
-

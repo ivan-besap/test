@@ -3,17 +3,16 @@ package com.eVolGreen.eVolGreen.Controllers.AccountController;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.FeeDTO.FeeDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.FeeDTO.NewFeeDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Fee.Fee;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountCompany;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
-import com.eVolGreen.eVolGreen.Services.DUserService.CompanyUserService;
+import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.FeeService;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.security.core.Authentication;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,7 +25,7 @@ public class FeeController {
     private FeeService feeService;
 
     @Autowired
-    private CompanyUserService companyUserService;
+    private AccountService accountService;
 
     @GetMapping("/fees")
     public List<FeeDTO> getFees() {
@@ -36,95 +35,84 @@ public class FeeController {
     @GetMapping("/fees/{id}")
     public ResponseEntity<Object> getFeeDTOById(@PathVariable Long id) {
 
-        String message = " ";
+        String message;
         FeeDTO feeDTO = feeService.getFeeDTOById(id);
 
         if (feeDTO == null) {
-            message = "Fees/{id}: No se encontró la tarifa con el id proporcionado.";
+            message = "No se encontró la tarifa con el id proporcionado.";
             return new ResponseEntity<>(message, HttpStatus.NOT_FOUND);
         }
 
         return new ResponseEntity<>(feeDTO, HttpStatus.OK);
     }
 
+    @PostMapping("/fees")
+    public ResponseEntity<Object> createFee(Authentication authentication,
+                                            @RequestBody NewFeeDTO feeDTO) {
 
-    @PostMapping("/companies/current/fee")
-    public ResponseEntity<Object> createFee (Authentication authentication,
-                                             @RequestBody NewFeeDTO fee){
+        Optional<Account> optionalAccount = accountService.findByEmail(authentication.getName());
+        String mensaje;
 
-        CompanyUser company = companyUserService.findByEmailCompanyUser(authentication.getName());
-        String mensaje = " ";
-
-        if (company == null) {
-            mensaje = "La compañia no se encontro";
+        if (optionalAccount.isEmpty()) {
+            mensaje = "La cuenta no se encontró";
             return new ResponseEntity<>(mensaje, HttpStatus.NOT_FOUND);
         }
-        if (fee.getNombreTarifa() == null){
+
+        Account account = optionalAccount.get();
+
+        // Validar los campos requeridos
+        if (feeDTO.getNombreTarifa() == null) {
             mensaje = "El nombre es necesario";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (fee.getFechaInicio() == null){
-            mensaje = "La Fecha de inicio es necesaria ";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+        if (feeDTO.getFechaInicio() == null) {
+            mensaje = "La Fecha de inicio es necesaria";
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (fee.getFechaFin() == null){
-            mensaje = "La Fecha Fin de la tarifa es necesario";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+        if (feeDTO.getFechaFin() == null) {
+            mensaje = "La Fecha Fin de la tarifa es necesaria";
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (fee.getHoraInicio() == null){
+        if (feeDTO.getHoraInicio() == null) {
             mensaje = "La Hora de inicio es necesaria";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (fee.getHoraFin() == null){
-            mensaje = "La Hora Fines necesaria";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+        if (feeDTO.getHoraFin() == null) {
+            mensaje = "La Hora Fin es necesaria";
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (fee.getDiasDeLaSemana() == null){
-            mensaje = "Es necesario marcar 1 dia de la semana";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+        if (feeDTO.getDiasDeLaSemana() == null) {
+            mensaje = "Es necesario marcar al menos un día de la semana";
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (fee.getPrecioTarifa() == null){
+        if (feeDTO.getPrecioTarifa() == null) {
             mensaje = "El precio de la tarifa es necesario";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
 
-        Optional<AccountCompany> optionalAccountCompany = company.getCuentaCompañia().stream().findFirst();
-        if (optionalAccountCompany.isEmpty()) {
-            return new ResponseEntity<>("No se encontró la cuenta de la compañía", HttpStatus.NOT_FOUND);
-        }
-
-        AccountCompany accountCompany = optionalAccountCompany.get();
-
+        // Crear la nueva tarifa
         Fee nuevaTarifa = new Fee(
-                fee.getNombreTarifa(),
-                fee.getFechaInicio(),
-                fee.getFechaFin(),
-                fee.getHoraInicio(),
-                fee.getHoraFin(),
-                fee.getDiasDeLaSemana(),
-                fee.getPrecioTarifa(),
-                false
+                feeDTO.getNombreTarifa(),
+                feeDTO.getFechaInicio(),
+                feeDTO.getFechaFin(),
+                feeDTO.getHoraInicio(),
+                feeDTO.getHoraFin(),
+                feeDTO.getDiasDeLaSemana(),
+                feeDTO.getPrecioTarifa(),
+                true,
+                account
         );
-        nuevaTarifa.setCompañia(company);
-        nuevaTarifa.setCuentaCompañia(accountCompany);
+
         feeService.saveFee(nuevaTarifa);
 
         mensaje = "Se ha creado una nueva tarifa";
-        return new ResponseEntity<>(mensaje,HttpStatus.CREATED);
+        return new ResponseEntity<>(mensaje, HttpStatus.CREATED);
     }
 
-    @PutMapping("/companies/current/fee/{id}")
-    public ResponseEntity<Object> updateFee(Authentication authentication,
-                                            @PathVariable Long id,
-                                            @RequestBody NewFeeDTO feeDTO) {
+    @PutMapping("/fees/{id}")
+    public ResponseEntity<Object> updateFee(@PathVariable Long id, @RequestBody NewFeeDTO feeDTO) {
 
-        CompanyUser company = companyUserService.findByEmailCompanyUser(authentication.getName());
-        String mensaje = " ";
-
-        if (company == null) {
-            mensaje = "La compañía no se encontró";
-            return new ResponseEntity<>(mensaje, HttpStatus.NOT_FOUND);
-        }
+        String mensaje;
 
         // Buscar la tarifa existente por su ID
         Fee existingFee = feeService.findById(id);
@@ -179,15 +167,10 @@ public class FeeController {
         return ResponseEntity.status(HttpStatus.OK).body(mensaje);
     }
 
-    @PatchMapping("/companies/current/fee/{id}/delete")
-    public ResponseEntity<Object> deleteFee(Authentication authentication, @PathVariable Long id) {
-        CompanyUser company = companyUserService.findByEmailCompanyUser(authentication.getName());
-        String mensaje = " ";
+    @PatchMapping("/fees/{id}/delete")
+    public ResponseEntity<Object> deleteFee(@PathVariable Long id) {
 
-        if (company == null) {
-            mensaje = "La compañía no se encontró";
-            return new ResponseEntity<>(mensaje, HttpStatus.NOT_FOUND);
-        }
+        String mensaje;
 
         // Buscar la tarifa existente por su ID
         Fee existingFee = feeService.findById(id);
@@ -209,6 +192,4 @@ public class FeeController {
         mensaje = "La tarifa fue desactivada exitosamente";
         return ResponseEntity.ok(mensaje);
     }
-
-
 }

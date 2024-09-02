@@ -1,19 +1,14 @@
 package com.eVolGreen.eVolGreen.Controllers.AccountController;
 
 
-import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.CarCompanyDTO;
-import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.NewCarCompanyDTO;
-
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.CarDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.NewCarDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Car.Car;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.AccountCompany;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
 import com.eVolGreen.eVolGreen.Repositories.CarRepository;
-import com.eVolGreen.eVolGreen.Services.AccountService.AccountCompanyService;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.CarService;
 import com.eVolGreen.eVolGreen.Services.AccountService.DeviceIdentifierService;
-import com.eVolGreen.eVolGreen.Services.DUserService.ClientUserService;
-import com.eVolGreen.eVolGreen.Services.DUserService.CompanyUserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -26,122 +21,114 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api")
 public class CarController {
+
     @Autowired
     private CarService carService;
-    @Autowired
-    private ClientUserService clientUserService;
-    @Autowired
-    private DeviceIdentifierService deviceIdentifierService;
-//    @Autowired
-//    private EmailService emailService;
+
     @Autowired
     private AccountService accountService;
+
     @Autowired
     private CarRepository carRepository;
-    @Autowired
-    private CompanyUserService companyService;
-    @Autowired
-    private AccountCompanyService accountCompanyService;
 
     @GetMapping("/cars")
-    public List<CarCompanyDTO> getCars() {
-        return carService.getCarsCompanyDTO();
+    public List<CarDTO> getCars() {
+        return carService.getCarsDTO();
     }
 
-    @GetMapping("/companies/current/cars")
-    public List<CarCompanyDTO> getCars(Authentication authentication) {
-        CompanyUser company = companyService.findByEmailCompanyUser(authentication.getName());
-        return carService.getCarsCompanyDTOByCompany(company);
+    @GetMapping("/accounts/current/cars")
+    public ResponseEntity<List<CarDTO>> getCars(Authentication authentication) {
+        Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
+        if (accountOptional.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        Account account = accountOptional.get();
+        return new ResponseEntity<>(carService.getCarsDTOByAccount(account), HttpStatus.OK);
     }
 
-    @GetMapping("/companies/current/cars/{id}")
-    public CarCompanyDTO getCardDTO(@PathVariable Long id) {
-        return carService.getCardCompanyDTO(id);
+    @GetMapping("/accounts/current/cars/{id}")
+    public CarDTO getCarDTO(@PathVariable Long id) {
+        return carService.getCarDTO(id);
     }
 
-    @PostMapping("/companies/current/cars")
-    public ResponseEntity<Object> createCar (Authentication authentication,
-                                             @RequestBody NewCarCompanyDTO car){
+    @PostMapping("/accounts/current/cars")
+    public ResponseEntity<Object> createCar(Authentication authentication,
+                                            @RequestBody NewCarDTO carDTO) {
 
-        CompanyUser company = companyService.findByEmailCompanyUser(authentication.getName());
-        String mensaje = " ";
+        Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
+        if (accountOptional.isEmpty()) {
+            return new ResponseEntity<>("La cuenta no se encontró", HttpStatus.NOT_FOUND);
+        }
+        Account account = accountOptional.get();
 
-        if (company == null) {
-            mensaje = "La compañia no se encontro";
+        String mensaje = "";
+        if (account == null) {
+            mensaje = "La cuenta no se encontró";
             return new ResponseEntity<>(mensaje, HttpStatus.NOT_FOUND);
         }
 
-        if (car.getPatente() == null){
-            mensaje = "La pantente es necesaria";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+        if (carDTO.getPatente() == null) {
+            mensaje = "La patente es necesaria";
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (car.getModelo() == null){
+        if (carDTO.getModelo() == null) {
             mensaje = "El modelo es necesario";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if(car.getVin() == null){
-            mensaje = "El vin es necesario";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+        if (carDTO.getVin() == null) {
+            mensaje = "El VIN es necesario";
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if(car.getColor() == null){
+        if (carDTO.getColor() == null) {
             mensaje = "El color del auto es necesario";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if(car.getMarca() == null){
+        if (carDTO.getMarca() == null) {
             mensaje = "La marca es necesaria en el auto";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (car.getAñoFabricacion() ==null){
-            mensaje = "El año de fabricacion es necesario";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+        if (carDTO.getAñoFabricacion() == null) {
+            mensaje = "El año de fabricación es necesario";
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (car.getCapacidadPotencia() == null){
-            mensaje = "La capacidad de potencia maxima del auto es necesaria";
-            return  new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+        if (carDTO.getCapacidadPotencia() == null) {
+            mensaje = "La capacidad de potencia máxima del auto es necesaria";
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-
-        Optional<AccountCompany> optionalAccountCompany = company.getCuentaCompañia().stream().findFirst();
-        if (optionalAccountCompany.isEmpty()) {
-            return new ResponseEntity<>("No se encontró la cuenta de la compañía", HttpStatus.NOT_FOUND);
-        }
-
-        AccountCompany accountCompany = optionalAccountCompany.get();
 
         Car nuevoAuto = new Car(
-                car.getPatente(),
-                car.getModelo(),
-                car.getVin(),
-                car.getColor(),
-                car.getMarca(),
-                car.getAñoFabricacion(),
-                car.getCapacidadPotencia(),
+                carDTO.getPatente(),
+                carDTO.getModelo(),
+                carDTO.getVin(),
+                carDTO.getColor(),
+                carDTO.getMarca(),
+                carDTO.getAñoFabricacion(),
+                carDTO.getCapacidadPotencia(),
                 true
         );
-        nuevoAuto.setCuentaCompañia(accountCompany);
+        nuevoAuto.setAccount(account);
         carService.saveCar(nuevoAuto);
 
-        mensaje = "El auto se ha creado con exito";
-        return new ResponseEntity<>(mensaje,HttpStatus.CREATED);
+        mensaje = "El auto se ha creado con éxito";
+        return new ResponseEntity<>(mensaje, HttpStatus.CREATED);
     }
 
-    @PutMapping("/companies/current/cars/{id}")
+    @PutMapping("/accounts/current/cars/{id}")
     public ResponseEntity<Object> updateCar(Authentication authentication,
                                             @PathVariable Long id,
-                                            @RequestBody NewCarCompanyDTO carDTO) {
+                                            @RequestBody NewCarDTO carDTO) {
 
-        // Verificar si la compañía del usuario autenticado existe
-        CompanyUser company = companyService.findByEmailCompanyUser(authentication.getName());
-        if (company == null) {
-            return new ResponseEntity<>("La compañía no se encontró", HttpStatus.NOT_FOUND);
+        Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
+        if (accountOptional.isEmpty()) {
+            return new ResponseEntity<>("La cuenta no se encontró", HttpStatus.NOT_FOUND);
         }
+        Account account = accountOptional.get();
 
-        // Buscar el auto existente por su ID
         Car existingCar = carService.findById(id);
         if (existingCar == null) {
             return new ResponseEntity<>("El auto no se encontró", HttpStatus.NOT_FOUND);
         }
 
-        // Verificar los campos requeridos en el DTO
         if (carDTO.getPatente() == null) {
             return new ResponseEntity<>("La patente es necesaria", HttpStatus.FORBIDDEN);
         }
@@ -164,7 +151,6 @@ public class CarController {
             return new ResponseEntity<>("La capacidad de potencia máxima del auto es necesaria", HttpStatus.FORBIDDEN);
         }
 
-        // Actualizar los datos del auto existente
         existingCar.setPatente(carDTO.getPatente());
         existingCar.setModelo(carDTO.getModelo());
         existingCar.setVin(carDTO.getVin());
@@ -173,32 +159,28 @@ public class CarController {
         existingCar.setAñoFabricacion(carDTO.getAñoFabricacion());
         existingCar.setCapacidadPotencia(carDTO.getCapacidadPotencia());
 
-        // Guardar los cambios en la base de datos
         carService.saveCar(existingCar);
 
         return new ResponseEntity<>("El auto se ha actualizado con éxito", HttpStatus.OK);
     }
 
-    @PatchMapping("/companies/current/cars/{id}/delete")
+    @PatchMapping("/accounts/current/cars/{id}/delete")
     public ResponseEntity<Object> deleteCar(Authentication authentication, @PathVariable Long id) {
-        // Obtener la compañía del usuario autenticado
-        CompanyUser company = companyService.findByEmailCompanyUser(authentication.getName());
-        if (company == null) {
-            return new ResponseEntity<>("La compañía no se encontró", HttpStatus.NOT_FOUND);
+        Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
+        if (accountOptional.isEmpty()) {
+            return new ResponseEntity<>("La cuenta no se encontró", HttpStatus.NOT_FOUND);
         }
+        Account account = accountOptional.get();
 
-        // Buscar el auto por su ID
         Car car = carService.findById(id);
         if (car == null) {
             return new ResponseEntity<>("El auto no se encontró", HttpStatus.NOT_FOUND);
         }
 
-        // Verificar si el auto ya está desactivado
         if (!car.getActivo()) {
             return new ResponseEntity<>("El auto ya está desactivado", HttpStatus.BAD_REQUEST);
         }
 
-        // Desactivar el auto
         car.setActivo(false);
         carService.saveCar(car);
 

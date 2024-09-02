@@ -1,21 +1,17 @@
 package com.eVolGreen.eVolGreen.Controllers.AccountController;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.PermissionCredentialDTO.PermissionDTO;
-import com.eVolGreen.eVolGreen.Models.Account.PermissionCredential.Permission;
-import com.eVolGreen.eVolGreen.Models.User.subclassUser.CompanyUser;
+import com.eVolGreen.eVolGreen.Models.Account.Permission.Permission;
 import com.eVolGreen.eVolGreen.Repositories.PermissionRepository;
-import com.eVolGreen.eVolGreen.Services.DUserService.CompanyUserService;
-import com.eVolGreen.eVolGreen.Services.DUserService.EmployeeUserService;
-import com.eVolGreen.eVolGreen.Services.AccountService.CredentialService;
 import com.eVolGreen.eVolGreen.Services.AccountService.PermissionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
 
 @RestController
 @RequestMapping("/api/permissions")
@@ -25,18 +21,9 @@ public class PermissionController {
     private PermissionRepository permissionRepository;
 
     @Autowired
-    private EmployeeUserService employeeUserService;
-
-    @Autowired
-    private CompanyUserService companyUserService;
-
-    @Autowired
-    private CredentialService credentialService;
-
-    @Autowired
     private PermissionService permissionService;
 
-    @GetMapping("/default")
+    @GetMapping
     public List<PermissionDTO> getPermissions() {
         return permissionRepository.findAll()
                 .stream()
@@ -44,22 +31,46 @@ public class PermissionController {
                 .collect(Collectors.toList());
     }
 
-    @GetMapping("/company")
-    public ResponseEntity<List<PermissionDTO>> getPermissions(Authentication authentication) {
-        CompanyUser company = companyUserService.findByEmailCompanyUser(authentication.getName());
-        if (company == null) {
-            return new ResponseEntity<>(HttpStatus.FORBIDDEN);
+    @PostMapping
+    public ResponseEntity<Object> createPermission(@RequestBody PermissionDTO permissionDTO) {
+        if (permissionDTO.getNombre() == null || permissionDTO.getNombre().isBlank()) {
+            return new ResponseEntity<>("Permission name cannot be blank", HttpStatus.BAD_REQUEST);
         }
 
-        List<Permission> permissions = permissionService.getPermissionsForCompany(company.getId());
+        if (permissionDTO.getDescripcion() == null || permissionDTO.getDescripcion().isBlank()) {
+            return new ResponseEntity<>("Permission description cannot be blank", HttpStatus.BAD_REQUEST);
+        }
 
-        List<PermissionDTO> permissionDTOs = permissions.stream()
-                .map(PermissionDTO::new)
-                .collect(Collectors.toList());
+        Permission permission = new Permission(permissionDTO.getNombre(), permissionDTO.getDescripcion());
+        permissionService.savePermission(permission);
 
-        return new ResponseEntity<>(permissionDTOs, HttpStatus.OK);
+        return ResponseEntity.status(HttpStatus.CREATED).body(new PermissionDTO(permission));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<Object> updatePermission(@PathVariable Long id, @RequestBody PermissionDTO permissionDTO) {
+        Permission existingPermission = permissionService.findById(id);
+        if (existingPermission == null) {
+            return new ResponseEntity<>("Permission not found", HttpStatus.NOT_FOUND);
+        }
+
+        existingPermission.setNombre(permissionDTO.getNombre());
+        existingPermission.setDescripcion(permissionDTO.getDescripcion());
+        permissionService.savePermission(existingPermission);
+
+        return ResponseEntity.ok(new PermissionDTO(existingPermission));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Object> deletePermission(@PathVariable Long id) {
+        Permission existingPermission = permissionService.findById(id);
+        if (existingPermission == null) {
+            return new ResponseEntity<>("Permission not found", HttpStatus.NOT_FOUND);
+        }
+
+        permissionService.deletePermission(id);
+        return ResponseEntity.ok("Permission deleted successfully");
+    }
 //    @PostMapping("/company")
 //    public ResponseEntity<Object> createPermission(Authentication authentication,
 //                                                   @RequestBody PermissionDTO permissionDTO) {

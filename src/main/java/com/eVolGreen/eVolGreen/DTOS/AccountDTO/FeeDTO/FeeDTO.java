@@ -14,57 +14,46 @@ public class FeeDTO {
     private long id;
 
     @NotNull(message = "El nombre de la tarifa es obligatorio")
-    private String NombreTarifa;
+    private String nombreTarifa;
 
     @NotNull(message = "La fecha de inicio es obligatoria")
-    private LocalDate FechaInicio;
+    private LocalDate fechaInicio;
 
     @NotNull(message = "La fecha de fin es obligatoria")
-    private LocalDate FechaFin;
+    private LocalDate fechaFin;
 
     @NotNull(message = "La hora de inicio es obligatoria")
-    private LocalTime HoraInicio;
+    private LocalTime horaInicio;
 
     @NotNull(message = "La hora de fin es obligatoria")
-    private LocalTime HoraFin;
+    private LocalTime horaFin;
 
-    @NotNull(message = "Los dias de la semana son obligatorios")
-    private Set<String> DiasDeLaSemana;
+    @NotNull(message = "Los días de la semana son obligatorios")
+    private Set<String> diasDeLaSemana;
 
     @NotNull(message = "El precio de la tarifa es obligatorio")
-    private BigDecimal PrecioTarifa;
+    private BigDecimal precioTarifa;
 
-    private Set<FeeConnector> TarifaConector;
+    private Set<FeeConnector> tarifaConector;
 
-    private long CuentaCliente;
-
-    private long CuentaCompañia;
-
-    private long CuentaTrabajador;
-
-    private String Compañia;
+    private long accountId;
 
     private Boolean activo = false;
 
     public FeeDTO() {}
 
-    public FeeDTO( Fee Tarifa) {
-
-        id = Tarifa.getId();
-        NombreTarifa = Tarifa.getNombreTarifa();
-        FechaInicio = Tarifa.getFechaInicio();
-        FechaFin = Tarifa.getFechaFin();
-        HoraInicio = Tarifa.getHoraInicio();
-        HoraFin = Tarifa.getHoraFin();
-        DiasDeLaSemana = Tarifa.getDiasDeLaSemana();
-        PrecioTarifa = Tarifa.getPrecioTarifa();
-        TarifaConector = Tarifa.getTarifaConector();
-        CuentaCliente = Tarifa.getCuentaCliente().getId();
-        CuentaCompañia = Tarifa.getCuentaCompañia().getId();
-        CuentaTrabajador = Tarifa.getCuentaTrabajador().getId();
-        Compañia = Tarifa.getCuentaCompañia().getNombreCompañia();
-        activo = Tarifa.getActivo();
-
+    public FeeDTO(Fee tarifa) {
+        id = tarifa.getId();
+        nombreTarifa = tarifa.getNombreTarifa();
+        fechaInicio = tarifa.getFechaInicio();
+        fechaFin = tarifa.getFechaFin();
+        horaInicio = tarifa.getHoraInicio();
+        horaFin = tarifa.getHoraFin();
+        diasDeLaSemana = tarifa.getDiasDeLaSemana();
+        precioTarifa = tarifa.getPrecioTarifa();
+        tarifaConector = tarifa.getTarifaConector();
+        accountId = tarifa.getAccount().getId();
+        activo = tarifa.getActivo();
     }
 
     public long getId() {
@@ -75,70 +64,56 @@ public class FeeDTO {
         return activo;
     }
 
-    public @NotNull(message = "El nombre de la tarifa es obligatorio") String getNombreTarifa() {
-        return NombreTarifa;
+    public String getNombreTarifa() {
+        return nombreTarifa;
     }
 
-    public @NotNull(message = "La fecha de inicio es obligatoria") LocalDate getFechaInicio() {
-        return FechaInicio;
+    public LocalDate getFechaInicio() {
+        return fechaInicio;
     }
 
-    public @NotNull(message = "La fecha de fin es obligatoria") LocalDate getFechaFin() {
-        return FechaFin;
+    public LocalDate getFechaFin() {
+        return fechaFin;
     }
 
-    public @NotNull(message = "La hora de inicio es obligatoria") LocalTime getHoraInicio() {
-        return HoraInicio;
+    public LocalTime getHoraInicio() {
+        return horaInicio;
     }
 
-    public @NotNull(message = "La hora de fin es obligatoria") LocalTime getHoraFin() {
-        return HoraFin;
+    public LocalTime getHoraFin() {
+        return horaFin;
     }
 
-    public @NotNull(message = "Los dias de la semana son obligatorios") Set<String> getDiasDeLaSemana() {
-        return DiasDeLaSemana;
+    public Set<String> getDiasDeLaSemana() {
+        return diasDeLaSemana;
     }
 
-    public @NotNull(message = "El precio de la tarifa es obligatorio") BigDecimal getPrecioTarifa() {
-        return PrecioTarifa;
+    public BigDecimal getPrecioTarifa() {
+        return precioTarifa;
     }
 
     public Set<FeeConnector> getTarifaConector() {
-        return TarifaConector;
+        return tarifaConector;
     }
 
-    public long getCuentaCliente() {
-        return CuentaCliente;
-    }
-
-    public long getCuentaCompañia() {
-        return CuentaCompañia;
-    }
-
-    public long getCuentaTrabajador() {
-        return CuentaTrabajador;
-    }
-
-    public String getCompañia() {
-        return Compañia;
+    public long getAccountId() {
+        return accountId;
     }
 
     @Override
     public String toString() {
         return "FeeDTO{" +
                 "id=" + id +
-                ", NombreTarifa='" + NombreTarifa + '\'' +
-                ", FechaInicio=" + FechaInicio +
-                ", FechaFin=" + FechaFin +
-                ", HoraInicio=" + HoraInicio +
-                ", HoraFin=" + HoraFin +
-                ", DiasDeLaSemana=" + DiasDeLaSemana +
-                ", PrecioTarifa=" + PrecioTarifa +
-                ", TarifaConector=" + TarifaConector +
-                ", CuentaCliente=" + CuentaCliente +
-                ", CuentaCompañia=" + CuentaCompañia +
-                ", CuentaTrabajador=" + CuentaTrabajador +
-                ", Compañia='" + Compañia + '\'' +
+                ", nombreTarifa='" + nombreTarifa + '\'' +
+                ", fechaInicio=" + fechaInicio +
+                ", fechaFin=" + fechaFin +
+                ", horaInicio=" + horaInicio +
+                ", horaFin=" + horaFin +
+                ", diasDeLaSemana=" + diasDeLaSemana +
+                ", precioTarifa=" + precioTarifa +
+                ", tarifaConector=" + tarifaConector +
+                ", accountId=" + accountId +
+                ", activo=" + activo +
                 '}';
     }
 }
