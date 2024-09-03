@@ -1,6 +1,8 @@
 package com.eVolGreen.eVolGreen.Repositories;
 
 import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
+import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.TypeAccounts;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -22,6 +24,11 @@ public interface AccountRepository extends JpaRepository <Account, Long> {
     @Query("SELECT a FROM Account a JOIN FETCH a.role r LEFT JOIN FETCH r.permisos WHERE a.email = :email")
     Optional<Account> findByEmailWithRoleAndPermissions(@Param("email") String email);
 
+    List<Account> findByEmpresaAndTipoCuenta(Empresa empresa, TypeAccounts tipoCuenta);
+
+    List<Account> findByEmpresaAndTipoCuentaAndActivo(Empresa empresa, TypeAccounts tipoCuenta, Boolean activo);
+
+    Account findByEmpresaAndTipoCuentaAndActivoAndId(Empresa empresa, TypeAccounts typeAccounts, boolean activo, Long id);
 }
 
 

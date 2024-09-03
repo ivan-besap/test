@@ -2,18 +2,27 @@ package com.eVolGreen.eVolGreen.Controllers.AccountController;
 
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.AccountDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.EmployeeRegisterDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Location;
+import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.TypeAccounts;
+import com.eVolGreen.eVolGreen.Models.User.Role;
 import com.eVolGreen.eVolGreen.Repositories.AccountRepository;
 
+import com.eVolGreen.eVolGreen.Repositories.LocationRepository;
+import com.eVolGreen.eVolGreen.Repositories.RoleRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/api")
@@ -30,6 +39,15 @@ public class AccountController {
 
     @Autowired
     private AccountRepository accountRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private LocationRepository locationRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
 
     @GetMapping("/accounts")
     public List<AccountDTO> getAccounts() {
@@ -147,16 +165,223 @@ public class AccountController {
 //        return new ResponseEntity<>(mensaje, HttpStatus.CREATED);
 //    }
 
-    int min = 00000000;
-    int max = 99999999;
 
-    public int getRandomNumber(int min, int max) {
-        return (int) ((Math.random() * (max - min)) + min);
+
+//Crud para Usuario (Trabajador)
+
+    @PostMapping("/companies/current/employee")
+    public ResponseEntity<Object> registerEmployee(Authentication authentication,
+                                                   @RequestBody EmployeeRegisterDTO employeeDTO) {
+
+        Optional<Account> cuentaOpt = accountRepository.findByEmail(authentication.getName());
+        if (cuentaOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresa no encontrada");
+        }
+
+        Account cuentaEmpresa = cuentaOpt.get();
+
+        String validationError = validateEmployeeDTO(employeeDTO);
+        if (validationError != null) {
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).body(validationError);
+        }
+
+        Optional<Role> roleOpt = roleRepository.findById(employeeDTO.getRole());
+        if (roleOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Role no encontrado");
+        }
+
+        Role roleTrabajador = roleOpt.get();
+
+        String numeroDeCuenta = "Usuario" + getStringRandomEmployee();
+        Account cuentaUsuario = new Account(
+                employeeDTO.getNombre(),
+                employeeDTO.getApellidoPaterno(),
+                employeeDTO.getApellidoMaterno(),
+                numeroDeCuenta,
+                employeeDTO.getNombre(),
+                LocalDate.now(),
+                employeeDTO.getEmail(),
+                passwordEncoder.encode(employeeDTO.getPassword()),
+                TypeAccounts.EMPLOYEE,
+                roleTrabajador,
+                null,
+                null,
+                cuentaEmpresa.getEmpresa()
+        );
+
+        accountRepository.save(cuentaUsuario);
+
+        return ResponseEntity.ok("Empleado creado exitosamente");
     }
 
-    public String getStringRandomNumber() {
-        int randomNumber = getRandomNumber(min, max);
-        return String.valueOf(randomNumber);
+    @GetMapping("/roles")
+    public List<Role> getRoles() {
+        return roleRepository.findAll();
+    }
+
+    private String validateEmployeeDTO(EmployeeRegisterDTO employeeDTO) {
+        if (employeeDTO.getNombre().isBlank()) {
+            return "El nombre es requerido";
+        }
+        if (employeeDTO.getApellidoPaterno().isBlank()) {
+            return "El apellido paterno es requerido";
+        }
+        if (employeeDTO.getApellidoMaterno().isBlank()) {
+            return "El apellido materno es requerido";
+        }
+        if (employeeDTO.getEmail().isBlank()) {
+            return "El email es requerido";
+        }
+        if (employeeDTO.getPassword().isBlank()) {
+            return "La contraseña es requerida";
+        }
+        return null; // Sin errores
+    }
+
+    @GetMapping("/companies/current/employee")
+    public List<Account> getEmployees(Authentication authentication) {
+        Optional<Account> cuentaOpt = accountRepository.findByEmail(authentication.getName());
+        if (cuentaOpt.isEmpty()) {
+            return null;
+        }
+        Account cuenta = cuentaOpt.get();
+
+        return accountRepository.findByEmpresaAndTipoCuentaAndActivo(cuenta.getEmpresa(), TypeAccounts.EMPLOYEE, true);
+    }
+
+    @GetMapping("/companies/current/employee/{id}")
+    public Account getEmployee(Authentication authentication, @PathVariable Long id) {
+        Optional<Account> cuentaOpt = accountRepository.findByEmail(authentication.getName());
+        if (cuentaOpt.isEmpty()) {
+            return null;
+        }
+        Account cuenta = cuentaOpt.get();
+
+        return accountRepository.findByEmpresaAndTipoCuentaAndActivoAndId(cuenta.getEmpresa(), TypeAccounts.EMPLOYEE, true, id);
+    }
+
+    @PutMapping("/companies/current/employee/{id}")
+    public ResponseEntity<Object> updateEmployee(Authentication authentication,
+                                                 @PathVariable Long id,
+                                                 @RequestBody EmployeeRegisterDTO employeeDTO) {
+
+        Optional<Account> cuentaOpt = accountRepository.findByEmail(authentication.getName());
+        if (cuentaOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresa no encontrada");
+        }
+
+        Account cuentaEmpresa = cuentaOpt.get();
+
+        // Buscar el empleado por ID
+        Optional<Account> cuentaUsuario = accountRepository.findById(id);
+        if (cuentaUsuario.isEmpty()) {  // Cambiado a .isEmpty() para verificar correctamente
+            return new ResponseEntity<>("Usuario no encontrado", HttpStatus.NOT_FOUND);
+        }
+
+        Account cuentaTrabajador = cuentaUsuario.get();
+
+        // Validar los campos requeridos en el DTO
+        if (employeeDTO.getNombre().isBlank()) {
+            return new ResponseEntity<>("El nombre es requerido", HttpStatus.FORBIDDEN);
+        }
+        if (employeeDTO.getApellidoPaterno().isBlank()) {
+            return new ResponseEntity<>("El apellido paterno es requerido", HttpStatus.FORBIDDEN);
+        }
+        if (employeeDTO.getApellidoMaterno().isBlank()) {
+            return new ResponseEntity<>("El apellido materno es requerido", HttpStatus.FORBIDDEN);
+        }
+        if (employeeDTO.getEmail().isBlank()) {
+            return new ResponseEntity<>("El email es requerido", HttpStatus.FORBIDDEN);
+        }
+        if (employeeDTO.getPassword().isBlank()) {
+            return new ResponseEntity<>("La contraseña es requerida", HttpStatus.FORBIDDEN);
+        }
+
+        // Buscar el Role por ID y asignarlo a la cuenta
+        Optional<Role> roleOpt = roleRepository.findById(employeeDTO.getRole());
+        if (roleOpt.isEmpty()) {
+            return new ResponseEntity<>("Rol no encontrado", HttpStatus.NOT_FOUND);
+        }
+        Role role = roleOpt.get();
+
+        // Actualizar la información del empleado existente
+        cuentaTrabajador.setNombre(employeeDTO.getNombre());
+        cuentaTrabajador.setApellidoPaterno(employeeDTO.getApellidoPaterno());
+        cuentaTrabajador.setApellidoMaterno(employeeDTO.getApellidoMaterno());
+        cuentaTrabajador.setEmail(employeeDTO.getEmail());
+        cuentaTrabajador.setPassword(passwordEncoder.encode(employeeDTO.getPassword()));
+        cuentaTrabajador.setRole(role);  // Asignar el nuevo role
+
+        // Guardar los cambios en la base de datos
+        accountRepository.save(cuentaTrabajador);
+
+        return ResponseEntity.ok("Empleado actualizado exitosamente");
+    }
+
+    @PatchMapping("/companies/current/employees/{id}/delete")
+    public ResponseEntity<Object> deactivateEmployee(Authentication authentication,
+                                                     @PathVariable Long id) {
+
+        String message = " ";
+        Optional<Account> cuentaOpt = accountRepository.findByEmail(authentication.getName());
+        if (cuentaOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresa no encontrada");
+        }
+
+        Account cuentaEmpresa = cuentaOpt.get();
+
+        // Buscar el empleado por ID
+        Optional<Account> cuentaUsuario = accountRepository.findById(id);
+        if (cuentaUsuario.isEmpty()) {  // Cambiado a .isEmpty() para verificar correctamente
+            return new ResponseEntity<>("Usuario no encontrado", HttpStatus.NOT_FOUND);
+        }
+
+        Account cuentaTrabajador = cuentaUsuario.get();
+
+        // Verificar si el empleado ya está desactivado
+        if (!cuentaTrabajador.getActivo()) {
+            message = "El empleado ya está desactivado";
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+        }
+
+        // Desactivar el empleado
+        cuentaTrabajador.setActivo(false);
+        accountRepository.save(cuentaTrabajador);
+
+        message = "Empleado desactivado exitosamente";
+        return ResponseEntity.ok(message);
+    }
+
+    // Cambia isActiveStatus del cliente actualmente autenticada (Test)
+    @PutMapping("/employees/change-active-status")
+    public ResponseEntity<Object> changeActiveStatus(Authentication authentication,
+                                                     @RequestParam boolean activeStatus) {
+
+        String message = " ";
+        Optional<Account> cuentaOpt = accountRepository.findByEmail(authentication.getName());
+        if (cuentaOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresa no encontrada");
+        }
+
+        Account cuentaEmpresa = cuentaOpt.get();
+
+        cuentaEmpresa.setActivo(activeStatus);
+        accountRepository.save(cuentaEmpresa);
+
+        return ResponseEntity.ok("Active status updated to: " + activeStatus);
+    }
+
+
+
+
+
+
+
+    public String getStringRandomEmployee() {
+        int min = 0;
+        int max = 99999999;
+        int randomNumber = (int) ((Math.random() * (max - min)) + min);
+        return String.format("%08d", randomNumber);
     }
 
 }

@@ -18,6 +18,12 @@ public class Account{
     @GeneratedValue(strategy = GenerationType.AUTO, generator = "native")
     private long id;
 
+    private String nombre;
+
+    private String apellidoPaterno;
+
+    private String apellidoMaterno;
+
     @NotNull(message = "El número de cuenta no puede ser nulo.")
     private String numeroDeCuenta;
 
@@ -40,14 +46,12 @@ public class Account{
     @NotNull(message = "El tipo de cuenta no puede ser nulo.")
     private TypeAccounts tipoCuenta;
 
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "role_id", nullable = false)
     private Role role;
 
-    @NotNull(message = "El teléfono no puede ser nulo.")
     private String telefono;
 
-    @NotNull(message = "El RUT no puede ser nulo.")
     private String rut;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -58,7 +62,11 @@ public class Account{
 
     public Account() {}
 
-    public Account(String numeroDeCuenta, String nombreCuenta, LocalDate fechaDeCreacion, String email, String password, TypeAccounts tipoCuenta, Role role, String telefono, String rut, Empresa empresa) {
+    public Account(String nombre, String apellidoPaterno, String apellidoMaterno ,String numeroDeCuenta, String nombreCuenta, LocalDate fechaDeCreacion, String email, String password, TypeAccounts tipoCuenta, Role role, String telefono, String rut, Empresa empresa) {
+
+        this.nombre = nombre;
+        this.apellidoPaterno = apellidoPaterno;
+        this.apellidoMaterno = apellidoMaterno;
         this.numeroDeCuenta = numeroDeCuenta;
         this.nombreCuenta = nombreCuenta;
         this.fechaDeCreacion = fechaDeCreacion;
@@ -77,6 +85,38 @@ public class Account{
 
     public void setId(long id) {
         this.id = id;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public String getApellidoPaterno() {
+        return apellidoPaterno;
+    }
+
+    public void setApellidoPaterno(String apellidoPaterno) {
+        this.apellidoPaterno = apellidoPaterno;
+    }
+
+    public String getApellidoMaterno() {
+        return apellidoMaterno;
+    }
+
+    public void setApellidoMaterno(String apellidoMaterno) {
+        this.apellidoMaterno = apellidoMaterno;
+    }
+
+    public Role getRole() {
+        return role;
+    }
+
+    public void setRole(Role role) {
+        this.role = role;
     }
 
     public String getNumeroDeCuenta() {
