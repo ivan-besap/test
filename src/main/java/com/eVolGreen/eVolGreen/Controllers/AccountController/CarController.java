@@ -5,7 +5,9 @@ import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.CarDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.NewCarDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Car.Car;
+import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
 import com.eVolGreen.eVolGreen.Repositories.CarRepository;
+import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.CarService;
 import com.eVolGreen.eVolGreen.Services.AccountService.DeviceIdentifierService;
@@ -31,9 +33,17 @@ public class CarController {
     @Autowired
     private CarRepository carRepository;
 
+    @Autowired
+    private DeviceIdentifierRepository deviceIdentifierRepository;
+
     @GetMapping("/cars")
     public List<CarDTO> getCars() {
         return carService.getCarsDTO();
+    }
+
+    @GetMapping("/cars/{id}")
+    public CarDTO getCarDTO(@PathVariable Long id) {
+        return carService.getCarDTO(id);
     }
 
     @GetMapping("/accounts/current/cars")
@@ -47,8 +57,18 @@ public class CarController {
     }
 
     @GetMapping("/accounts/current/cars/{id}")
-    public CarDTO getCarDTO(@PathVariable Long id) {
-        return carService.getCarDTO(id);
+    public ResponseEntity<Object> getCarById(Authentication authentication, @PathVariable Long id) {
+        Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
+        if (accountOptional.isEmpty()) {
+            return new ResponseEntity<>("La cuenta no se encontró", HttpStatus.NOT_FOUND);
+        }
+
+        Car car = carService.findById(id);
+        if (car == null) {
+            return new ResponseEntity<>("El auto no se encontró", HttpStatus.NOT_FOUND);
+        }
+
+        return new ResponseEntity<>(car, HttpStatus.OK);
     }
 
     @PostMapping("/accounts/current/cars")
@@ -181,11 +201,22 @@ public class CarController {
             return new ResponseEntity<>("El auto ya está desactivado", HttpStatus.BAD_REQUEST);
         }
 
+        // Desactivar el auto
         car.setActivo(false);
         carService.saveCar(car);
 
-        return ResponseEntity.ok("El auto ha sido desactivado correctamente.");
+        // Desactivar los dispositivos de identificación asociados al auto
+        List<DeviceIdentifier> deviceIdentifiers = deviceIdentifierRepository.findByAuto(car);
+        for (DeviceIdentifier deviceIdentifier : deviceIdentifiers) {
+            if (deviceIdentifier.getActivo()) {
+                deviceIdentifier.setActivo(false);
+                deviceIdentifierRepository.save(deviceIdentifier);
+            }
+        }
+
+        return ResponseEntity.ok("El auto y sus dispositivos de identificación han sido desactivados correctamente.");
     }
+
 
 
 //

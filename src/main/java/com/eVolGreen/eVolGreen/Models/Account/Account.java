@@ -1,14 +1,18 @@
 package com.eVolGreen.eVolGreen.Models.Account;
 
+import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
 import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.TypeAccounts;
 import com.eVolGreen.eVolGreen.Models.User.Role;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
 import org.hibernate.annotations.GenericGenerator;
 import java.time.LocalDate;
+import java.util.HashSet;
+import java.util.Set;
 
 @Entity
 public class Account{
@@ -59,6 +63,9 @@ public class Account{
     @JsonBackReference
     private Empresa empresa;
 
+    @OneToMany(mappedBy = "cuenta", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference ("Account-RFID")
+    private Set<DeviceIdentifier> RFID = new HashSet<>();
 
     public Account() {}
 
@@ -207,6 +214,13 @@ public class Account{
         this.empresa = empresa;
     }
 
+    public Set<DeviceIdentifier> getRFID() {
+        return RFID;
+    }
+
+    public void setRFID(Set<DeviceIdentifier> RFID) {
+        this.RFID = RFID;
+    }
 
     @Override
     public String toString() {
@@ -224,5 +238,10 @@ public class Account{
                 ", rut='" + rut + '\'' +
                 ", empresa=" + empresa +
                 '}';
+    }
+
+    public void addDeviceIdentifier(DeviceIdentifier newDeviceIdentifier) {
+        this.RFID.add(newDeviceIdentifier);
+        newDeviceIdentifier.setCuenta(this);
     }
 }

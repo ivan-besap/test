@@ -11,14 +11,14 @@ public class NewDeviceIdentifierDTO {
     private String nombreDeIdentificador;
 
     @NotNull(message = "El RFID es obligatorio")
-    private Integer rfid;
+    private String rfid;
 
     @NotNull(message = "La fecha de expiración es obligatoria")
     private LocalDate fechaExpiracion;
 
-    private long auto;
+    private Long auto;
 
-    private Boolean activo = false;
+    private Long cuenta;
 
     public NewDeviceIdentifierDTO() { }
 
@@ -27,18 +27,14 @@ public class NewDeviceIdentifierDTO {
         rfid = deviceIdentifier.getRFID();
         fechaExpiracion = deviceIdentifier.getFechaExpiracion();
         auto = deviceIdentifier.getAuto().getId();
-        activo = deviceIdentifier.getActivo();
+        cuenta = deviceIdentifier.getCuenta().getId();
     }
 
     public @NotNull(message = "El nombre de identificador es obligatorio") String getNombreDeIdentificador() {
         return nombreDeIdentificador;
     }
 
-    public Boolean getActivo() {
-        return activo;
-    }
-
-    public @NotNull(message = "El RFID es obligatorio") Integer getRfid() {
+    public @NotNull(message = "El RFID es obligatorio") String getRfid() {
         return rfid;
     }
 
@@ -46,7 +42,22 @@ public class NewDeviceIdentifierDTO {
         return fechaExpiracion;
     }
 
-    public long getAuto() {
+    public Long getAuto() {
         return auto;
+    }
+
+    public Long getCuenta() {
+        return cuenta;
+    }
+
+    @Override
+    public String toString() {
+        return "NewDeviceIdentifierDTO{" +
+                "nombreDeIdentificador='" + nombreDeIdentificador + '\'' +
+                ", rfid='" + rfid + '\'' +
+                ", fechaExpiracion=" + fechaExpiracion +
+                ", auto=" + auto +
+                ", cuenta=" + cuenta +
+                '}';
     }
 }

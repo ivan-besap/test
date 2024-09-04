@@ -2,76 +2,64 @@ package com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO;
 
 import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
 import jakarta.validation.constraints.NotNull;
+
 import java.time.LocalDate;
 
 public class DeviceIdentifierDTO {
 
-    private long id;
+    private Long id;
 
-    @NotNull(message = "El nombre de identificador es obligatorio")
+    @NotNull(message = "El Nombre de Identificador es obligatorio")
     private String nombreDeIdentificador;
 
     @NotNull(message = "El RFID es obligatorio")
-    private Integer rfid;
+    private String RFID;
 
     @NotNull(message = "La fecha de expiración es obligatoria")
     private LocalDate fechaExpiracion;
 
-    private long auto;
+    private Long auto;
+
+    private Long cuenta;
 
     private Boolean activo = false;
 
     public DeviceIdentifierDTO(DeviceIdentifier deviceIdentifier) {
         id = deviceIdentifier.getId();
         nombreDeIdentificador = deviceIdentifier.getNombreDeIdentificador();
-        rfid = deviceIdentifier.getRFID();
+        RFID = deviceIdentifier.getRFID();
         fechaExpiracion = deviceIdentifier.getFechaExpiracion();
-        auto = deviceIdentifier.getAuto().getId();
+        cuenta = deviceIdentifier.getCuenta().getId();
+        auto = deviceIdentifier.getAuto() != null ? deviceIdentifier.getAuto().getId() : null;
         activo = deviceIdentifier.getActivo();
     }
 
-    public long getId() {
+    public Long getId() {
         return id;
     }
 
-    public void setId(long id) {
-        this.id = id;
+    public @NotNull(message = "El Nombre de Identificador es obligatorio") String getNombreDeIdentificador() {
+        return nombreDeIdentificador;
     }
 
-    public String getNombreDeIdentificador() {
-        return nombreDeIdentificador;
+    public @NotNull(message = "El RFID es obligatorio") String getRFID() {
+        return RFID;
+    }
+
+    public @NotNull(message = "La fecha de expiración es obligatoria") LocalDate getFechaExpiracion() {
+        return fechaExpiracion;
+    }
+
+    public Long getAuto() {
+        return auto;
+    }
+
+    public Long getCuenta() {
+        return cuenta;
     }
 
     public Boolean getActivo() {
         return activo;
-    }
-
-    public void setNombreDeIdentificador(String nombreDeIdentificador) {
-        this.nombreDeIdentificador = nombreDeIdentificador;
-    }
-
-    public LocalDate getFechaExpiracion() {
-        return fechaExpiracion;
-    }
-
-    public void setFechaExpiracion(LocalDate fechaExpiracion) {
-        this.fechaExpiracion = fechaExpiracion;
-    }
-
-    public Integer getRfid() {
-        return rfid;
-    }
-
-    public void setRfid(Integer rfid) {
-        this.rfid = rfid;
-    }
-
-    public long getAuto() {
-        return auto;
-    }
-
-    public void setAuto(long auto) {
-        this.auto = auto;
     }
 
     @Override
@@ -79,8 +67,11 @@ public class DeviceIdentifierDTO {
         return "DeviceIdentifierDTO{" +
                 "id=" + id +
                 ", nombreDeIdentificador='" + nombreDeIdentificador + '\'' +
-                ", rfid=" + rfid +
+                ", RFID='" + RFID + '\'' +
+                ", fechaExpiracion=" + fechaExpiracion +
                 ", auto=" + auto +
+                ", cuenta=" + cuenta +
+                ", activo=" + activo +
                 '}';
     }
 }
