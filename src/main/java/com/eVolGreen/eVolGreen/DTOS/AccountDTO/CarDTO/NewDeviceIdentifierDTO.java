@@ -18,7 +18,7 @@ public class NewDeviceIdentifierDTO {
 
     private Long auto;
 
-    private Long cuenta;
+    private Long empresa;
 
     public NewDeviceIdentifierDTO() { }
 
@@ -27,7 +27,7 @@ public class NewDeviceIdentifierDTO {
         rfid = deviceIdentifier.getRFID();
         fechaExpiracion = deviceIdentifier.getFechaExpiracion();
         auto = deviceIdentifier.getAuto().getId();
-        cuenta = deviceIdentifier.getCuenta().getId();
+        this.empresa = deviceIdentifier.getEmpresa().getId();
     }
 
     public @NotNull(message = "El nombre de identificador es obligatorio") String getNombreDeIdentificador() {
@@ -46,8 +46,8 @@ public class NewDeviceIdentifierDTO {
         return auto;
     }
 
-    public Long getCuenta() {
-        return cuenta;
+    public Long getEmpresa() {
+        return empresa;
     }
 
     @Override
@@ -57,7 +57,7 @@ public class NewDeviceIdentifierDTO {
                 ", rfid='" + rfid + '\'' +
                 ", fechaExpiracion=" + fechaExpiracion +
                 ", auto=" + auto +
-                ", cuenta=" + cuenta +
+                ", empresa=" + empresa +
                 '}';
     }
 }
