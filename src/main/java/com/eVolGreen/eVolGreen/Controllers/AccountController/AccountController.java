@@ -4,6 +4,7 @@ package com.eVolGreen.eVolGreen.Controllers.AccountController;
 import com.amazonaws.services.cognitoidp.model.ResourceNotFoundException;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.AccountDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.EmployeeRegisterDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.FeeDTO.FeeDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.RoleDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.RoleRequestDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
@@ -263,15 +264,7 @@ public class AccountController {
     @GetMapping("/roles")
     public List<RoleDTO> getRoles(Authentication authentication) {
         String email = authentication.getName();
-        Optional<Account> account = accountService.findByEmail(email);
-        if (account.isPresent()) {
-            Empresa empresa = account.get().getEmpresa();
-            if (empresa != null) {
-                List<Role> roles = roleService.findRolesByEmpresa(empresa);
-                return roles.stream().map(RoleDTO::new).collect(Collectors.toList());
-            }
-        }
-        return Collections.emptyList();
+        return roleService.getRolesDTO(email);
     }
 
     @GetMapping("/roles/{id}")
@@ -407,7 +400,31 @@ public class AccountController {
         role.setPermisos(permisos);
         role.setEmpresa(empresa);
         roleService.saveRole(role);
+        role.setActivo(true);
         return ResponseEntity.ok("Rol creado exitosamente");
+    }
+
+    @PatchMapping("/roles/{id}/delete")
+    public ResponseEntity<Object> toggleRoleActiveStatus(@PathVariable Long id) {
+        Optional<Role> optionalRole = roleService.findById(id);
+
+        if (optionalRole.isEmpty()) {
+            return new ResponseEntity<>("El rol no se encontró", HttpStatus.NOT_FOUND);
+        }
+
+        Role role = optionalRole.get();
+
+        if (role.getActivo()) {
+            role.setActivo(false);
+            roleService.saveRole(role);
+
+            return ResponseEntity.ok("El rol ha sido desactivado correctamente.");
+        } else {
+            role.setActivo(true);
+            roleService.saveRole(role);
+
+            return ResponseEntity.ok("El rol ha sido activado correctamente.");
+        }
     }
 
 

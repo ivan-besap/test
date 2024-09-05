@@ -12,6 +12,8 @@ public class RoleDTO {
     private Set<PermissionDTO> permisos;
     private EmpresaDTO empresa;
 
+    private Boolean activo;
+
     public RoleDTO(Role role) {
         this.id = role.getId();
         this.nombre = role.getNombre();
@@ -19,6 +21,7 @@ public class RoleDTO {
                 .map(PermissionDTO::new)
                 .collect(Collectors.toSet());
         this.empresa = new EmpresaDTO(role.getEmpresa());
+        this.activo = role.getActivo();
     }
 
 
@@ -55,5 +58,13 @@ public class RoleDTO {
 
     public void setEmpresa(EmpresaDTO empresa) {
         this.empresa = empresa;
+    }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
     }
 }

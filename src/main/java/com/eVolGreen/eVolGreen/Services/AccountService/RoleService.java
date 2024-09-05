@@ -1,5 +1,7 @@
 package com.eVolGreen.eVolGreen.Services.AccountService;
 
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.FeeDTO.FeeDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.RoleDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.User.Role;
 
@@ -10,5 +12,6 @@ public interface RoleService {
     Optional<Role> findByNombre(String name);
     void saveRole(Role role);
     Optional<Role> findById(Long id);
-    List<Role> findRolesByEmpresa(Empresa empresa);
+//    List<Role> findRolesByEmpresa(String email);
+    List<RoleDTO> getRolesDTO(String email);
 }

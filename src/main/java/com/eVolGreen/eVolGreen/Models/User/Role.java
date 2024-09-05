@@ -32,13 +32,17 @@ public class Role {
     @JoinColumn(name = "empresa_id")
     private Empresa empresa;
 
+    @NotNull
+    private Boolean activo = true;
+
     public Role() {
     }
 
-    public Role(String nombre, List<Permission> permisos, Empresa empresa) {
+    public Role(String nombre, List<Permission> permisos, Empresa empresa, Boolean activo) {
         this.nombre = nombre;
         this.permisos = permisos;
         this.empresa = empresa;
+        this.activo = activo;
     }
 
     public Long getId() {
@@ -71,5 +75,13 @@ public class Role {
 
     public void setEmpresa(Empresa empresa) {
         this.empresa = empresa;
+    }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
     }
 }
