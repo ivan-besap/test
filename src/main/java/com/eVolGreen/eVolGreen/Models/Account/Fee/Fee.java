@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Account.Fee;
 
 import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -45,20 +46,16 @@ public class Fee {
     @NotNull(message = "El precio de la tarifa es obligatorio")
     private BigDecimal precioTarifa;
 
-    @OneToMany(mappedBy = "tarifa", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference("Tarifa-TarifaConector")
-    private Set<FeeConnector> tarifaConector = new HashSet<>();
-
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id")
-    @JsonBackReference("Account-Fee")
-    private Account account;
+    @JoinColumn(name = "empresa_id")
+    @JsonBackReference("Empresa-Fee")
+    private Empresa empresa;
 
     private Boolean activo = false;
 
     public Fee() {}
 
-    public Fee(String nombreTarifa, LocalDate fechaInicio, LocalDate fechaFin, LocalTime horaInicio, LocalTime horaFin, Set<String> diasDeLaSemana, BigDecimal precioTarifa, Boolean activo, Account account) {
+    public Fee(String nombreTarifa, LocalDate fechaInicio, LocalDate fechaFin, LocalTime horaInicio, LocalTime horaFin, Set<String> diasDeLaSemana, BigDecimal precioTarifa, Boolean activo, Empresa empresa) {
         this.nombreTarifa = nombreTarifa;
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
@@ -67,7 +64,7 @@ public class Fee {
         this.diasDeLaSemana = diasDeLaSemana;
         this.precioTarifa = precioTarifa;
         this.activo = activo;
-        this.account = account;
+        this.empresa = empresa;
     }
 
     public long getId() {
@@ -134,20 +131,13 @@ public class Fee {
         this.precioTarifa = precioTarifa;
     }
 
-    public Set<FeeConnector> getTarifaConector() {
-        return tarifaConector;
+
+    public Empresa getEmpresa() {
+        return empresa;
     }
 
-    public void setTarifaConector(Set<FeeConnector> tarifaConector) {
-        this.tarifaConector = tarifaConector;
-    }
-
-    public Account getAccount() {
-        return account;
-    }
-
-    public void setAccount(Account account) {
-        this.account = account;
+    public void setEmpresa(Empresa empresa) {
+        this.empresa = empresa;
     }
 
     public Boolean getActivo() {
@@ -170,7 +160,7 @@ public class Fee {
                 ", diasDeLaSemana=" + diasDeLaSemana +
                 ", precioTarifa=" + precioTarifa +
                 ", activo=" + activo +
-                ", account=" + account +
+                ", empresa=" + empresa +
                 '}';
     }
 }

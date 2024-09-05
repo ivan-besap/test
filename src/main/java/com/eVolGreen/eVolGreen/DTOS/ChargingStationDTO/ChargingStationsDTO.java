@@ -40,7 +40,7 @@ public class ChargingStationsDTO {
     @NotNull(message = "La ubicación de la terminal no puede ser nula.")
     private LocationChargingStationDTO UbicacionTerminal;
 
-    private long Cuenta;
+    private long EmpresaId;
 
     private Boolean activo;
 
@@ -57,7 +57,7 @@ public class ChargingStationsDTO {
                 .map(ChargerDTO::new)
                 .collect(Collectors.toList());
         this.UbicacionTerminal = new LocationChargingStationDTO(Terminal.getUbicacionTerminal());
-        this.Cuenta = Terminal.getAccount().getId();
+        this.EmpresaId = Terminal.getEmpresa().getId();
         this.activo = Terminal.getActivo();
     }
 
@@ -97,8 +97,8 @@ public class ChargingStationsDTO {
         return UbicacionTerminal;
     }
 
-    public long getCuenta() {
-        return Cuenta;
+    public long getEmpresaId() {
+        return EmpresaId;
     }
 
     @Override
@@ -112,7 +112,7 @@ public class ChargingStationsDTO {
                 ", Transacciones=" + Transacciones +
                 ", Cargadores=" + Cargadores +
                 ", UbicacionTerminal=" + UbicacionTerminal +
-                ", Cuenta=" + Cuenta +
+                ", Empresa=" + EmpresaId +
                 ", activo=" + activo +
                 '}';
     }

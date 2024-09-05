@@ -3,6 +3,7 @@ package com.eVolGreen.eVolGreen.Services.ImplementService.AccountServiceImplemen
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.DeviceIdentifierDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.DeviceIdentifierService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -36,5 +37,13 @@ public class DeviceIdentifierServiceImplement implements DeviceIdentifierService
     @Override
     public DeviceIdentifier findById(Long id) {
         return deviceIdentifierRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    public List<DeviceIdentifierDTO> getDeviceIdentifiersByEmpresa(Empresa empresa) {
+        return deviceIdentifierRepository.findUnassignedDeviceIdentifiersByEmpresa(empresa)
+                .stream()
+                .map(DeviceIdentifierDTO::new)
+                .collect(Collectors.toList());
     }
 }

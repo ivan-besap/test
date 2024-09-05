@@ -5,6 +5,7 @@ import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.NewDeviceIdentifierDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Car.Car;
 import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.CarService;
@@ -52,16 +53,17 @@ public class DeviceIdentifierController {
     }
 
     // Método para obtener dispositivos filtrados por usuario y estado activo
-    @GetMapping("/accounts/current/deviceIdentifiers")
-    public List<DeviceIdentifierDTO> getDeviceIdentifiersByUser(Authentication authentication) {
+    @GetMapping("/empresa/current/deviceIdentifiers")
+    public List<DeviceIdentifierDTO> getDeviceIdentifiersByEmpresa(Authentication authentication) {
 
         Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
         if (accountOptional.isPresent()) {
             Account account = accountOptional.get();
-            List<DeviceIdentifier> deviceIdentifiers = deviceIdentifierRepository.findByCuentaAndActivo(account, true);
+            Empresa empresa = account.getEmpresa(); // Obtener la empresa asociada a la cuenta
+            List<DeviceIdentifier> deviceIdentifiers = deviceIdentifierRepository.findByEmpresaAndActivo(empresa, true);
             return deviceIdentifiers.stream().map(DeviceIdentifierDTO::new).collect(Collectors.toList());
         } else {
-            return Collections.emptyList();
+            return Collections.emptyList(); // Si no hay cuenta, devolver lista vacía
         }
     }
 
@@ -70,21 +72,26 @@ public class DeviceIdentifierController {
     public ResponseEntity<Object> createDeviceIdentifier(Authentication authentication,
                                                          @RequestBody NewDeviceIdentifierDTO deviceIdentifierDTO) {
 
+        // Buscar la cuenta del usuario autenticado
         Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
         if (accountOptional.isEmpty()) {
             return new ResponseEntity<>("La cuenta no se encontró", HttpStatus.NOT_FOUND);
         }
         Account account = accountOptional.get();
 
-        String mensaje = " ";
-
-        if (deviceIdentifierDTO.getNombreDeIdentificador() == null){
-            mensaje = "El nombre de la tarjeta RFID es necesario";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+        Empresa empresa = account.getEmpresa();
+        if (empresa == null) {
+            return new ResponseEntity<>("No se encontró la empresa asociada", HttpStatus.NOT_FOUND);
         }
-        if (deviceIdentifierDTO.getRfid() == null){
+
+        String mensaje = "";
+        if (deviceIdentifierDTO.getNombreDeIdentificador() == null) {
+            mensaje = "El nombre de la tarjeta RFID es necesario";
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+        }
+        if (deviceIdentifierDTO.getRfid() == null) {
             mensaje = "El código RFID es necesario";
-            return new ResponseEntity<>(mensaje,HttpStatus.FORBIDDEN);
+            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
 
         DeviceIdentifier newDeviceIdentifier = new DeviceIdentifier(
@@ -94,9 +101,10 @@ public class DeviceIdentifierController {
                 null,
                 true
         );
-        newDeviceIdentifier.setCuenta(account);
-        account.addDeviceIdentifier(newDeviceIdentifier);
+        newDeviceIdentifier.setEmpresa(empresa);
+
         deviceIdentifierService.saveDeviceIdentifier(newDeviceIdentifier);
+
         return new ResponseEntity<>("Identificador de dispositivo creado exitosamente", HttpStatus.CREATED);
     }
 
@@ -194,10 +202,15 @@ public class DeviceIdentifierController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
         Account account = accountOptional.get();
-        List<DeviceIdentifier> unassignedDeviceIdentifiers = deviceIdentifierRepository.findUnassignedDeviceIdentifiersByAccount(account);
+        Empresa empresa = account.getEmpresa();
+        if (empresa == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+        }
+        List<DeviceIdentifier> unassignedDeviceIdentifiers = deviceIdentifierRepository.findUnassignedDeviceIdentifiersByEmpresa(empresa);
         List<DeviceIdentifierDTO> deviceIdentifierDTOs = unassignedDeviceIdentifiers.stream()
                 .map(DeviceIdentifierDTO::new)
                 .collect(Collectors.toList());
+
         return ResponseEntity.ok(deviceIdentifierDTOs);
     }
 

@@ -63,13 +63,10 @@ public class Account{
     @JsonBackReference
     private Empresa empresa;
 
-    @OneToMany(mappedBy = "cuenta", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference ("Account-RFID")
-    private Set<DeviceIdentifier> RFID = new HashSet<>();
 
     public Account() {}
 
-    public Account(String nombre, String apellidoPaterno, String apellidoMaterno ,String numeroDeCuenta, String nombreCuenta, LocalDate fechaDeCreacion, String email, String password, TypeAccounts tipoCuenta, Role role, String telefono, String rut, Empresa empresa) {
+    public Account(String nombre, String apellidoPaterno, String apellidoMaterno ,String numeroDeCuenta, String nombreCuenta, LocalDate fechaDeCreacion, String email, String password, TypeAccounts tipoCuenta, Role role, String telefono, String rut, Empresa empresa,Boolean activo) {
 
         this.nombre = nombre;
         this.apellidoPaterno = apellidoPaterno;
@@ -84,6 +81,7 @@ public class Account{
         this.telefono = telefono;
         this.rut = rut;
         this.empresa = empresa;
+        this.activo = activo;
     }
 
     public long getId() {
@@ -214,13 +212,6 @@ public class Account{
         this.empresa = empresa;
     }
 
-    public Set<DeviceIdentifier> getRFID() {
-        return RFID;
-    }
-
-    public void setRFID(Set<DeviceIdentifier> RFID) {
-        this.RFID = RFID;
-    }
 
     @Override
     public String toString() {
@@ -231,17 +222,13 @@ public class Account{
                 ", fechaDeCreacion=" + fechaDeCreacion +
                 ", email='" + email + '\'' +
                 ", password='" + password + '\'' +
-                ", activo=" + activo +
                 ", tipoCuenta=" + tipoCuenta +
                 ", role=" + role +
                 ", telefono='" + telefono + '\'' +
                 ", rut='" + rut + '\'' +
                 ", empresa=" + empresa +
+                ", activo=" + activo +
                 '}';
     }
 
-    public void addDeviceIdentifier(DeviceIdentifier newDeviceIdentifier) {
-        this.RFID.add(newDeviceIdentifier);
-        newDeviceIdentifier.setCuenta(this);
-    }
 }

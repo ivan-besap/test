@@ -1,8 +1,12 @@
 package com.eVolGreen.eVolGreen.Models.User;
 
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
+import com.eVolGreen.eVolGreen.Models.Account.Permission.Permission;
 import jakarta.persistence.Entity;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+
+import java.util.List;
 import java.util.Set;
 @Entity
 public class Role {
@@ -14,16 +18,27 @@ public class Role {
     @NotNull(message = "El nombre del rol es obligatorio")
     private String nombre;
 
-    @ElementCollection(fetch = FetchType.LAZY)
-    @CollectionTable(name = "role_permissions", joinColumns = @JoinColumn(name = "role_id"))
-    @Column(name = "permission_id")
-    private Set<Long> permisos;
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+            name = "role_permissions",
+            joinColumns = @JoinColumn(name = "role_id"),
+            inverseJoinColumns = @JoinColumn(name = "permission_id")
+    )
+    @OrderBy("id ASC") // Ordena los permisos por id ascendente
+    private List<Permission> permisos;
 
-    public Role() {}
+    // Relación con Empresa
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empresa_id")
+    private Empresa empresa;
 
-    public Role(String nombre, Set<Long> permisos) {
+    public Role() {
+    }
+
+    public Role(String nombre, List<Permission> permisos, Empresa empresa) {
         this.nombre = nombre;
         this.permisos = permisos;
+        this.empresa = empresa;
     }
 
     public Long getId() {
@@ -42,11 +57,19 @@ public class Role {
         this.nombre = nombre;
     }
 
-    public Set<Long> getPermisos() {
+    public List<Permission> getPermisos() {
         return permisos;
     }
 
-    public void setPermisos(Set<Long> permisos) {
+    public void setPermisos(List<Permission> permisos) {
         this.permisos = permisos;
+    }
+
+    public Empresa getEmpresa() {
+        return empresa;
+    }
+
+    public void setEmpresa(Empresa empresa) {
+        this.empresa = empresa;
     }
 }

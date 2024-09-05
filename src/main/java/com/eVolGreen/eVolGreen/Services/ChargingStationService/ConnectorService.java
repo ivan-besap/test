@@ -25,5 +25,7 @@ public interface ConnectorService {
 
     List<ConnectorDTO> getActiveConnectorsDTO();
 
+    List<ConnectorDTO> getConnectorsForCurrentUser(String email);
+
 
 }

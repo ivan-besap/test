@@ -6,6 +6,7 @@ import com.eVolGreen.eVolGreen.Auth.Request.LoginRequest;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.RegisterRequestDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
+import com.eVolGreen.eVolGreen.Models.Account.Permission.Permission;
 import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.TypeAccounts;
 import com.eVolGreen.eVolGreen.Models.User.Role;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
@@ -22,6 +23,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/auth")
@@ -57,16 +60,29 @@ public class AuthController {
 
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterRequestDTO request) {
-        // Crear la empresa
+
+
         Empresa empresa = new Empresa();
         empresa.setNombre(request.getNombreEmpresa());
         empresaService.saveEmpresa(empresa);
 
-        // Crear el rol por defecto (Admin)
-        Role adminRole = roleService.findByNombre("ADMIN")
+
+        Role globalAdminRole = roleService.findByNombre("ADMIN")
                 .orElseThrow(() -> new RuntimeException("Rol 'ADMIN' no encontrado"));
 
-        // Crear la cuenta asociada a la empresa
+
+        List<Permission> permisosClonados = globalAdminRole.getPermisos()
+                .stream()
+                .collect(Collectors.toList());
+
+
+        Role companyAdminRole = new Role();
+        companyAdminRole.setNombre("ADMIN");
+        companyAdminRole.setPermisos(permisosClonados);
+        companyAdminRole.setEmpresa(empresa);
+        roleService.saveRole(companyAdminRole);
+
+
         String numeroDeCuenta = "admin-" + getStringRandomNumber();
         String encriptedPassword = passwordEncoder.encode(request.getPassword());
 
@@ -76,12 +92,15 @@ public class AuthController {
         account.setFechaDeCreacion(LocalDate.now());
         account.setEmail(request.getEmail());
         account.setPassword(encriptedPassword);
-        account.setActivo(false);  // Por defecto inactivo
+        account.setActivo(false);
         account.setTipoCuenta(TypeAccounts.COMPANY);
-        account.setRol(adminRole);
+        account.setRol(companyAdminRole);
         account.setTelefono(request.getTelefono());
         account.setRut(request.getRut());
         account.setEmpresa(empresa);
+        account.setNombre(request.getNombre());
+        account.setApellidoPaterno(request.getApellidoPaterno());
+        account.setApellidoMaterno(request.getApellidoMaterno());
 
         accountService.saveAccount(account);
 

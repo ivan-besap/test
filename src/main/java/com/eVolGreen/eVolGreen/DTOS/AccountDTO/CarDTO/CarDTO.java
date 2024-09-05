@@ -27,14 +27,14 @@ public class CarDTO {
     private String marca;
 
     @NotNull(message = "El Año de Fabricación es obligatorio")
-    private String añoFabricacion;
+    private String anoFabricacion;
 
     @NotNull(message = "La Capacidad de Potencia es obligatoria")
     private BigDecimal capacidadPotencia;
 
     private Set<DeviceIdentifierDTO> rfid;
 
-    private long accountId;
+    private long empresaId;
 
     private Boolean activo = false;
 
@@ -47,12 +47,12 @@ public class CarDTO {
         this.vin = car.getVin();
         this.color = car.getColor();
         this.marca = car.getMarca();
-        this.añoFabricacion = car.getAñoFabricacion();
+        this.anoFabricacion = car.getAnoFabricacion();
         this.capacidadPotencia = car.getCapacidadPotencia();
         this.rfid = car.getRfid().stream()
                 .map(DeviceIdentifierDTO::new)
                 .collect(Collectors.toSet());
-        this.accountId = car.getAccount().getId();
+        this.empresaId = car.getEmpresa().getId();
         this.activo = car.getActivo();
     }
 
@@ -80,8 +80,8 @@ public class CarDTO {
         return marca;
     }
 
-    public String getAñoFabricacion() {
-        return añoFabricacion;
+    public String getAnoFabricacion() {
+        return anoFabricacion;
     }
 
     public BigDecimal getCapacidadPotencia() {
@@ -92,8 +92,8 @@ public class CarDTO {
         return rfid;
     }
 
-    public long getAccountId() {
-        return accountId;
+    public long getEmpresaId() {
+        return empresaId;
     }
 
     public Boolean getActivo() {
@@ -109,10 +109,10 @@ public class CarDTO {
                 ", vin='" + vin + '\'' +
                 ", color='" + color + '\'' +
                 ", marca='" + marca + '\'' +
-                ", añoFabricacion='" + añoFabricacion + '\'' +
+                ", anoFabricacion='" + anoFabricacion + '\'' +
                 ", capacidadPotencia=" + capacidadPotencia +
                 ", rfid=" + rfid +
-                ", accountId=" + accountId +
+                ", empresaId=" + empresaId +
                 ", activo=" + activo +
                 '}';
     }

@@ -3,6 +3,7 @@ package com.eVolGreen.eVolGreen.Services.ImplementService.AccountServiceImplemen
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.CarDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Car.Car;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Repositories.CarRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.CarService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,8 +42,8 @@ public class CarServiceImplement implements CarService {
     }
 
     @Override
-    public List<CarDTO> getCarsDTOByAccount(Account account) {
-        List<Car> cars = carRepository.findByAccountAndActivo(account, true);
+    public List<CarDTO> getCarsDTOByEmpresa(Empresa empresa) {
+        List<Car> cars = carRepository.findByEmpresaAndActivo(empresa, true);
         return cars.stream()
                 .map(CarDTO::new)
                 .collect(Collectors.toList());

@@ -20,4 +20,6 @@ public interface ChargerService {
     boolean updateChargerStatus(Long id, ChargerStatus activeStatus);
 
     List<ChargerDTO> getActiveChargersDTO();
+
+    List<ChargerDTO> getChargersForCurrentUser(String email);
 }

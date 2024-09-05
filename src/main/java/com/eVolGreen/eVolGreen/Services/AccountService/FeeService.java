@@ -17,7 +17,7 @@ public interface FeeService {
 
     Optional<Fee> findFeeById(Long id);
 
-    List<FeeDTO> getFeesDTO();
+    List<FeeDTO> getFeesDTO(String email);
 
     Fee updateFee(Long id, Fee feeDetails);
 

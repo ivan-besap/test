@@ -6,6 +6,7 @@ import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.NewCarDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Car.Car;
 import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Repositories.CarRepository;
 import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
@@ -53,7 +54,11 @@ public class CarController {
             return new ResponseEntity<>(HttpStatus.NOT_FOUND);
         }
         Account account = accountOptional.get();
-        return new ResponseEntity<>(carService.getCarsDTOByAccount(account), HttpStatus.OK);
+        Empresa empresa = account.getEmpresa();
+        if (empresa == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+        return new ResponseEntity<>(carService.getCarsDTOByEmpresa(empresa), HttpStatus.OK);
     }
 
     @GetMapping("/accounts/current/cars/{id}")
@@ -81,11 +86,12 @@ public class CarController {
         }
         Account account = accountOptional.get();
 
-        String mensaje = "";
-        if (account == null) {
-            mensaje = "La cuenta no se encontró";
-            return new ResponseEntity<>(mensaje, HttpStatus.NOT_FOUND);
+        Empresa empresa = account.getEmpresa();
+        if (empresa == null) {
+            return new ResponseEntity<>("La cuenta no está asociada a ninguna empresa", HttpStatus.NOT_FOUND);
         }
+
+        String mensaje = "";
 
         if (carDTO.getPatente() == null) {
             mensaje = "La patente es necesaria";
@@ -107,7 +113,7 @@ public class CarController {
             mensaje = "La marca es necesaria en el auto";
             return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (carDTO.getAñoFabricacion() == null) {
+        if (carDTO.getAnoFabricacion() == null) {
             mensaje = "El año de fabricación es necesario";
             return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
@@ -122,11 +128,12 @@ public class CarController {
                 carDTO.getVin(),
                 carDTO.getColor(),
                 carDTO.getMarca(),
-                carDTO.getAñoFabricacion(),
+                carDTO.getAnoFabricacion(),
                 carDTO.getCapacidadPotencia(),
+                empresa,  
                 true
         );
-        nuevoAuto.setAccount(account);
+      
         carService.saveCar(nuevoAuto);
 
         mensaje = "El auto se ha creado con éxito";
@@ -164,7 +171,7 @@ public class CarController {
         if (carDTO.getMarca() == null) {
             return new ResponseEntity<>("La marca es necesaria en el auto", HttpStatus.FORBIDDEN);
         }
-        if (carDTO.getAñoFabricacion() == null) {
+        if (carDTO.getAnoFabricacion() == null) {
             return new ResponseEntity<>("El año de fabricación es necesario", HttpStatus.FORBIDDEN);
         }
         if (carDTO.getCapacidadPotencia() == null) {
@@ -176,7 +183,7 @@ public class CarController {
         existingCar.setVin(carDTO.getVin());
         existingCar.setColor(carDTO.getColor());
         existingCar.setMarca(carDTO.getMarca());
-        existingCar.setAñoFabricacion(carDTO.getAñoFabricacion());
+        existingCar.setanoFabricacion(carDTO.getAnoFabricacion());
         existingCar.setCapacidadPotencia(carDTO.getCapacidadPotencia());
 
         carService.saveCar(existingCar);

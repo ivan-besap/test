@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Account.Car;
 
 import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
@@ -35,7 +36,7 @@ public class Car {
     private String marca;
 
     @NotNull(message = "El Año de Fabricación es obligatorio")
-    private String añoFabricacion;
+    private String anoFabricacion;
 
     @NotNull(message = "La Capacidad de Potencia es obligatoria")
     private BigDecimal capacidadPotencia;
@@ -45,22 +46,23 @@ public class Car {
     private Set<DeviceIdentifier> rfid = new HashSet<>();
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id")
-    @JsonBackReference("Account-Car")
-    private Account account;
+    @JoinColumn(name = "empresa_id")  // Cambio aquí
+    @JsonBackReference("Empresa-Car")
+    private Empresa empresa;
 
     private Boolean activo = false;
 
     public Car() { }
 
-    public Car(String patente, String modelo, String vin, String color, String marca, String añoFabricacion, BigDecimal capacidadPotencia, Boolean activo) {
+    public Car(String patente, String modelo, String vin, String color, String marca, String anoFabricacion, BigDecimal capacidadPotencia, Empresa empresa, Boolean activo) {
         this.patente = patente;
         this.modelo = modelo;
         this.vin = vin;
         this.color = color;
         this.marca = marca;
-        this.añoFabricacion = añoFabricacion;
+        this.anoFabricacion = anoFabricacion;
         this.capacidadPotencia = capacidadPotencia;
+        this.empresa = empresa;
         this.activo = activo;
     }
 
@@ -112,12 +114,12 @@ public class Car {
         this.marca = marca;
     }
 
-    public String getAñoFabricacion() {
-        return añoFabricacion;
+    public String getAnoFabricacion() {
+        return anoFabricacion;
     }
 
-    public void setAñoFabricacion(String añoFabricacion) {
-        this.añoFabricacion = añoFabricacion;
+    public void setanoFabricacion(String anoFabricacion) {
+        this.anoFabricacion = anoFabricacion;
     }
 
     public BigDecimal getCapacidadPotencia() {
@@ -136,14 +138,13 @@ public class Car {
         this.rfid = rfid;
     }
 
-    public Account getAccount() {
-        return account;
+    public Empresa getEmpresa() {
+        return empresa;
     }
 
-    public void setAccount(Account account) {
-        this.account = account;
+    public void setEmpresa(Empresa empresa) {
+        this.empresa = empresa;
     }
-
     public Boolean getActivo() {
         return activo;
     }
@@ -161,10 +162,10 @@ public class Car {
                 ", vin='" + vin + '\'' +
                 ", color='" + color + '\'' +
                 ", marca='" + marca + '\'' +
-                ", añoFabricacion='" + añoFabricacion + '\'' +
+                ", anoFabricacion='" + anoFabricacion + '\'' +
                 ", capacidadPotencia=" + capacidadPotencia +
                 ", rfid=" + rfid +
-                ", account=" + account +
+                ", empresa=" + empresa +
                 ", activo=" + activo +
                 '}';
     }

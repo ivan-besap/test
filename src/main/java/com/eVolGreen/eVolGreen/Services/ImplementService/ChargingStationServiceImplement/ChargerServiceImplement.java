@@ -2,15 +2,19 @@ package com.eVolGreen.eVolGreen.Services.ImplementService.ChargingStationService
 
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargingStationsDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStationStatus;
 import com.eVolGreen.eVolGreen.Repositories.ChargerRepository;
+import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -20,6 +24,10 @@ public class ChargerServiceImplement implements ChargerService {
 
     @Autowired
     private ChargerRepository chargerRepository;
+
+    @Autowired
+    private AccountService accountService;
+
 
     @Override
     public List<ChargerDTO> getChargersDTO() {
@@ -62,5 +70,21 @@ public class ChargerServiceImplement implements ChargerService {
                 .filter(Charger::getActivo) // Filtra las estaciones activas
                 .map(ChargerDTO::new)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<ChargerDTO> getChargersForCurrentUser(String email) {
+        Optional<Account> account = accountService.findByEmail(email);
+        if (account.isPresent()) {
+            Empresa empresa = account.get().getEmpresa();
+            if (empresa != null) {
+                return chargerRepository.findByTerminal_Empresa(empresa)
+                        .stream()
+                        .filter(Charger::getActivo)
+                        .map(ChargerDTO::new)
+                        .collect(Collectors.toList());
+            }
+        }
+        return Collections.emptyList();
     }
 }

@@ -3,6 +3,7 @@ package com.eVolGreen.eVolGreen.Controllers.ChargingStationController;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ConnectorDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.NewConnectorDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Fee.Fee;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
@@ -10,6 +11,7 @@ import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.ConnectorStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.TypeConnector;
 import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
+import com.eVolGreen.eVolGreen.Services.AccountService.FeeService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargingStationsService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ConnectorService;
@@ -41,11 +43,14 @@ public class ConnectorController {
     @Autowired
     private ChargingStationsService chargingStationsService;
 
-    @GetMapping("/connectors")
-    public List<ConnectorDTO> getConnectors() {
-         return connectorService.getActiveConnectorsDTO();
-    }
+    @Autowired
+    private FeeService feeService;
 
+    @GetMapping("/connectors")
+    public List<ConnectorDTO> getConnectors(Authentication authentication) {
+        String email = authentication.getName();
+        return connectorService.getConnectorsForCurrentUser(email);
+    }
     @GetMapping("/connectors/{id}")
     public ConnectorDTO getConnector(@PathVariable Long id) {
         return connectorService.getConnectorDTO(id);
@@ -118,6 +123,7 @@ public class ConnectorController {
                 connectorDTO.getCorrienteMaxima(),
                 cargador,
                 terminal,
+                null,
                 ConnectorStatus.DISCONNECTED,
                 true
         );
@@ -259,5 +265,25 @@ public class ConnectorController {
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Estación no encontrada.");
         }
+    }
+    @PatchMapping("/connectors/{id}/assign-fee")
+    public ResponseEntity<Object> assignFeeToConnector(
+            @PathVariable Long id,
+            @RequestParam Long tarifaId) {
+
+        Connector connector = connectorService.findById(id);
+        if (connector == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("El conector no se encontró");
+        }
+
+        Fee tarifa = feeService.findById(tarifaId);
+        if (tarifa == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("La tarifa no se encontró");
+        }
+
+        connector.setTarifa(tarifa);
+        connectorService.saveConnector(connector);
+
+        return ResponseEntity.status(HttpStatus.OK).body("La tarifa fue asignada al conector correctamente.");
     }
 }

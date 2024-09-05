@@ -1,8 +1,13 @@
 package com.eVolGreen.eVolGreen.Services.ImplementService.AccountServiceImplement;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.FeeDTO.FeeDTO;
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.Account.Fee.Fee;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Repositories.FeeRepository;
+import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.FeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -10,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -19,6 +25,9 @@ public class FeeServiceImplement implements FeeService {
 
     @Autowired
     private FeeRepository feeRepository;
+
+    @Autowired
+    private AccountService accountService;
 
     @Override
     @Transactional
@@ -43,11 +52,19 @@ public class FeeServiceImplement implements FeeService {
     }
 
     @Override
-    public List<FeeDTO> getFeesDTO() {
-        return feeRepository.findAll()
-                .stream()
-                .map(FeeDTO::new)
-                .collect(Collectors.toList());
+    public List<FeeDTO> getFeesDTO(String email) {
+        Optional<Account> account = accountService.findByEmail(email);
+        if (account.isPresent()) {
+            Empresa empresa = account.get().getEmpresa();
+            if (empresa != null) {
+                return feeRepository.findByEmpresa(empresa)
+                        .stream()
+                        .filter(Fee::getActivo)
+                        .map(FeeDTO::new)
+                        .collect(Collectors.toList());
+            }
+        }
+        return Collections.emptyList();
     }
 
     @Override
@@ -63,6 +80,7 @@ public class FeeServiceImplement implements FeeService {
             fee.setHoraFin(feeDetails.getHoraFin());
             fee.setDiasDeLaSemana(feeDetails.getDiasDeLaSemana());
             fee.setPrecioTarifa(feeDetails.getPrecioTarifa());
+            fee.setEmpresa(feeDetails.getEmpresa());
             return feeRepository.save(fee);
         }
         return null;
@@ -125,4 +143,6 @@ public class FeeServiceImplement implements FeeService {
         feeRepository.save(nuevaTarifa);
 
     }
+
+
 }

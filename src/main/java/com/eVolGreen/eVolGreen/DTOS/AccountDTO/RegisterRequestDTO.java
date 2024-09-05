@@ -21,6 +21,15 @@ public class RegisterRequestDTO {
     @NotBlank(message = "La contraseña es obligatoria")
     private String password;
 
+    @NotBlank(message = "El nombre es obligatorio")
+    private String nombre;
+
+    @NotBlank(message = "El apellido paterno es obligatorio")
+    private String apellidoPaterno;
+
+    @NotBlank(message = "El apellido materno es obligatorio")
+    private String apellidoMaterno;
+
     // Getters y Setters
 
     public String getNombreEmpresa() {
@@ -61,5 +70,29 @@ public class RegisterRequestDTO {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getNombre() {
+        return nombre;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public String getApellidoPaterno() {
+        return apellidoPaterno;
+    }
+
+    public void setApellidoPaterno(String apellidoPaterno) {
+        this.apellidoPaterno = apellidoPaterno;
+    }
+
+    public String getApellidoMaterno() {
+        return apellidoMaterno;
+    }
+
+    public void setApellidoMaterno(String apellidoMaterno) {
+        this.apellidoMaterno = apellidoMaterno;
     }
 }

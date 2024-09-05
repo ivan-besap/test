@@ -1,7 +1,6 @@
 package com.eVolGreen.eVolGreen.DTOS.AccountDTO.FeeDTO;
 
 import com.eVolGreen.eVolGreen.Models.Account.Fee.Fee;
-import com.eVolGreen.eVolGreen.Models.Account.Fee.FeeConnector;
 import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
@@ -34,9 +33,9 @@ public class FeeDTO {
     @NotNull(message = "El precio de la tarifa es obligatorio")
     private BigDecimal precioTarifa;
 
-    private Set<FeeConnector> tarifaConector;
 
-    private long accountId;
+
+    private long empresaId;
 
     private Boolean activo = false;
 
@@ -51,8 +50,7 @@ public class FeeDTO {
         horaFin = tarifa.getHoraFin();
         diasDeLaSemana = tarifa.getDiasDeLaSemana();
         precioTarifa = tarifa.getPrecioTarifa();
-        tarifaConector = tarifa.getTarifaConector();
-        accountId = tarifa.getAccount().getId();
+        empresaId = tarifa.getEmpresa().getId();
         activo = tarifa.getActivo();
     }
 
@@ -92,12 +90,9 @@ public class FeeDTO {
         return precioTarifa;
     }
 
-    public Set<FeeConnector> getTarifaConector() {
-        return tarifaConector;
-    }
 
-    public long getAccountId() {
-        return accountId;
+    public long getEmpresaId() {
+        return empresaId;
     }
 
     @Override
@@ -111,8 +106,7 @@ public class FeeDTO {
                 ", horaFin=" + horaFin +
                 ", diasDeLaSemana=" + diasDeLaSemana +
                 ", precioTarifa=" + precioTarifa +
-                ", tarifaConector=" + tarifaConector +
-                ", accountId=" + accountId +
+                ", empresaId=" + empresaId +
                 ", activo=" + activo +
                 '}';
     }

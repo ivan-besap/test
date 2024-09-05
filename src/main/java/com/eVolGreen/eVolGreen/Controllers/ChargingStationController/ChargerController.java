@@ -43,8 +43,9 @@ public class ChargerController {
     private ChargerModelService chargerModelService;
 
     @GetMapping("/chargers")
-    public List<ChargerDTO> getChargers() {
-         return chargerService.getActiveChargersDTO();
+    public List<ChargerDTO> getChargers(Authentication authentication) {
+        String email = authentication.getName();  // Obtener el email del usuario autenticado
+        return chargerService.getChargersForCurrentUser(email);
     }
 
     @GetMapping("/chargers/{id}")

@@ -3,6 +3,7 @@ package com.eVolGreen.eVolGreen.Controllers.ChargingStationController;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargingStationsDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.NewChargingStationsDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.Account.Location;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
@@ -45,13 +46,14 @@ public class ChargingStationsController {
     @Autowired
     private ConnectorService connectorService;
 
-    @GetMapping("/chargingStations")
+    /*@GetMapping("/chargingStations")
     public List<ChargingStationsDTO> getChargingStations() {
-        return chargingStationsService.getActiveChargingStationsDTO(); // Llamada al nuevo método
-    }
-    @GetMapping("/chargingStations/{id}")
-    public ChargingStationsDTO getChargingStations(@PathVariable Long id) {
-        return chargingStationsService.getChargingStationDTO(id);
+        return chargingStationsService.getActiveChargingStationsDTO();
+    }*/
+    @GetMapping("/chargingStations")
+    public List<ChargingStationsDTO> getChargingStations(Authentication authentication) {
+        String email = authentication.getName();
+        return chargingStationsService.getActiveChargingStationsDTOForCurrentUser(email);
     }
 
     @PostMapping("/companies/current/chargingStations")
@@ -63,6 +65,13 @@ public class ChargingStationsController {
 
         if (account.isEmpty()) {
             message = "No se encontró la cuenta";
+            return ResponseEntity.status(400).body(message);
+        }
+
+        Empresa empresa = account.get().getEmpresa();
+
+        if (empresa == null) {
+            message = "No se encontró la empresa asociada a la cuenta";
             return ResponseEntity.status(400).body(message);
         }
 
@@ -86,7 +95,7 @@ public class ChargingStationsController {
                 LocalDate.now(),
                 ChargingStationStatus.INACTIVE,
                 ubicacionTerminal,
-                account.get(), // Asocia directamente la cuenta obtenida
+                empresa, // Asocia directamente la cuenta obtenida
                 true
         );
 

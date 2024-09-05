@@ -33,6 +33,8 @@ public class NewFeeDTO {
 
     private Boolean activo = false;
 
+    private Long empresaId;
+
     // Constructor por defecto
     public NewFeeDTO() { }
 
@@ -46,6 +48,7 @@ public class NewFeeDTO {
         this.DiasDeLaSemana = Tarifa.getDiasDeLaSemana();
         this.PrecioTarifa = Tarifa.getPrecioTarifa();
         this.activo = Tarifa.getActivo();
+        this.empresaId = Tarifa.getEmpresa().getId();
     }
 
     // Getters
@@ -108,5 +111,13 @@ public class NewFeeDTO {
 
     public void setPrecioTarifa(BigDecimal precioTarifa) {
         this.PrecioTarifa = precioTarifa;
+    }
+
+    public Long getEmpresaId() {
+        return empresaId;
+    }
+
+    public void setEmpresaId(Long empresaId) {
+        this.empresaId = empresaId;
     }
 }

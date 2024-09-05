@@ -1,8 +1,8 @@
 package com.eVolGreen.eVolGreen.Models.ChargingStation.Connector;
 
+import com.eVolGreen.eVolGreen.Models.Account.Fee.Fee;
 import com.eVolGreen.eVolGreen.Models.Account.Reservation;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
-import com.eVolGreen.eVolGreen.Models.Account.Fee.FeeConnector;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
@@ -54,23 +54,24 @@ public class Connector {
     private Charger cargador;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "Terminal_id")
+    @JoinColumn(name = "terminal_id")
     @JsonBackReference("Terminal-Conector")
-    private ChargingStation Terminal;
+    private ChargingStation terminal;
 
     @OneToMany(mappedBy = "conector", fetch = FetchType.LAZY)
     @JsonManagedReference("Conector-Reservacion")
     private Set<Reservation> Reservaciones = new HashSet<>();
 
-    @OneToMany(mappedBy = "Conector", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    @JsonManagedReference("Conector-FeeConnector")
-    private Set<FeeConnector> TarifaConector = new HashSet<>();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "tarifa_id", nullable = true)
+    @JsonBackReference("Tarifa-Conector")
+    private Fee tarifa;  // Relación directa con la tarifa
 
     private boolean Activo = false;
 
     public Connector() { }
 
-    public Connector(String Alias, TypeConnector TipoConector, String NConector, BigDecimal VoltajeMaximo, BigDecimal PotenciaMaxima, BigDecimal CorrienteMaxima, Charger charger, ChargingStation terminal, ConnectorStatus EstadoConector, boolean Activo) {
+    public Connector(String Alias, TypeConnector TipoConector, String NConector, BigDecimal VoltajeMaximo, BigDecimal PotenciaMaxima, BigDecimal CorrienteMaxima, Charger charger, ChargingStation terminal, Fee tarifa, ConnectorStatus EstadoConector, boolean Activo) {
         this.Alias = Alias;
         this.TipoConector = TipoConector;
         this.NConector = NConector;
@@ -78,9 +79,10 @@ public class Connector {
         this.PotenciaMaxima = PotenciaMaxima;
         this.CorrienteMaxima = CorrienteMaxima;
         this.cargador = charger;
-        this.Terminal = terminal;
+        this.terminal = terminal;
         this.EstadoConector = EstadoConector;
         this.Activo = Activo;
+        this.tarifa = tarifa;
     }
 
     public Long getId() {
@@ -124,11 +126,11 @@ public class Connector {
     }
 
     public ChargingStation getTerminal() {
-        return Terminal;
+        return terminal;
     }
 
     public void setTerminal(ChargingStation terminal) {
-        Terminal = terminal;
+        this.terminal = terminal;
     }
 
     public @NotNull(message = "La Potencia Maxima es obligatoria") BigDecimal getPotenciaMaxima() {
@@ -171,14 +173,13 @@ public class Connector {
         Reservaciones = reservaciones;
     }
 
-    public Set<FeeConnector> getTarifaConector() {
-        return TarifaConector;
+    public Fee getTarifa() {
+        return tarifa;
     }
 
-    public void setTarifaConector(Set<FeeConnector> tarifaConector) {
-        TarifaConector = tarifaConector;
+    public void setTarifa(Fee tarifa) {
+        this.tarifa = tarifa;
     }
-
     public void setId(long id) {
         this.id = id;
     }
@@ -204,7 +205,7 @@ public class Connector {
                 ", EstadoConector=" + EstadoConector +
                 ", Cargador=" + cargador +
                 ", Reservaciones=" + Reservaciones +
-                ", TarifaConector=" + TarifaConector +
+                ", Tarifa=" + tarifa +
                 '}';
     }
 }

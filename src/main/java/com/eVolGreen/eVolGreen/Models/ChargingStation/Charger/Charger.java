@@ -44,9 +44,9 @@ public class Charger {
 
     @NotNull(message = "El Terminal es obligatorio")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "Terminal_id")
+    @JoinColumn(name = "terminal_id")
     @JsonBackReference("Terminal-Cargador")
-    private ChargingStation Terminal;
+    private ChargingStation terminal;
 
     @OneToMany(mappedBy = "Cargador", fetch = FetchType.LAZY)
     @JsonManagedReference("Cargador-UnidadCarga")
@@ -79,7 +79,7 @@ public class Charger {
         this.modelo = model;
         this.activo = activo;
         this.fechaCreacion = fechaCreacion;
-        this.Terminal = Terminal;
+        this.terminal = Terminal;
         this.fabricante = manufacturer;
         this.estadoCargador = ChargerStatus.ACTIVE;
     }
@@ -151,11 +151,11 @@ public class Charger {
     }
 
     public @NotNull(message = "El Terminal es obligatorio") ChargingStation getTerminal() {
-        return Terminal;
+        return terminal;
     }
 
     public void setTerminal(@NotNull(message = "El Terminal es obligatorio") ChargingStation terminal) {
-        Terminal = terminal;
+        this.terminal = terminal;
     }
 
     public Set<ChargingUnit> getUnidadCarga() {

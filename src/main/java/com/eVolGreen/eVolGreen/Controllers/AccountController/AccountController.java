@@ -1,10 +1,15 @@
 package com.eVolGreen.eVolGreen.Controllers.AccountController;
 
 
+import com.amazonaws.services.cognitoidp.model.ResourceNotFoundException;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.AccountDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.EmployeeRegisterDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.RoleDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.RoleRequestDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.Account.Location;
+import com.eVolGreen.eVolGreen.Models.Account.Permission.Permission;
 import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.TypeAccounts;
 import com.eVolGreen.eVolGreen.Models.User.Role;
 import com.eVolGreen.eVolGreen.Repositories.AccountRepository;
@@ -13,6 +18,8 @@ import com.eVolGreen.eVolGreen.Repositories.LocationRepository;
 import com.eVolGreen.eVolGreen.Repositories.RoleRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 
+import com.eVolGreen.eVolGreen.Services.AccountService.PermissionService;
+import com.eVolGreen.eVolGreen.Services.AccountService.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -21,8 +28,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -48,6 +55,11 @@ public class AccountController {
 
     @Autowired
     private PasswordEncoder passwordEncoder;
+
+    @Autowired
+    private PermissionService permissionService;
+    @Autowired
+    private RoleService roleService;
 
     @GetMapping("/accounts")
     public List<AccountDTO> getAccounts() {
@@ -204,9 +216,10 @@ public class AccountController {
                 passwordEncoder.encode(employeeDTO.getPassword()),
                 TypeAccounts.EMPLOYEE,
                 roleTrabajador,
-                null,
-                null,
-                cuentaEmpresa.getEmpresa()
+                employeeDTO.getTelefono(),
+                employeeDTO.getRut(),
+                cuentaEmpresa.getEmpresa(),
+                true
         );
 
         accountRepository.save(cuentaUsuario);
@@ -214,50 +227,71 @@ public class AccountController {
         return ResponseEntity.ok("Empleado creado exitosamente");
     }
 
+    @PatchMapping("/companies/current/employees/{id}/delete")
+    public ResponseEntity<Object> deactivateEmployee(Authentication authentication,
+                                                     @PathVariable Long id) {
+        String message = " ";
+        Optional<Account> cuentaOpt = accountRepository.findByEmail(authentication.getName());
+        if (cuentaOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresa no encontrada");
+        }
+
+        Account cuentaEmpresa = cuentaOpt.get();
+
+        // Buscar el empleado por ID
+        Optional<Account> cuentaUsuario = accountRepository.findById(id);
+        if (cuentaUsuario.isEmpty()) {  // Cambiado a .isEmpty() para verificar correctamente
+            return new ResponseEntity<>("Usuario no encontrado", HttpStatus.NOT_FOUND);
+        }
+
+        Account cuentaTrabajador = cuentaUsuario.get();
+
+        // Verificar si el empleado ya está desactivado
+        if (!cuentaTrabajador.getActivo()) {
+            message = "El empleado ya está desactivado";
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+        }
+
+        // Desactivar el empleado
+        cuentaTrabajador.setActivo(false);
+        accountRepository.save(cuentaTrabajador);
+
+        message = "Empleado desactivado exitosamente";
+        return ResponseEntity.ok(message);
+    }
+
     @GetMapping("/roles")
-    public List<Role> getRoles() {
-        return roleRepository.findAll();
+    public List<RoleDTO> getRoles(Authentication authentication) {
+        String email = authentication.getName();
+        Optional<Account> account = accountService.findByEmail(email);
+        if (account.isPresent()) {
+            Empresa empresa = account.get().getEmpresa();
+            if (empresa != null) {
+                List<Role> roles = roleService.findRolesByEmpresa(empresa);
+                return roles.stream().map(RoleDTO::new).collect(Collectors.toList());
+            }
+        }
+        return Collections.emptyList();
     }
 
-    private String validateEmployeeDTO(EmployeeRegisterDTO employeeDTO) {
-        if (employeeDTO.getNombre().isBlank()) {
-            return "El nombre es requerido";
-        }
-        if (employeeDTO.getApellidoPaterno().isBlank()) {
-            return "El apellido paterno es requerido";
-        }
-        if (employeeDTO.getApellidoMaterno().isBlank()) {
-            return "El apellido materno es requerido";
-        }
-        if (employeeDTO.getEmail().isBlank()) {
-            return "El email es requerido";
-        }
-        if (employeeDTO.getPassword().isBlank()) {
-            return "La contraseña es requerida";
-        }
-        return null; // Sin errores
+    @GetMapping("/roles/{id}")
+    public ResponseEntity<RoleDTO> getRoleById(@PathVariable Long id) {
+        Role role = roleService.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found with id " + id));
+        RoleDTO roleDTO = new RoleDTO(role);
+        return ResponseEntity.ok(roleDTO);
     }
 
-    @GetMapping("/companies/current/employee")
-    public List<Account> getEmployees(Authentication authentication) {
-        Optional<Account> cuentaOpt = accountRepository.findByEmail(authentication.getName());
-        if (cuentaOpt.isEmpty()) {
-            return null;
-        }
-        Account cuenta = cuentaOpt.get();
+    @PutMapping("/roles/{id}")
+    public ResponseEntity<String> updateRole(@PathVariable Long id, @RequestBody RoleRequestDTO roleRequestDTO) {
+        Role role = roleService.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found with id " + id));
+        role.setNombre(roleRequestDTO.getNombre());
+        List<Permission> permisos = permissionService.findAllById(roleRequestDTO.getPermisosIds());
+        role.setPermisos(permisos);
+        roleService.saveRole(role);
 
-        return accountRepository.findByEmpresaAndTipoCuentaAndActivo(cuenta.getEmpresa(), TypeAccounts.EMPLOYEE, true);
-    }
-
-    @GetMapping("/companies/current/employee/{id}")
-    public Account getEmployee(Authentication authentication, @PathVariable Long id) {
-        Optional<Account> cuentaOpt = accountRepository.findByEmail(authentication.getName());
-        if (cuentaOpt.isEmpty()) {
-            return null;
-        }
-        Account cuenta = cuentaOpt.get();
-
-        return accountRepository.findByEmpresaAndTipoCuentaAndActivoAndId(cuenta.getEmpresa(), TypeAccounts.EMPLOYEE, true, id);
+        return ResponseEntity.ok("Role updated successfully");
     }
 
     @PutMapping("/companies/current/employee/{id}")
@@ -293,9 +327,9 @@ public class AccountController {
         if (employeeDTO.getEmail().isBlank()) {
             return new ResponseEntity<>("El email es requerido", HttpStatus.FORBIDDEN);
         }
-        if (employeeDTO.getPassword().isBlank()) {
+        /*if (employeeDTO.getPassword().isBlank()) {
             return new ResponseEntity<>("La contraseña es requerida", HttpStatus.FORBIDDEN);
-        }
+        }*/
 
         // Buscar el Role por ID y asignarlo a la cuenta
         Optional<Role> roleOpt = roleRepository.findById(employeeDTO.getRole());
@@ -309,7 +343,7 @@ public class AccountController {
         cuentaTrabajador.setApellidoPaterno(employeeDTO.getApellidoPaterno());
         cuentaTrabajador.setApellidoMaterno(employeeDTO.getApellidoMaterno());
         cuentaTrabajador.setEmail(employeeDTO.getEmail());
-        cuentaTrabajador.setPassword(passwordEncoder.encode(employeeDTO.getPassword()));
+        /*cuentaTrabajador.setPassword(passwordEncoder.encode(employeeDTO.getPassword()));*/
         cuentaTrabajador.setRole(role);  // Asignar el nuevo role
 
         // Guardar los cambios en la base de datos
@@ -318,57 +352,62 @@ public class AccountController {
         return ResponseEntity.ok("Empleado actualizado exitosamente");
     }
 
-    @PatchMapping("/companies/current/employees/{id}/delete")
-    public ResponseEntity<Object> deactivateEmployee(Authentication authentication,
-                                                     @PathVariable Long id) {
-
-        String message = " ";
-        Optional<Account> cuentaOpt = accountRepository.findByEmail(authentication.getName());
-        if (cuentaOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresa no encontrada");
+    private String validateEmployeeDTO(EmployeeRegisterDTO employeeDTO) {
+        if (employeeDTO.getNombre().isBlank()) {
+            return "El nombre es requerido";
         }
-
-        Account cuentaEmpresa = cuentaOpt.get();
-
-        // Buscar el empleado por ID
-        Optional<Account> cuentaUsuario = accountRepository.findById(id);
-        if (cuentaUsuario.isEmpty()) {  // Cambiado a .isEmpty() para verificar correctamente
-            return new ResponseEntity<>("Usuario no encontrado", HttpStatus.NOT_FOUND);
+        if (employeeDTO.getApellidoPaterno().isBlank()) {
+            return "El apellido paterno es requerido";
         }
-
-        Account cuentaTrabajador = cuentaUsuario.get();
-
-        // Verificar si el empleado ya está desactivado
-        if (!cuentaTrabajador.getActivo()) {
-            message = "El empleado ya está desactivado";
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(message);
+        if (employeeDTO.getApellidoMaterno().isBlank()) {
+            return "El apellido materno es requerido";
         }
-
-        // Desactivar el empleado
-        cuentaTrabajador.setActivo(false);
-        accountRepository.save(cuentaTrabajador);
-
-        message = "Empleado desactivado exitosamente";
-        return ResponseEntity.ok(message);
+        if (employeeDTO.getEmail().isBlank()) {
+            return "El email es requerido";
+        }
+        if (employeeDTO.getPassword().isBlank()) {
+            return "La contraseña es requerida";
+        }
+        return null; // Sin errores
     }
 
-    // Cambia isActiveStatus del cliente actualmente autenticada (Test)
-    @PutMapping("/employees/change-active-status")
-    public ResponseEntity<Object> changeActiveStatus(Authentication authentication,
-                                                     @RequestParam boolean activeStatus) {
-
-        String message = " ";
+    @GetMapping("/companies/current/employee")
+    public ResponseEntity<List<AccountDTO>> getEmployees(Authentication authentication) {
         Optional<Account> cuentaOpt = accountRepository.findByEmail(authentication.getName());
         if (cuentaOpt.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresa no encontrada");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(null);
         }
 
-        Account cuentaEmpresa = cuentaOpt.get();
+        Account cuenta = cuentaOpt.get();
+        List<Account> empleados = accountRepository.findByEmpresaAndTipoCuentaAndActivo(cuenta.getEmpresa(), TypeAccounts.EMPLOYEE, true);
 
-        cuentaEmpresa.setActivo(activeStatus);
-        accountRepository.save(cuentaEmpresa);
+        List<AccountDTO> empleadosDTO = empleados.stream()
+                .map(AccountDTO::new)
+                .collect(Collectors.toList());
 
-        return ResponseEntity.ok("Active status updated to: " + activeStatus);
+        return ResponseEntity.ok(empleadosDTO);
+    }
+
+
+    @PostMapping("/create-role")
+    public ResponseEntity<String> createRole(@RequestBody RoleRequestDTO roleRequestDTO, Authentication authentication) {
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
+
+        if (account.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se encontró la cuenta del usuario autenticado");
+        }
+        Empresa empresa = account.get().getEmpresa();
+
+        if (empresa == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se encontró una empresa asociada a la cuenta");
+        }
+        Role role = new Role();
+        role.setNombre(roleRequestDTO.getNombre());
+        List<Permission> permisos = permissionService.findAllById(roleRequestDTO.getPermisosIds());
+        role.setPermisos(permisos);
+        role.setEmpresa(empresa);
+        roleService.saveRole(role);
+        return ResponseEntity.ok("Rol creado exitosamente");
     }
 
 

@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.ChargingStation;
 
 import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.Account.Location;
 import com.eVolGreen.eVolGreen.Models.Account.Reservation;
@@ -42,11 +43,11 @@ public class ChargingStation {
     @JsonManagedReference("Terminal-Transaction")
     private Set<Transaction> transacciones = new HashSet<>();
 
-    @OneToMany(mappedBy = "Terminal", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "terminal", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("Terminal-Cargador")
     private Set<Charger> cargadores = new HashSet<>();
 
-    @OneToMany(mappedBy = "Terminal", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "terminal", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
     @JsonManagedReference("Terminal-Connector")
     private Set<Connector> conectores = new HashSet<>();
 
@@ -57,20 +58,20 @@ public class ChargingStation {
     private Location ubicacionTerminal;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id")
-    @JsonBackReference("Account-Terminal")
-    private Account account;
+    @JoinColumn(name = "empresa_id")
+    @JsonBackReference("Empresa-Terminal")
+    private Empresa empresa;
 
     private Boolean activo = false;
 
     public ChargingStation() {}
 
-    public ChargingStation(String nombreTerminal, LocalDate fechaDeCreacion, ChargingStationStatus estadoTerminal, Location ubicacionTerminal, Account account, Boolean activo) {
+    public ChargingStation(String nombreTerminal, LocalDate fechaDeCreacion, ChargingStationStatus estadoTerminal, Location ubicacionTerminal, Empresa empresa, Boolean activo) {
         this.nombreTerminal = nombreTerminal;
         this.fechaDeCreacion = fechaDeCreacion;
         this.estadoTerminal = estadoTerminal;
         this.ubicacionTerminal = ubicacionTerminal;
-        this.account = account;
+        this.empresa = empresa;
         this.activo = activo;
     }
 
@@ -146,12 +147,12 @@ public class ChargingStation {
         this.ubicacionTerminal = ubicacionTerminal;
     }
 
-    public Account getAccount() {
-        return account;
+    public Empresa getEmpresa() {
+        return empresa;
     }
 
-    public void setAccount(Account account) {
-        this.account = account;
+    public void setEmpresa(Empresa empresa) {
+        this.empresa = empresa;
     }
 
     public Boolean getActivo() {
@@ -174,7 +175,7 @@ public class ChargingStation {
                 ", cargadores=" + cargadores +
                 ", conectores=" + conectores +
                 ", ubicacionTerminal=" + ubicacionTerminal +
-                ", account=" + account +
+                ", empresa=" + empresa +
                 ", activo=" + activo +
                 '}';
     }

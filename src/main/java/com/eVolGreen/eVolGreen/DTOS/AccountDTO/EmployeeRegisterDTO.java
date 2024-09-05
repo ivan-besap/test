@@ -1,8 +1,7 @@
 package com.eVolGreen.eVolGreen.DTOS.AccountDTO;
 
 import com.eVolGreen.eVolGreen.Models.Account.Account;
-import com.eVolGreen.eVolGreen.Models.User.Role;
-import jakarta.persistence.*;
+import jakarta.persistence.JoinColumn;
 import jakarta.validation.constraints.NotNull;
 
 public class EmployeeRegisterDTO {
@@ -22,18 +21,25 @@ public class EmployeeRegisterDTO {
     @NotNull(message = "El password no puede ser nulo.")
     private String password;
 
+    @NotNull(message = "El teléfono no puede ser nulo.")
+    private String telefono;
+
+    @NotNull(message = "El RUT no puede ser nulo.")
+    private String rut;
+
     @JoinColumn(name = "role_id", nullable = false)
     private Long role;
 
     public EmployeeRegisterDTO() { }
 
     public EmployeeRegisterDTO(Account account) {
-
         nombre = account.getNombre();
         apellidoPaterno = account.getApellidoPaterno();
         apellidoMaterno = account.getApellidoMaterno();
         email = account.getEmail();
         password = account.getPassword();
+        telefono = account.getTelefono();
+        rut = account.getRut();
         role = account.getRole().getId();
     }
 
@@ -57,6 +63,14 @@ public class EmployeeRegisterDTO {
         return password;
     }
 
+    public @NotNull(message = "El teléfono no puede ser nulo.") String getTelefono() {
+        return telefono;
+    }
+
+    public @NotNull(message = "El RUT no puede ser nulo.") String getRut() {
+        return rut;
+    }
+
     public Long getRole() {
         return role;
     }
@@ -69,6 +83,8 @@ public class EmployeeRegisterDTO {
                 ", apellidoMaterno='" + apellidoMaterno + '\'' +
                 ", email='" + email + '\'' +
                 ", password='" + password + '\'' +
+                ", telefono='" + telefono + '\'' +
+                ", rut='" + rut + '\'' +
                 ", role=" + role +
                 '}';
     }

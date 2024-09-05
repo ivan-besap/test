@@ -35,7 +35,7 @@ public class AccountDTO {
     private TypeAccounts tipoCuenta;
 
     @NotNull(message = "El rol no puede ser nulo.")
-    private Role rol;
+    private RoleDTO rol;
 
 
     @NotNull(message = "El teléfono no puede ser nulo.")
@@ -45,6 +45,10 @@ public class AccountDTO {
     private String rut;
 
     private EmpresaDTO empresa;
+    private String nombre;
+    private String apellidoPaterno;
+    private String apellidoMaterno;
+
 
     public AccountDTO() {}
 
@@ -57,9 +61,12 @@ public class AccountDTO {
         this.password = account.getPassword();
         this.activo = account.getActivo();
         this.tipoCuenta = account.getTipoCuenta();
-        this.rol = account.getRol();
+        this.rol = new RoleDTO(account.getRole());
         this.telefono = account.getTelefono();
         this.rut = account.getRut();
+        this.nombre = account.getNombre();
+        this.apellidoPaterno = account.getApellidoPaterno();
+        this.apellidoMaterno = account.getApellidoMaterno();
         this.empresa = new EmpresaDTO(account.getEmpresa());
     }
 
@@ -95,7 +102,7 @@ public class AccountDTO {
         return tipoCuenta;
     }
 
-    public Role getRol() {
+    public RoleDTO getRol() {
         return rol;
     }
 
@@ -106,9 +113,80 @@ public class AccountDTO {
     public String getRut() {
         return rut;
     }
+    public String getNombre() {
+        return nombre;
+    }
+
+    public String getApellidoPaterno() {
+        return apellidoPaterno;
+    }
+
+    public String getApellidoMaterno() {
+        return apellidoMaterno;
+    }
 
     public EmpresaDTO getEmpresa() {
         return empresa;
+    }
+
+    public void setId(long id) {
+        this.id = id;
+    }
+
+    public void setNumeroDeCuenta(String numeroDeCuenta) {
+        this.numeroDeCuenta = numeroDeCuenta;
+    }
+
+    public void setNombreCuenta(String nombreCuenta) {
+        this.nombreCuenta = nombreCuenta;
+    }
+
+    public void setFechaDeCreacion(LocalDate fechaDeCreacion) {
+        this.fechaDeCreacion = fechaDeCreacion;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
+    }
+
+    public void setTipoCuenta(TypeAccounts tipoCuenta) {
+        this.tipoCuenta = tipoCuenta;
+    }
+
+    public void setRol(RoleDTO rol) {
+        this.rol = rol;
+    }
+
+    public void setTelefono(String telefono) {
+        this.telefono = telefono;
+    }
+
+    public void setRut(String rut) {
+        this.rut = rut;
+    }
+
+    public void setNombre(String nombre) {
+        this.nombre = nombre;
+    }
+
+    public void setApellidoPaterno(String apellidoPaterno) {
+        this.apellidoPaterno = apellidoPaterno;
+    }
+
+    public void setApellidoMaterno(String apellidoMaterno) {
+        this.apellidoMaterno = apellidoMaterno;
+    }
+
+    public void setEmpresa(EmpresaDTO empresa) {
+        this.empresa = empresa;
     }
 
     @Override
@@ -125,6 +203,9 @@ public class AccountDTO {
                 ", rol=" + rol +
                 ", telefono='" + telefono + '\'' +
                 ", rut='" + rut + '\'' +
+                ", nombre='" + nombre + '\'' +
+                ", apellidoPaterno='" + apellidoPaterno + '\'' +
+                ", apellidoMaterno='" + apellidoMaterno + '\'' +
                 ", empresa=" + (empresa != null ? empresa.getNombre() : "null") +
                 '}';
     }

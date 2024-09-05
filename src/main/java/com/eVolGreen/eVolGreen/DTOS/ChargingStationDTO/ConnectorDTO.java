@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO;
 
-import com.eVolGreen.eVolGreen.Models.Account.Fee.FeeConnector;
+import com.eVolGreen.eVolGreen.Models.Account.Fee.Fee;
 import com.eVolGreen.eVolGreen.Models.Account.Reservation;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.ConnectorStatus;
@@ -10,7 +10,6 @@ import jakarta.validation.constraints.NotNull;
 
 
 import java.math.BigDecimal;
-import java.util.HashSet;
 import java.util.Set;
 
 public class ConnectorDTO {
@@ -47,9 +46,11 @@ public class ConnectorDTO {
 
     private Set<Reservation> Reservaciones;
 
-    private Set<FeeConnector> TarifaConector;
+    private Fee tarifa;
 
     private String IdCargador;
+
+    private String nombreTerminal;
 
     public ConnectorDTO(Connector Conector) {
 
@@ -63,8 +64,9 @@ public class ConnectorDTO {
         Cargador = Conector.getCargador().getId();
         TipoConector = Conector.getTipoConector();
         Terminal = Conector.getTerminal().getId();
+        nombreTerminal = Conector.getTerminal().getNombreTerminal();
         Reservaciones = Conector.getReservaciones();
-        TarifaConector = Conector.getTarifaConector();
+        tarifa = Conector.getTarifa();
         IdCargador = Conector.getCargador().getoCPPid();
     }
 
@@ -112,12 +114,16 @@ public class ConnectorDTO {
         return Reservaciones;
     }
 
-    public Set<FeeConnector> getTarifaConector() {
-        return TarifaConector;
+    public Fee getTarifa() {
+        return tarifa;
     }
 
     public Long getTerminal() {
         return Terminal;
+    }
+
+    public String getNombreTerminal() {
+        return nombreTerminal; // Método getter para el nombre del terminal
     }
 
     @Override
@@ -133,7 +139,7 @@ public class ConnectorDTO {
                 ", EstadoConector=" + EstadoConector +
                 ", Cargador=" + Cargador +
                 ", Reservaciones=" + Reservaciones +
-                ", TarifaConector=" + TarifaConector +
+                ", Tarifa=" + tarifa +
                 ", IdCargador=" + IdCargador +
                 '}';
     }

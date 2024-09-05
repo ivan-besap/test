@@ -51,144 +51,194 @@ public class EVolGreenApplication {
 									  PermissionRepository permissionRepository,
 									  LocationRepository locationRepository, ChargerManufacturerService chargerManufacturerService, ChargerModelService chargerModelService) {
 		return args -> {
-
 			/*
 
 //			// Crear y guardar permisos
-			Permission chargerCreate = new Permission("charger_create", "Permitir crear un nuevo cargador");
-			permissionRepository.save(chargerCreate);
-
-			Permission chargerDelete = new Permission("charger_delete", "Permitir borrar un cargador");
-			permissionRepository.save(chargerDelete);
-
-			Permission chargerEdit = new Permission("charger_edit", "Permitir editar un cargador");
-			permissionRepository.save(chargerEdit);
-
-			Permission chargingStationView = new Permission("charging_station_view", "Permitir ver las cargas por terminal");
-			permissionRepository.save(chargingStationView);
-
-			Permission ocppChargerCommands = new Permission("ocpp_charger_commands", "Permitir comandos OCPP - Cargador");
-			permissionRepository.save(ocppChargerCommands);
-
-			Permission ocppConnectorCommands = new Permission("ocpp_connector_commands", "Permitir comandos OCPP - Conector");
-			permissionRepository.save(ocppConnectorCommands);
-
-			Permission ocppChargingStationCommands = new Permission("ocpp_charging_station_commands", "Permitir comandos OCPP - Carga por terminal");
-			permissionRepository.save(ocppChargingStationCommands);
-
-			Permission driverCreate = new Permission("driver_create", "Permitir crear conductores");
-			permissionRepository.save(driverCreate);
-
-			Permission driverDelete = new Permission("drive_delete", "Permitir borrar conductores");
-			permissionRepository.save(driverDelete);
-
-			Permission driverEdit = new Permission("driver_edit", "Permitir editar conductores");
-			permissionRepository.save(driverEdit);
-
-			Permission driverDisable = new Permission("driver_disable", "Permitir inhabilitar conductores");
-			permissionRepository.save(driverDisable);
-
-			Permission driverView = new Permission("driver_view", "Permitir ver conductores");
-			permissionRepository.save(driverView);
-
-			Permission chargerSettingsView = new Permission("charger_settings_view", "Permitir ver configuraciones de cargador");
-			permissionRepository.save(chargerSettingsView);
-
-			Permission powerControlCreate = new Permission("power_control_create", "Permitir crear control de potencia");
-			permissionRepository.save(powerControlCreate);
-
-			Permission powerControlEdit = new Permission("power_control_edit", "Permitir editar control de potencia");
-			permissionRepository.save(powerControlEdit);
-
-			Permission powerControlView = new Permission("power_control_view", "Permitir ver control de potencia");
-			permissionRepository.save(powerControlView);
-
-			Permission dashboardView = new Permission("dashboard_view", "Permitir ver el dashboard");
+			Permission dashboardView = new Permission("dashboard_view", "Permitir ver dashboard");
 			permissionRepository.save(dashboardView);
 
-			Permission scheduledDisablesCreate = new Permission("scheduled_disables_create", "Permitir crear inhabilitaciones programadas");
-			permissionRepository.save(scheduledDisablesCreate);
+			Permission dashboardViewPorEstacion = new Permission("dashboard_view_por_estacion", "Permitir ver dashboard por estacion");
+			permissionRepository.save(dashboardViewPorEstacion);
 
-			Permission scheduledDisablesEdit = new Permission("scheduled_disables_edit", "Permitir editar inhabilitaciones programadas");
-			permissionRepository.save(scheduledDisablesEdit);
+			Permission ocppCommandsView = new Permission("ocpp_commands_view", "Permitir ver comandos OCPP");
+			permissionRepository.save(ocppCommandsView);
 
-			Permission scheduledDisablesView = new Permission("scheduled_disables_view", "Permitir ver inhabilitaciones programadas");
-			permissionRepository.save(scheduledDisablesView);
+			Permission ocppCommandsReiniciarCarga = new Permission("ocpp_commands_reiniciar_carga", "Permitir Reiniciar Carga OCPP");
+			permissionRepository.save(ocppCommandsReiniciarCarga);
 
-			Permission ocppEditSettings = new Permission("ocpp_edit_settings", "Permitir editar configuraciones OCPP");
-			permissionRepository.save(ocppEditSettings);
+			Permission ocppCommandsIniciarCarga = new Permission("ocpp_commands_iniciar_carga", "Permitir Iniciar Carga OCPP");
+			permissionRepository.save(ocppCommandsIniciarCarga);
 
-			Permission ocppViewSettings = new Permission("ocpp_view_settings", "Permitir ver configuraciones OCPP");
-			permissionRepository.save(ocppViewSettings);
+			Permission ocppCommandsDetenerCarga = new Permission("ocpp_commands_detener_carga", "Permitir Detener Carga OCPP");
+			permissionRepository.save(ocppCommandsDetenerCarga);
 
-			Permission peakShavingCreate = new Permission("peak_shaving_create", "Permitir crear peak shaving");
-			permissionRepository.save(peakShavingCreate);
+			Permission ocppCommandsHabilitarCarga = new Permission("ocpp_commands_habilitar_carga", "Permitir Habilitar Carga OCPP");
+			permissionRepository.save(ocppCommandsHabilitarCarga);
 
-			Permission peakShavingEdit = new Permission("peak_shaving_edit", "Permitir editar peak shaving");
-			permissionRepository.save(peakShavingEdit);
+			Permission ocppCommandsDeshabilitarCarga = new Permission("ocpp_commands_deshabilitar_carga", "Permitir Deshabilitar Carga OCPP");
+			permissionRepository.save(ocppCommandsDeshabilitarCarga);
 
-			Permission peakShavingView = new Permission("peak_shaving_view", "Permitir ver peak shaving");
-			permissionRepository.save(peakShavingView);
+			Permission ocppCommandsDesbloquearCarga = new Permission("ocpp_commands_desbloquear_carga", "Permitir Desbloquear Carga OCPP");
+			permissionRepository.save(ocppCommandsDesbloquearCarga);
 
-			Permission chargeRecordsView = new Permission("charge_records_view", "Permitir ver registros de carga");
-			permissionRepository.save(chargeRecordsView);
+			Permission tarifasView = new Permission("tarifas_view", "Permitir ver Tarifas");
+			permissionRepository.save(tarifasView);
 
-			Permission rolesDelete = new Permission("roles_delete", "Permitir borrar roles");
-			permissionRepository.save(rolesDelete);
+			Permission tarifasCrear = new Permission("tarifas_crear", "Permitir crear Tarifas");
+			permissionRepository.save(tarifasCrear);
 
-			Permission rolesCreate = new Permission("roles_create", "Permitir crear roles");
-			permissionRepository.save(rolesCreate);
+			Permission tarifasEditar = new Permission("tarifas_editar", "Permitir editar Tarifas");
+			permissionRepository.save(tarifasEditar);
 
-			Permission rolesEdit = new Permission("roles_edit", "Permitir editar roles");
-			permissionRepository.save(rolesEdit);
+			Permission tarifasEliminar = new Permission("tarifas_eliminar", "Permitir eliminar Tarifas");
+			permissionRepository.save(tarifasEliminar);
 
-			Permission rolesView = new Permission("roles_view", "Permitir ver roles");
+			Permission tarifasAsignar = new Permission("tarifas_asignar", "Permitir Asignar Tarifas");
+			permissionRepository.save(tarifasAsignar);
+
+			Permission flotasView = new Permission("flotas_view", "Permitir ver Flotas");
+			permissionRepository.save(flotasView);
+
+			Permission flotasCrear = new Permission("flotas_crear", "Permitir crear Flotas");
+			permissionRepository.save(flotasCrear);
+
+			Permission flotasEditar = new Permission("flotas_editar", "Permitir editar Flotas");
+			permissionRepository.save(flotasEditar);
+
+			Permission flotasEliminar = new Permission("flotas_eliminar", "Permitir eliminar Flotas");
+			permissionRepository.save(flotasEliminar);
+
+			Permission reporteCargaView = new Permission("reportes_cargas_view", "Permitir ver Reportes de cargas");
+			permissionRepository.save(reporteCargaView);
+
+			Permission reporteDetalleCargaView = new Permission("reportes_detalles_cargas_view", "Permitir ver Reportes detalles de carga");
+			permissionRepository.save(reporteDetalleCargaView);
+
+			Permission reporteCargaCargadorView = new Permission("reportes_cargas_cargador_view", "Permitir ver Reportes cargas por cargador");
+			permissionRepository.save(reporteCargaCargadorView);
+
+			Permission reporteCargasTerminalView = new Permission("reportes_cargas_terminal_view", "Permitir ver Reportes cargas por terminal");
+			permissionRepository.save(reporteCargasTerminalView);
+
+			Permission reporteCargasFlotaView = new Permission("reportes_cargas_flota_view", "Permitir ver Reportes cargas por flota");
+			permissionRepository.save(reporteCargasFlotaView);
+
+			Permission reporteErroresConectorView = new Permission("reportes_errores_conector_view", "Permitir ver Reportes errores por conector");
+			permissionRepository.save(reporteErroresConectorView);
+
+			Permission reporteErroresView = new Permission("reportes_errores_view", "Permitir ver Reportes errores");
+			permissionRepository.save(reporteErroresView);
+
+			Permission usuariosEmpresaView = new Permission("usuarios_empresa_view", "Permitir ver Usuarios Empresa");
+			permissionRepository.save(usuariosEmpresaView);
+
+			Permission usuariosEmpresaCrear = new Permission("usuarios_empresa_crear", "Permitir crear Usuarios Empresa");
+			permissionRepository.save(usuariosEmpresaCrear);
+
+			Permission usuariosEmpresaEditar = new Permission("usuarios_empresa_editar", "Permitir editar Usuarios Empresa");
+			permissionRepository.save(usuariosEmpresaEditar);
+
+			Permission usuariosEmpresaEliminar = new Permission("usuarios_empresa_eliminar", "Permitir eliminar Usuarios Empresa");
+			permissionRepository.save(usuariosEmpresaEliminar);
+
+			Permission rolesView = new Permission("roles_view", "Permitir ver Roles");
 			permissionRepository.save(rolesView);
 
-			Permission terminalsView = new Permission("charging_station_view", "Permitir ver tecles");
-			permissionRepository.save(terminalsView);
+			Permission rolesEditar = new Permission("roles_editar", "Permitir editar Roles");
+			permissionRepository.save(rolesEditar);
 
-			Permission locationsCreate = new Permission("locations_create", "Permitir crear ubicaciones");
-			permissionRepository.save(locationsCreate);
+			Permission rolesEliminar = new Permission("roles_eliminar", "Permitir eliminar Roles");
+			permissionRepository.save(rolesEliminar);
 
-			Permission locationsView = new Permission("locations_view", "Permitir ver ubicaciones");
-			permissionRepository.save(locationsView);
+			Permission tarjetarfidView = new Permission("tartetarfid_view", "Permitir ver TarjetasRFID");
+			permissionRepository.save(tarjetarfidView);
 
-			Permission electricFirefighter = new Permission("electric_firefighter", "Permitir acceso de Electrobombero");
-			permissionRepository.save(electricFirefighter);
+			Permission tarjetarfidCrear = new Permission("tartetarfid_crear", "Permitir crear TarjetasRFID");
+			permissionRepository.save(tarjetarfidCrear);
 
-			Permission chargersByUser = new Permission("chargers_by_user", "Permitir ver cargadores por usuario");
-			permissionRepository.save(chargersByUser);
+			Permission tarjetarfidEditar = new Permission("tartetarfid_editar", "Permitir editar TarjetasRFID");
+			permissionRepository.save(tarjetarfidEditar);
 
-			Permission chargersByTerminal = new Permission("chargers_by_terminal", "Permitir ver cargadores por terminal");
-			permissionRepository.save(chargersByTerminal);
+			Permission tarjetarfidEliminar = new Permission("tartetarfid_eliminar", "Permitir eliminar TarjetasRFID");
+			permissionRepository.save(tarjetarfidEliminar);
 
-			Permission clientView = new Permission("client_view", "Permitir vista clientes");
-			permissionRepository.save(clientView);
+			Permission estacionView = new Permission("estacion_view", "Permitir ver Estaciones");
+			permissionRepository.save(estacionView);
 
-			Permission employeeView = new Permission("employee_view", "Permitir vista encargado");
-			permissionRepository.save(employeeView);
+			Permission estacionCrear = new Permission("estacion_crear", "Permitir crear Estaciones");
+			permissionRepository.save(estacionCrear);
+
+			Permission estacionEditar = new Permission("estacion_editar", "Permitir editar Estaciones");
+			permissionRepository.save(estacionEditar);
+
+			Permission estacionEliminar = new Permission("estacion_eliminar", "Permitir eliminar Estaciones");
+			permissionRepository.save(estacionEliminar);
+
+			Permission cargadorView = new Permission("cargador_view", "Permitir ver Cargadores");
+			permissionRepository.save(cargadorView);
+
+			Permission cargadorCrear = new Permission("cargador_crear", "Permitir crear Cargadores");
+			permissionRepository.save(cargadorCrear);
+
+			Permission cargadorEditar = new Permission("cargador_editar", "Permitir editar Cargadores");
+			permissionRepository.save(cargadorEditar);
+
+			Permission cargadorEliminar = new Permission("cargador_eliminar", "Permitir eliminar Cargadores");
+			permissionRepository.save(cargadorEliminar);
+
+			Permission cargadorMantenimientoCrear = new Permission("cargador_mantenimiento_crear", "Permitir Crear Mantenimiento Cargador");
+			permissionRepository.save(cargadorMantenimientoCrear);
+
+			Permission cargadorMantenimientoAsignar = new Permission("cargador_mantenimiento_asignar", "Permitir Asignar Mantenimiento Cargador");
+			permissionRepository.save(cargadorMantenimientoAsignar);
+
+			Permission conectorView = new Permission("conector_view", "Permitir ver Conectores");
+			permissionRepository.save(conectorView);
+
+			Permission conectorCrear = new Permission("conector_crear", "Permitir crear Conector");
+			permissionRepository.save(conectorCrear);
+
+			Permission conectorEditar = new Permission("conector_editar", "Permitir editar Conector");
+			permissionRepository.save(conectorEditar);
+
+			Permission conectorEliminar = new Permission("conector_eliminar", "Permitir eliminar Conector");
+			permissionRepository.save(conectorEliminar);
+
+			Permission configuracionCorreoAlertaView = new Permission("configuracion_correo_alerta_view", "Permitir ver Configuración de Correos Alertas");
+			permissionRepository.save(configuracionCorreoAlertaView);
+
+			Permission reporteAlarmaDiariaView = new Permission("reportes_alarma_diaria_view", "Permitir ver Alarmas diarias");
+			permissionRepository.save(reporteAlarmaDiariaView);
+
+			Permission rolesCreate = new Permission("roles_create", "Permitir crear Roles");
+			permissionRepository.save(rolesCreate);
+
+			Permission tarjetarfidAsignar = new Permission("tartetarfid_asignar", "Permitir Asignar TarjetasRFID");
+			permissionRepository.save(tarjetarfidAsignar);
 
 
 
-			Set<Long> permisos = permissionRepository.findAll().stream()
-					.map(Permission::getId)
-					.collect(Collectors.toSet());
-
-			Role adminRole = new Role();
-			adminRole.setNombre("ADMIN");
-			adminRole.setPermisos(permisos);
-
-			roleRepository.save(adminRole);
+			List<Permission> permisos = permissionRepository.findAll();
 
 			Empresa defaultEmpresa = new Empresa();
 			defaultEmpresa.setNombre("Empresa Predeterminada");
 			empresaRepository.save(defaultEmpresa);
 
+			Role adminRole = new Role();
+			adminRole.setNombre("ADMIN");
+			adminRole.setPermisos(permisos);
+			adminRole.setEmpresa(defaultEmpresa);
+
+			roleRepository.save(adminRole);
+
+
 			// Crear la cuenta principal de la compañía
 			String numeroDeCuenta = "admin-" + getStringRandomNumber();
 			String encriptedPassword = passwordEncoder.encode("password");
 			Account account = new Account(
+					"Mi Empresa",
+					"Mi Empresa",
+					"Mi Empresa",
 					numeroDeCuenta,
 					"Cuenta Principal de Mi Empresa",
 					LocalDate.now(),
@@ -198,7 +248,8 @@ public class EVolGreenApplication {
 					adminRole,
 					"8889874322",
 					"13.445.221-1",
-					defaultEmpresa
+					defaultEmpresa,
+					true
 			);
 
 			account.setActivo(true);
@@ -214,9 +265,7 @@ public class EVolGreenApplication {
 					"Modelo de Prueba 1"
 			);
 			chargerModelService.saveChargerModel(chargerModel);
-
 		*/
-
 		};
 	}
 

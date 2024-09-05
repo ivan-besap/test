@@ -1,20 +1,12 @@
 package com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO;
 
-import com.eVolGreen.eVolGreen.Models.Account.Fee.FeeConnector;
-import com.eVolGreen.eVolGreen.Models.Account.Reservation;
-import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.ConnectorStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.TypeConnector;
-import com.fasterxml.jackson.annotation.JsonBackReference;
-import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
-import org.hibernate.annotations.GenericGenerator;
 
 import java.math.BigDecimal;
-import java.util.HashSet;
-import java.util.Set;
 
 public class NewConnectorDTO {
 
@@ -44,6 +36,8 @@ public class NewConnectorDTO {
     private Long cargador;
 
     private Long terminal;
+
+    private Long tarifa;
 
 
     public NewConnectorDTO() { }
@@ -87,6 +81,14 @@ public class NewConnectorDTO {
 
     public @NotNull(message = "La Corriente Maxima es obligatoria") BigDecimal getCorrienteMaxima() {
         return corrienteMaxima;
+    }
+
+    public Long getTarifa() {
+        return tarifa;
+    }
+
+    public void setTarifa(Long tarifa) {
+        this.tarifa = tarifa;
     }
 
     public ConnectorStatus getEstadoConector() {

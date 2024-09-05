@@ -23,12 +23,12 @@ public class NewCarDTO {
     private String marca;
 
     @NotNull(message = "El Año de Fabricación es obligatorio")
-    private String añoFabricacion;
+    private String anoFabricacion;
 
     @NotNull(message = "La Capacidad de Potencia es obligatoria")
     private BigDecimal capacidadPotencia;
 
-    private Long accountId;
+    private Long empresaId;
 
     private Boolean activo = false;
 
@@ -40,9 +40,9 @@ public class NewCarDTO {
         this.vin = car.getVin();
         this.color = car.getColor();
         this.marca = car.getMarca();
-        this.añoFabricacion = car.getAñoFabricacion();
+        this.anoFabricacion = car.getAnoFabricacion();
         this.capacidadPotencia = car.getCapacidadPotencia();
-        this.accountId = car.getAccount().getId();
+        this.empresaId = car.getEmpresa().getId();
         this.activo = car.getActivo();
     }
 
@@ -70,16 +70,16 @@ public class NewCarDTO {
         return marca;
     }
 
-    public String getAñoFabricacion() {
-        return añoFabricacion;
+    public String getAnoFabricacion() {
+        return anoFabricacion;
     }
 
     public BigDecimal getCapacidadPotencia() {
         return capacidadPotencia;
     }
 
-    public Long getAccountId() {
-        return accountId;
+    public long getEmpresaId() {
+        return empresaId;
     }
 
     @Override
@@ -90,9 +90,9 @@ public class NewCarDTO {
                 ", vin='" + vin + '\'' +
                 ", color='" + color + '\'' +
                 ", marca='" + marca + '\'' +
-                ", añoFabricacion='" + añoFabricacion + '\'' +
+                ", anoFabricacion='" + anoFabricacion + '\'' +
                 ", capacidadPotencia=" + capacidadPotencia +
-                ", accountId=" + accountId +
+                ", empresaId=" + empresaId +
                 ", activo=" + activo +
                 '}';
     }

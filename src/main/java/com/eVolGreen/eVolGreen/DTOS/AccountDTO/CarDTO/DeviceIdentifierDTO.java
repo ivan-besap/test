@@ -20,7 +20,7 @@ public class DeviceIdentifierDTO {
 
     private Long auto;
 
-    private Long cuenta;
+    private Long empresa;
 
     private Boolean activo = false;
 
@@ -29,7 +29,7 @@ public class DeviceIdentifierDTO {
         nombreDeIdentificador = deviceIdentifier.getNombreDeIdentificador();
         RFID = deviceIdentifier.getRFID();
         fechaExpiracion = deviceIdentifier.getFechaExpiracion();
-        cuenta = deviceIdentifier.getCuenta().getId();
+        this.empresa = deviceIdentifier.getEmpresa().getId();
         auto = deviceIdentifier.getAuto() != null ? deviceIdentifier.getAuto().getId() : null;
         activo = deviceIdentifier.getActivo();
     }
@@ -54,8 +54,8 @@ public class DeviceIdentifierDTO {
         return auto;
     }
 
-    public Long getCuenta() {
-        return cuenta;
+    public Long getEmpresa() {
+        return empresa;
     }
 
     public Boolean getActivo() {
@@ -70,7 +70,7 @@ public class DeviceIdentifierDTO {
                 ", RFID='" + RFID + '\'' +
                 ", fechaExpiracion=" + fechaExpiracion +
                 ", auto=" + auto +
-                ", cuenta=" + cuenta +
+                ", empresa=" + empresa +
                 ", activo=" + activo +
                 '}';
     }

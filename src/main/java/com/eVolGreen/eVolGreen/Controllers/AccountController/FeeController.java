@@ -3,7 +3,9 @@ package com.eVolGreen.eVolGreen.Controllers.AccountController;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.FeeDTO.FeeDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.FeeDTO.NewFeeDTO;
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.Account.Fee.Fee;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.FeeService;
@@ -28,8 +30,9 @@ public class FeeController {
     private AccountService accountService;
 
     @GetMapping("/fees")
-    public List<FeeDTO> getFees() {
-        return feeService.getFeesDTO();
+    public List<FeeDTO> getFees(Authentication authentication) {
+        String email = authentication.getName();
+        return feeService.getFeesDTO(email);
     }
 
     @GetMapping("/fees/{id}")
@@ -50,6 +53,7 @@ public class FeeController {
     public ResponseEntity<Object> createFee(Authentication authentication,
                                             @RequestBody NewFeeDTO feeDTO) {
 
+
         Optional<Account> optionalAccount = accountService.findByEmail(authentication.getName());
         String mensaje;
 
@@ -60,7 +64,14 @@ public class FeeController {
 
         Account account = optionalAccount.get();
 
-        // Validar los campos requeridos
+
+        Empresa empresa = account.getEmpresa();
+        if (empresa == null) {
+            mensaje = "No se encontró una empresa asociada a la cuenta";
+            return new ResponseEntity<>(mensaje, HttpStatus.NOT_FOUND);
+        }
+
+
         if (feeDTO.getNombreTarifa() == null) {
             mensaje = "El nombre es necesario";
             return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
@@ -90,7 +101,7 @@ public class FeeController {
             return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
 
-        // Crear la nueva tarifa
+
         Fee nuevaTarifa = new Fee(
                 feeDTO.getNombreTarifa(),
                 feeDTO.getFechaInicio(),
@@ -100,7 +111,7 @@ public class FeeController {
                 feeDTO.getDiasDeLaSemana(),
                 feeDTO.getPrecioTarifa(),
                 true,
-                account
+                empresa
         );
 
         feeService.saveFee(nuevaTarifa);
@@ -192,4 +203,5 @@ public class FeeController {
         mensaje = "La tarifa fue desactivada exitosamente";
         return ResponseEntity.ok(mensaje);
     }
+
 }

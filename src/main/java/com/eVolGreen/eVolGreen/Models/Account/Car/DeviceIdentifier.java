@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Account.Car;
 
 import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -30,11 +31,11 @@ public class DeviceIdentifier {
     @JsonBackReference("Auto-RFID")
     private Car auto;
 
-    @NotNull(message = "La cuenta no puede estar en nulo.")
+    @NotNull(message = "La empresa no puede estar en nulo.")
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "account_id", nullable = false)
-    @JsonBackReference("Account-RFID")
-    private Account cuenta;
+    @JoinColumn(name = "empresa_id", nullable = false)
+    @JsonBackReference("Empresa-RFID")
+    private Empresa empresa;
 
     private Boolean activo = false;
 
@@ -87,12 +88,12 @@ public class DeviceIdentifier {
         this.auto = auto;
     }
 
-    public @NotNull(message = "La cuenta no puede estar en nulo.") Account getCuenta() {
-        return cuenta;
+    public Empresa getEmpresa() {
+        return empresa;
     }
 
-    public void setCuenta(@NotNull(message = "La cuenta no puede estar en nulo.") Account cuenta) {
-        this.cuenta = cuenta;
+    public void setEmpresa(Empresa empresa) {
+        this.empresa = empresa;
     }
 
     public Boolean getActivo() {
@@ -111,7 +112,7 @@ public class DeviceIdentifier {
                 ", RFID='" + RFID + '\'' +
                 ", fechaExpiracion=" + fechaExpiracion +
                 ", auto=" + auto +
-                ", cuenta=" + cuenta +
+                ", empresa=" + empresa +
                 ", activo=" + activo +
                 '}';
     }
