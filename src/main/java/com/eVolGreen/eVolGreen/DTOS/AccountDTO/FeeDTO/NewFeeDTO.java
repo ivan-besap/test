@@ -35,6 +35,8 @@ public class NewFeeDTO {
 
     private Long empresaId;
 
+    private String consumoDeEnergiaAlarma;
+
     // Constructor por defecto
     public NewFeeDTO() { }
 
@@ -49,6 +51,7 @@ public class NewFeeDTO {
         this.PrecioTarifa = Tarifa.getPrecioTarifa();
         this.activo = Tarifa.getActivo();
         this.empresaId = Tarifa.getEmpresa().getId();
+        this.consumoDeEnergiaAlarma = Tarifa.getConsumoDeEnergiaAlarma();
     }
 
     // Getters
@@ -82,6 +85,10 @@ public class NewFeeDTO {
 
     public BigDecimal getPrecioTarifa() {
         return PrecioTarifa;
+    }
+
+    public String getConsumoDeEnergiaAlarma() {
+        return consumoDeEnergiaAlarma;
     }
 
     // Setters
@@ -119,5 +126,9 @@ public class NewFeeDTO {
 
     public void setEmpresaId(Long empresaId) {
         this.empresaId = empresaId;
+    }
+
+    public void setConsumoDeEnergiaAlarma(String consumoDeEnergiaAlarma) {
+        this.consumoDeEnergiaAlarma = consumoDeEnergiaAlarma;
     }
 }

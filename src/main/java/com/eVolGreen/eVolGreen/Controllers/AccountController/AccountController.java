@@ -2,12 +2,10 @@ package com.eVolGreen.eVolGreen.Controllers.AccountController;
 
 
 import com.amazonaws.services.cognitoidp.model.ResourceNotFoundException;
-import com.eVolGreen.eVolGreen.DTOS.AccountDTO.AccountDTO;
-import com.eVolGreen.eVolGreen.DTOS.AccountDTO.EmployeeRegisterDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.*;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.FeeDTO.FeeDTO;
-import com.eVolGreen.eVolGreen.DTOS.AccountDTO.RoleDTO;
-import com.eVolGreen.eVolGreen.DTOS.AccountDTO.RoleRequestDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.AuditLog;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.Account.Location;
 import com.eVolGreen.eVolGreen.Models.Account.Permission.Permission;
@@ -15,10 +13,12 @@ import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.TypeAccounts;
 import com.eVolGreen.eVolGreen.Models.User.Role;
 import com.eVolGreen.eVolGreen.Repositories.AccountRepository;
 
+import com.eVolGreen.eVolGreen.Repositories.AuditLogRepository;
 import com.eVolGreen.eVolGreen.Repositories.LocationRepository;
 import com.eVolGreen.eVolGreen.Repositories.RoleRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 
+import com.eVolGreen.eVolGreen.Services.AccountService.AuditLogService;
 import com.eVolGreen.eVolGreen.Services.AccountService.PermissionService;
 import com.eVolGreen.eVolGreen.Services.AccountService.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -49,7 +49,13 @@ public class AccountController {
     private AccountRepository accountRepository;
 
     @Autowired
+    private AuditLogService auditLogService;
+
+    @Autowired
     private RoleRepository roleRepository;
+
+    @Autowired
+    private AuditLogRepository auditLogRepository;
 
     @Autowired
     private LocationRepository locationRepository;
@@ -191,7 +197,12 @@ public class AccountController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresa no encontrada");
         }
 
+        if (accountRepository.findByEmail(employeeDTO.getEmail()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Ya existe un usuario con ese correo electrónico.");
+        }
+
         Account cuentaEmpresa = cuentaOpt.get();
+        Account account2 = cuentaOpt.get();
 
         String validationError = validateEmployeeDTO(employeeDTO);
         if (validationError != null) {
@@ -220,10 +231,15 @@ public class AccountController {
                 employeeDTO.getTelefono(),
                 employeeDTO.getRut(),
                 cuentaEmpresa.getEmpresa(),
-                true
+                true,
+                false,
+                false
         );
 
         accountRepository.save(cuentaUsuario);
+
+        String descripcion = "Usuario " + account2.getEmail() + " creó un usuario Empresa con el nombre: " + employeeDTO.getNombre() + " " + employeeDTO.getApellidoPaterno() + " y correo: " + employeeDTO.getEmail();
+        auditLogService.recordAction(descripcion, account2);
 
         return ResponseEntity.ok("Empleado creado exitosamente");
     }
@@ -236,6 +252,7 @@ public class AccountController {
         if (cuentaOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresa no encontrada");
         }
+        Account account2 = cuentaOpt.get();
 
         Account cuentaEmpresa = cuentaOpt.get();
 
@@ -257,6 +274,9 @@ public class AccountController {
         cuentaTrabajador.setActivo(false);
         accountRepository.save(cuentaTrabajador);
 
+        String descripcion = "Usuario " + account2.getEmail() + " eliminó un usuario Empresa con el nombre: " + cuentaTrabajador.getNombre() + " " + cuentaTrabajador.getApellidoPaterno() + " y correo: " + cuentaTrabajador.getEmail();
+        auditLogService.recordAction(descripcion, account2);
+
         message = "Empleado desactivado exitosamente";
         return ResponseEntity.ok(message);
     }
@@ -276,13 +296,23 @@ public class AccountController {
     }
 
     @PutMapping("/roles/{id}")
-    public ResponseEntity<String> updateRole(@PathVariable Long id, @RequestBody RoleRequestDTO roleRequestDTO) {
+    public ResponseEntity<String> updateRole( Authentication authentication,@PathVariable Long id, @RequestBody RoleRequestDTO roleRequestDTO) {
+
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
+
+        if (account.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se encontró la cuenta del usuario autenticado");
+        }
+        Account account2 = account.get();
         Role role = roleService.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found with id " + id));
         role.setNombre(roleRequestDTO.getNombre());
         List<Permission> permisos = permissionService.findAllById(roleRequestDTO.getPermisosIds());
         role.setPermisos(permisos);
         roleService.saveRole(role);
+
+        String descripcion = "Usuario " + account2.getEmail() + " editó un rol con el nombre: " + role.getNombre();
+        auditLogService.recordAction(descripcion, account2);
 
         return ResponseEntity.ok("Role updated successfully");
     }
@@ -296,6 +326,7 @@ public class AccountController {
         if (cuentaOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresa no encontrada");
         }
+        Account account2 = cuentaOpt.get();
 
         Account cuentaEmpresa = cuentaOpt.get();
 
@@ -306,6 +337,12 @@ public class AccountController {
         }
 
         Account cuentaTrabajador = cuentaUsuario.get();
+
+        if (!cuentaTrabajador.getEmail().equals(employeeDTO.getEmail())) {
+            if (accountRepository.findByEmail(employeeDTO.getEmail()).isPresent()) {
+                return ResponseEntity.status(HttpStatus.CONFLICT).body("Ya existe un usuario con ese correo electrónico.");
+            }
+        }
 
         // Validar los campos requeridos en el DTO
         if (employeeDTO.getNombre().isBlank()) {
@@ -336,11 +373,17 @@ public class AccountController {
         cuentaTrabajador.setApellidoPaterno(employeeDTO.getApellidoPaterno());
         cuentaTrabajador.setApellidoMaterno(employeeDTO.getApellidoMaterno());
         cuentaTrabajador.setEmail(employeeDTO.getEmail());
-        /*cuentaTrabajador.setPassword(passwordEncoder.encode(employeeDTO.getPassword()));*/
         cuentaTrabajador.setRole(role);  // Asignar el nuevo role
+
+        if (employeeDTO.getPassword() != null && !employeeDTO.getPassword().isBlank()) {
+            cuentaTrabajador.setPassword(passwordEncoder.encode(employeeDTO.getPassword()));
+        }
 
         // Guardar los cambios en la base de datos
         accountRepository.save(cuentaTrabajador);
+
+        String descripcion = "Usuario " + account2.getEmail() + " modificó un usuario Empresa con el nombre: " + employeeDTO.getNombre() + " " + employeeDTO.getApellidoPaterno() + " y correo: " + employeeDTO.getEmail();
+        auditLogService.recordAction(descripcion, account2);
 
         return ResponseEntity.ok("Empleado actualizado exitosamente");
     }
@@ -389,6 +432,8 @@ public class AccountController {
         if (account.isEmpty()) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se encontró la cuenta del usuario autenticado");
         }
+        Account account2 = account.get();
+
         Empresa empresa = account.get().getEmpresa();
 
         if (empresa == null) {
@@ -401,11 +446,23 @@ public class AccountController {
         role.setEmpresa(empresa);
         roleService.saveRole(role);
         role.setActivo(true);
+
+        String descripcion = "Usuario " + account2.getEmail() + " creó un rol con el nombre: " + role.getNombre();
+        auditLogService.recordAction(descripcion, account2);
+
         return ResponseEntity.ok("Rol creado exitosamente");
     }
 
     @PatchMapping("/roles/{id}/delete")
-    public ResponseEntity<Object> toggleRoleActiveStatus(@PathVariable Long id) {
+    public ResponseEntity<Object> toggleRoleActiveStatus(Authentication authentication,@PathVariable Long id) {
+
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
+
+        if (account.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se encontró la cuenta del usuario autenticado");
+        }
+        Account account2 = account.get();
+
         Optional<Role> optionalRole = roleService.findById(id);
 
         if (optionalRole.isEmpty()) {
@@ -417,7 +474,8 @@ public class AccountController {
         if (role.getActivo()) {
             role.setActivo(false);
             roleService.saveRole(role);
-
+            String descripcion = "Usuario " + account2.getEmail() + " eliminó un rol con el nombre: " + role.getNombre();
+            auditLogService.recordAction(descripcion, account2);
             return ResponseEntity.ok("El rol ha sido desactivado correctamente.");
         } else {
             role.setActivo(true);
@@ -426,9 +484,175 @@ public class AccountController {
             return ResponseEntity.ok("El rol ha sido activado correctamente.");
         }
     }
+    @GetMapping("/audit-logs")
+    public List<AuditLogDTO> getAuditLogs() {
+        List<AuditLog> auditLogs = auditLogRepository.findAll();
+
+        // Convertir las entidades AuditLog a AuditLogDTO
+        return auditLogs.stream().map(log -> new AuditLogDTO(
+                log.getAccount().getEmail(),
+                log.getAccount().getNombre(),
+                log.getAccount().getApellidoPaterno(),
+                log.getDescription(),
+                log.getDate()
+        )).collect(Collectors.toList());
+    }
+
+    @GetMapping("/verify-account")
+    public ResponseEntity<String> verifyAccount(@RequestParam("email") String email) {
+        Optional<Account> accountOpt = accountService.findByEmail(email);
+        if (accountOpt.isEmpty()) {
+            return new ResponseEntity<>("Cuenta no encontrada", HttpStatus.NOT_FOUND);
+        }
+        Account account = accountOpt.get();
+        if (account.getActivo()) {
+            return new ResponseEntity<>("La cuenta ya está activa", HttpStatus.BAD_REQUEST);
+        }
+        account.setActivo(true);
+        accountService.saveAccount(account);
+        return ResponseEntity.ok("Cuenta activada con éxito");
+    }
+
+    @GetMapping("/usuarios/alarmaCorreo")
+    public ResponseEntity<List<AccountDTO>> getUsuariosPorAlarmaCorreo(Authentication authentication) {
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
+
+        if (account.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.emptyList());
+        }
+
+        Empresa empresa = account.get().getEmpresa();
+
+        List<Account> usuarios = accountRepository.findByEmpresaIdAndAlarmaCorreoTrue(empresa.getId());
+        List<AccountDTO> usuariosDTO = usuarios.stream()
+                .map(AccountDTO::new)
+                .collect(Collectors.toList());
+        return new ResponseEntity<>(usuariosDTO, HttpStatus.OK);
+    }
+    @PatchMapping("/usuarios/alarmaCorreo/{id}/remove")
+    public ResponseEntity<String> removeUsuarioFromAlarmaCorreo(@PathVariable Long id, Authentication authentication) {
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
+        if (account.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se encontró la cuenta del usuario autenticado");
+        }
+        Optional<Account> usuario = accountRepository.findById(id);
+
+        if (usuario.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró el usuario");
+        }
+
+        Account usuarioToUpdate = usuario.get();
+        usuarioToUpdate.setAlarmaCorreo(false);
+        accountRepository.save(usuarioToUpdate);
+
+        return ResponseEntity.ok("Usuario eliminado de las alarmas diarias correctamente.");
+    }
 
 
+    @GetMapping("/usuarios/alarmaError")
+    public ResponseEntity<List<AccountDTO>> getUsuariosPorAlarmaError(Authentication authentication) {
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
 
+        if (account.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.emptyList());
+        }
+
+        Empresa empresa = account.get().getEmpresa();
+
+        List<Account> usuarios = accountRepository.findByEmpresaIdAndAlarmaErrorTrue(empresa.getId());
+        List<AccountDTO> usuariosDTO = usuarios.stream()
+                .map(AccountDTO::new)
+                .collect(Collectors.toList());
+        return new ResponseEntity<>(usuariosDTO, HttpStatus.OK);
+    }
+    @PatchMapping("/usuarios/alarmaError/{id}/remove")
+    public ResponseEntity<String> removeUsuarioFromAlarmaError(@PathVariable Long id, Authentication authentication) {
+        // Buscar la cuenta del usuario autenticado
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
+
+        if (account.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se encontró la cuenta del usuario autenticado");
+        }
+
+        Optional<Account> usuario = accountRepository.findById(id);
+
+        if (usuario.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró el usuario");
+        }
+
+        Account usuarioToUpdate = usuario.get();
+        usuarioToUpdate.setAlarmaError(false);
+        accountRepository.save(usuarioToUpdate);
+
+        return ResponseEntity.ok("Usuario eliminado de las alertas de errores de conector correctamente.");
+    }
+
+    @GetMapping("/usuarios/correos")
+    public ResponseEntity<List<Map<String, String>>> getCorreosPorEmpresa(Authentication authentication) {
+        Optional<Account> account = accountService.findByEmail(authentication.getName());
+
+        if (account.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Collections.emptyList());
+        }
+        Empresa empresa = account.get().getEmpresa();
+
+        List<Account> accounts = accountRepository.findByEmpresaAndActivo(empresa,true);
+        List<Map<String, String>> correos = accounts.stream()
+                .map(acc -> Map.of("value", String.valueOf(acc.getId()), "label", acc.getEmail()))
+                .collect(Collectors.toList());
+
+        return new ResponseEntity<>(correos, HttpStatus.OK);
+    }
+
+    @PostMapping("/usuarios/alarmaCorreo/add")
+    public ResponseEntity<String> agregarUsuarioAlarmaCorreo(@RequestBody Map<String, String> payload, Authentication authentication) {
+        Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
+
+        if (accountOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se encontró la cuenta del usuario autenticado");
+        }
+        Account accountUsuario = accountOptional.get();
+        String email = payload.get("email");
+
+        Optional<Account> usuario = accountService.findByEmail(email);
+        if (usuario.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("El usuario con ese correo no fue encontrado");
+        }
+        Account account = usuario.get();
+        account.setAlarmaCorreo(true);
+        accountService.saveAccount(account);
+
+        String descripcion = "Usuario " + accountUsuario.getEmail() + " añadió a " + account.getEmail() + " a las alarmas de correo.";
+        auditLogService.recordAction(descripcion, accountUsuario);
+
+        return ResponseEntity.ok("El usuario ha sido añadido correctamente a las alarmas de correo.");
+    }
+
+    @PostMapping("/usuarios/alarmaError/add")
+    public ResponseEntity<String> agregarUsuarioAlarmaError(@RequestBody Map<String, String> payload, Authentication authentication) {
+        Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
+
+        if (accountOptional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("No se encontró la cuenta del usuario autenticado");
+        }
+
+        Account accountUsuario = accountOptional.get();
+        String email = payload.get("email");
+
+        Optional<Account> usuario = accountService.findByEmail(email);
+        if (usuario.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("El usuario con ese correo no fue encontrado");
+        }
+
+        Account account = usuario.get();
+        account.setAlarmaError(true);  // Activa el campo de alarmaError
+        accountService.saveAccount(account);
+
+        String descripcion = "Usuario " + accountUsuario.getEmail() + " añadió a " + account.getEmail() + " a las alarmas de errores de conector.";
+        auditLogService.recordAction(descripcion, accountUsuario);
+
+        return ResponseEntity.ok("El usuario ha sido añadido correctamente a las alarmas de errores de conector.");
+    }
 
 
 

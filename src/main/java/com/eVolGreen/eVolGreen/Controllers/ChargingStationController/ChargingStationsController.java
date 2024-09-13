@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Controllers.ChargingStationController;
 
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargingStationsDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.NewChargingStationsDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
@@ -11,6 +12,7 @@ import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStationStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.eVolGreen.eVolGreen.Repositories.ChargingStationRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
+import com.eVolGreen.eVolGreen.Services.AccountService.AuditLogService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargingStationsService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ConnectorService;
@@ -39,6 +41,9 @@ public class ChargingStationsController {
     private AccountService accountService;
 
     @Autowired
+    private AuditLogService auditLogService;
+
+    @Autowired
     private LocationService  locationService;
 
     @Autowired
@@ -56,6 +61,11 @@ public class ChargingStationsController {
         return chargingStationsService.getActiveChargingStationsDTOForCurrentUser(email);
     }
 
+    @GetMapping("/chargingStations/{id}")
+    public ChargingStationsDTO getChargingStation(@PathVariable Long id) {
+        return chargingStationsService.getChargingStationDTO(id);
+    }
+
     @PostMapping("/companies/current/chargingStations")
     public ResponseEntity<Object> registerChargingStation(Authentication authentication,
                                                           @RequestBody NewChargingStationsDTO chargingStationsDTO) {
@@ -67,6 +77,8 @@ public class ChargingStationsController {
             message = "No se encontró la cuenta";
             return ResponseEntity.status(400).body(message);
         }
+
+        Account account2 = account.get();
 
         Empresa empresa = account.get().getEmpresa();
 
@@ -101,6 +113,9 @@ public class ChargingStationsController {
 
         chargingStationsService.saveChargingStations(newChargingStation);
 
+        String descripcion = "Usuario " + account2.getEmail() + " creó una estación con el nombre: " + chargingStationsDTO.getNombreTerminal();
+        auditLogService.recordAction(descripcion, account2);
+
 
         return ResponseEntity.status(201).body(new ChargingStationsDTO(newChargingStation));
     }
@@ -113,10 +128,13 @@ public class ChargingStationsController {
         Optional<Account> account = accountService.findByEmail(authentication.getName());
         String message = " ";
 
+
         if (account.isEmpty()) {
             message = "No se encontró la cuenta";
             return ResponseEntity.status(400).body(message);
         }
+
+        Account account2 = account.get();
 
         ChargingStation existingChargingStation = chargingStationsService.findById(id);
         if (existingChargingStation == null) {
@@ -141,6 +159,9 @@ public class ChargingStationsController {
         existingChargingStation.setNombreTerminal(chargingStationsDTO.getNombreTerminal());
         chargingStationsService.saveChargingStations(existingChargingStation);
 
+        String descripcion = "Usuario " + account2.getEmail() + " modificó una estación con el nombre: " + chargingStationsDTO.getNombreTerminal();
+        auditLogService.recordAction(descripcion, account2);
+
         return ResponseEntity.status(200).body(new ChargingStationsDTO(existingChargingStation));
     }
 
@@ -156,6 +177,8 @@ public class ChargingStationsController {
             message = "No se encontró la cuenta";
             return ResponseEntity.status(400).body(message);
         }
+
+        Account account2 = account.get();
 
         // Buscar la estación de carga por su ID
         ChargingStation chargingStation = chargingStationsService.findById(id);
@@ -173,6 +196,10 @@ public class ChargingStationsController {
         // Desactivar la estación de carga
         chargingStation.setActivo(false);
         chargingStationsService.saveChargingStations(chargingStation);
+
+        String descripcion = "Usuario " + account2.getEmail() + " eliminó una estación con el nombre: " + chargingStation.getNombreTerminal();
+        auditLogService.recordAction(descripcion, account2);
+
 
         for (Charger charger : chargingStation.getCargadores()) {
             charger.setActivo(false);

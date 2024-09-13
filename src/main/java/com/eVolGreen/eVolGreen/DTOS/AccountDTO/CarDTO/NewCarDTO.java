@@ -32,6 +32,8 @@ public class NewCarDTO {
 
     private Boolean activo = false;
 
+    private String alias;
+
     public NewCarDTO() {}
 
     public NewCarDTO(Car car) {
@@ -44,6 +46,7 @@ public class NewCarDTO {
         this.capacidadPotencia = car.getCapacidadPotencia();
         this.empresaId = car.getEmpresa().getId();
         this.activo = car.getActivo();
+        this.alias = car.getAlias();
     }
 
     public String getPatente() {
@@ -82,6 +85,14 @@ public class NewCarDTO {
         return empresaId;
     }
 
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
+    }
+
     @Override
     public String toString() {
         return "NewCarDTO{" +
@@ -94,6 +105,7 @@ public class NewCarDTO {
                 ", capacidadPotencia=" + capacidadPotencia +
                 ", empresaId=" + empresaId +
                 ", activo=" + activo +
+                ", alias=" + alias +
                 '}';
     }
 }

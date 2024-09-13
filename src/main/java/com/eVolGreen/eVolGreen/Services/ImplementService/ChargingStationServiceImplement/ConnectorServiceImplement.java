@@ -2,6 +2,8 @@ package com.eVolGreen.eVolGreen.Services.ImplementService.ChargingStationService
 
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ConnectorDTO;
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.NewTypeConnectorDTO;
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.TypeConnectorDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
@@ -10,6 +12,7 @@ import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.ConnectorStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.TypeConnector;
 import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
+import com.eVolGreen.eVolGreen.Repositories.TypeConnectorRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ConnectorService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -27,6 +30,9 @@ public class ConnectorServiceImplement implements ConnectorService {
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private TypeConnectorRepository typeConnectorRepository;
 
     @Override
     public List<ConnectorDTO> getConnectorsDTO() {
@@ -51,8 +57,11 @@ public class ConnectorServiceImplement implements ConnectorService {
     }
 
     @Override
-    public TypeConnector[] getAllTypeConnectors() {
-        return TypeConnector.values();
+    public List<TypeConnectorDTO> getAllTypeConnectors() {
+        List<TypeConnector> typeConnectors = typeConnectorRepository.findAll();
+        return typeConnectors.stream()
+                .map(TypeConnectorDTO::new)
+                .collect(Collectors.toList());
     }
 
     @Override
@@ -94,6 +103,13 @@ public class ConnectorServiceImplement implements ConnectorService {
             }
         }
         return Collections.emptyList();
+    }
+
+    @Override
+    public void saveTypeConnector(NewTypeConnectorDTO newTypeConnectorDTO) {
+        TypeConnector typeConnector = new TypeConnector();
+        typeConnector.setNombre(newTypeConnectorDTO.getNombre());
+        typeConnectorRepository.save(typeConnector);
     }
 
 }

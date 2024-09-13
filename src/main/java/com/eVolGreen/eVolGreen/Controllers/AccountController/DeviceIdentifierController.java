@@ -8,6 +8,7 @@ import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
+import com.eVolGreen.eVolGreen.Services.AccountService.AuditLogService;
 import com.eVolGreen.eVolGreen.Services.AccountService.CarService;
 import com.eVolGreen.eVolGreen.Services.AccountService.DeviceIdentifierService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,9 @@ public class DeviceIdentifierController {
 
     @Autowired
     private DeviceIdentifierRepository deviceIdentifierRepository;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Autowired
     private AccountService accountService;
@@ -105,6 +109,9 @@ public class DeviceIdentifierController {
 
         deviceIdentifierService.saveDeviceIdentifier(newDeviceIdentifier);
 
+        String descripcion = "Usuario " + account.getEmail() + " creó una tarjeta RFID de nombre: " + deviceIdentifierDTO.getNombreDeIdentificador();
+        auditLogService.recordAction(descripcion, account);
+
         return new ResponseEntity<>("Identificador de dispositivo creado exitosamente", HttpStatus.CREATED);
     }
 
@@ -131,17 +138,25 @@ public class DeviceIdentifierController {
             return new ResponseEntity<>("El código RFID es necesario", HttpStatus.FORBIDDEN);
         }
 
-        Car car = carService.findById(deviceIdentifierDTO.getAuto());
-        if (car == null) {
-            return new ResponseEntity<>("El auto es necesario para asociar la tarjeta RFID", HttpStatus.NOT_FOUND);
-        }
-
         existingDeviceIdentifier.setNombreDeIdentificador(deviceIdentifierDTO.getNombreDeIdentificador());
         existingDeviceIdentifier.setRFID(deviceIdentifierDTO.getRfid());
         existingDeviceIdentifier.setFechaExpiracion(deviceIdentifierDTO.getFechaExpiracion());
-        existingDeviceIdentifier.setAuto(car);
+
+        if (deviceIdentifierDTO.getAuto() != null) {
+            Car car = carService.findById(deviceIdentifierDTO.getAuto());
+            if (car == null) {
+                return new ResponseEntity<>("El auto proporcionado no se encontró", HttpStatus.NOT_FOUND);
+            }
+            existingDeviceIdentifier.setAuto(car);
+        } else {
+
+            existingDeviceIdentifier.setAuto(null);
+        }
 
         deviceIdentifierService.saveDeviceIdentifier(existingDeviceIdentifier);
+
+        String descripcion = "Usuario " + account.getEmail() + " modificó una tarjeta RFID de nombre: " + existingDeviceIdentifier.getNombreDeIdentificador();
+        auditLogService.recordAction(descripcion, account);
 
         return new ResponseEntity<>("Identificador de dispositivo actualizado exitosamente", HttpStatus.OK);
     }
@@ -167,34 +182,37 @@ public class DeviceIdentifierController {
         deviceIdentifier.setActivo(false);
         deviceIdentifierService.saveDeviceIdentifier(deviceIdentifier);
 
+        String descripcion = "Usuario " + account.getEmail() + " eliminó una tarjeta RFID de nombre: " + deviceIdentifier.getNombreDeIdentificador();
+        auditLogService.recordAction(descripcion, account);
+
         return ResponseEntity.ok("Identificador del dispositivo desactivado correctamente.");
     }
 
     @PatchMapping("/accounts/current/device-identifiers/{id}/assign-car")
     public ResponseEntity<Object> assignCarToDeviceIdentifier(@PathVariable Long id,
-                                                              @RequestBody Map<String,
-                                                                      Long> payload) {
+                                                              @RequestBody Map<String, Long> payload) {
         Long carId = payload.get("carId");
 
         Optional<DeviceIdentifier> deviceIdentifierOptional = Optional.ofNullable(deviceIdentifierService.findById(id));
         if (deviceIdentifierOptional.isEmpty()) {
             return new ResponseEntity<>("Device Identifier not found", HttpStatus.NOT_FOUND);
         }
-
         Optional<Car> carOptional = Optional.ofNullable(carService.findById(carId));
         if (carOptional.isEmpty()) {
             return new ResponseEntity<>("Car not found", HttpStatus.NOT_FOUND);
         }
-
-        DeviceIdentifier deviceIdentifier = deviceIdentifierOptional.get();
         Car car = carOptional.get();
-
+        List<DeviceIdentifier> assignedIdentifiers = deviceIdentifierRepository.findByAuto(car);
+        for (DeviceIdentifier identifier : assignedIdentifiers) {
+            identifier.setAuto(null);
+            deviceIdentifierService.saveDeviceIdentifier(identifier);
+        }
+        DeviceIdentifier deviceIdentifier = deviceIdentifierOptional.get();
         deviceIdentifier.setAuto(car);
         deviceIdentifierService.saveDeviceIdentifier(deviceIdentifier);
 
         return new ResponseEntity<>("Car assigned to Device Identifier", HttpStatus.OK);
     }
-
     @GetMapping("/unassigned-device-identifiers")
     public ResponseEntity<List<DeviceIdentifierDTO>> getUnassignedDeviceIdentifiers(Authentication authentication) {
         Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());

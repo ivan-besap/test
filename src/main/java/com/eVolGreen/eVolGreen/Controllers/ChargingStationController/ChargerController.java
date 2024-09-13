@@ -1,7 +1,6 @@
 package com.eVolGreen.eVolGreen.Controllers.ChargingStationController;
 
-import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerDTO;
-import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.NewChargerDTO;
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.*;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargerManufacturer;
@@ -9,10 +8,12 @@ import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargerModel;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
+import com.eVolGreen.eVolGreen.Services.AccountService.AuditLogService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerManufacturerService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerModelService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargingStationsService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -29,6 +30,9 @@ public class ChargerController {
 
     @Autowired
     private ChargerService chargerService;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Autowired
     private ChargingStationsService chargingStationsService;
@@ -64,6 +68,9 @@ public class ChargerController {
             mensaje = "No se encontró la cuenta";
             return ResponseEntity.status(400).body(mensaje);
         }
+
+        Account account2 = account.get();
+
         if (chargerDTO.getoCPPid() == null) {
             mensaje = "El Id del cargador es obligatorio";
             return ResponseEntity.status(400).body(mensaje);
@@ -116,6 +123,10 @@ public class ChargerController {
 
         chargerService.saveCharger(charger);
 
+        String descripcion = "Usuario " + account2.getEmail() + " creó un cargador con el nombre: " + charger.getNombre();
+        auditLogService.recordAction(descripcion, account2);
+
+
         return ResponseEntity.status(201).body("Charger created successfully and associated with the charging station.");
     }
 
@@ -131,6 +142,8 @@ public class ChargerController {
             mensaje = "No se encontró la cuenta";
             return ResponseEntity.status(400).body(mensaje);
         }
+
+        Account account2 = account.get();
 
         // Buscar el cargador existente
         Charger existingCharger = chargerService.findById(id);
@@ -194,6 +207,9 @@ public class ChargerController {
         // Guardar los cambios en la base de datos
         chargerService.saveCharger(existingCharger);
 
+        String descripcion = "Usuario " + account2.getEmail() + " modificó un cargador con el nombre: " + existingCharger.getNombre();
+        auditLogService.recordAction(descripcion, account2);
+
         return ResponseEntity.status(200).body("Charger updated successfully.");
     }
 
@@ -208,6 +224,8 @@ public class ChargerController {
             mensaje = "La cuenta no se encontró";
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body(mensaje);
         }
+
+        Account account2 = account.get();
 
         // Buscar el cargador por su ID
         Charger charger = chargerService.findById(id);
@@ -226,6 +244,9 @@ public class ChargerController {
         charger.setActivo(false);
         chargerService.saveCharger(charger);
 
+        String descripcion = "Usuario " + account2.getEmail() + " eliminó un cargador con el nombre: " + charger.getNombre();
+        auditLogService.recordAction(descripcion, account2);
+
         mensaje = "Cargador desactivado correctamente";
         return ResponseEntity.ok(mensaje);
     }
@@ -238,6 +259,24 @@ public class ChargerController {
         } else {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Estación no encontrada.");
         }
+    }
+
+    @PostMapping("/charger-manufacturers")
+    public ResponseEntity<String> createChargerManufacturer(@RequestBody @Valid NewChargerManufacturerDTO newChargerManufacturerDTO) {
+        ChargerManufacturer chargerManufacturer = new ChargerManufacturer();
+        chargerManufacturer.setName(newChargerManufacturerDTO.getName());
+
+        chargerManufacturerService.saveChargerManufacturer(chargerManufacturer);
+        return new ResponseEntity<>("Fabricante de cargador creado con éxito", HttpStatus.CREATED);
+    }
+
+    @PostMapping("/charger-models")
+    public ResponseEntity<String> createChargerModel(@RequestBody @Valid NewChargerModelDTO newChargerModelDTO) {
+        ChargerModel chargerModel = new ChargerModel();
+        chargerModel.setName(newChargerModelDTO.getName());
+
+        chargerModelService.saveChargerModel(chargerModel);
+        return new ResponseEntity<>("Modelo de cargador creado con éxito", HttpStatus.CREATED);
     }
 
 }

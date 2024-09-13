@@ -2,6 +2,8 @@ package com.eVolGreen.eVolGreen.Controllers.ChargingStationController;
 
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ConnectorDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.NewConnectorDTO;
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.NewTypeConnectorDTO;
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.TypeConnectorDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Fee.Fee;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
@@ -11,10 +13,12 @@ import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.ConnectorStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.TypeConnector;
 import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
+import com.eVolGreen.eVolGreen.Services.AccountService.AuditLogService;
 import com.eVolGreen.eVolGreen.Services.AccountService.FeeService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargingStationsService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ConnectorService;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -33,6 +37,10 @@ public class ConnectorController {
 
     @Autowired
     private ChargerService chargerService;
+
+    @Autowired
+    private AuditLogService auditLogService;
+
 
     @Autowired
     private ConnectorRepository connectorRepository;
@@ -68,6 +76,8 @@ public class ConnectorController {
             mensaje = "No se encontró la cuenta";
             return ResponseEntity.status(400).body(mensaje);
         }
+
+        Account account2 = account.get();
 
         if (connectorDTO.getAlias() == null) {
             mensaje = "El alias del cargador no puede estar vacío";
@@ -130,6 +140,10 @@ public class ConnectorController {
 
 
         connectorService.saveConnector(connector);
+
+        String descripcion = "Usuario " + account2.getEmail() + " creó un conector con el nombre: " + connectorDTO.getAlias();
+        auditLogService.recordAction(descripcion, account2);
+
         mensaje = " El conector fue creado exitosamente y asociado con el cargador";
         return ResponseEntity.status(201).body(mensaje);
     }
@@ -146,6 +160,8 @@ public class ConnectorController {
             mensaje = "No se encontró la cuenta";
             return ResponseEntity.status(400).body(mensaje);
         }
+
+        Account account2 = account.get();
 
         // Buscar el conector existente
         Connector existingConnector = connectorService.findById(id);
@@ -211,10 +227,12 @@ public class ConnectorController {
         existingConnector.setCorrienteMaxima(connectorDTO.getCorrienteMaxima());
         existingConnector.setCargador(cargador);
         existingConnector.setTerminal(terminal);
-        existingConnector.setEstadoConector(ConnectorStatus.DISCONNECTED); // Puedes ajustar este estado según tu lógica
 
         // Guardar los cambios en la base de datos
         connectorService.saveConnector(existingConnector);
+
+        String descripcion = "Usuario " + account2.getEmail() + " modificó un conector con el nombre: " + existingConnector.getAlias();
+        auditLogService.recordAction(descripcion, account2);
 
         mensaje = "El conector fue actualizado exitosamente";
         return ResponseEntity.status(200).body(mensaje);
@@ -230,6 +248,8 @@ public class ConnectorController {
             mensaje = "No se encontró la cuenta";
             return ResponseEntity.status(400).body(mensaje);
         }
+
+        Account account2 = account.get();
 
         // Buscar el conector por su ID
         Connector connector = connectorService.findById(id);
@@ -248,13 +268,22 @@ public class ConnectorController {
         connector.setActivo(false);
         connectorService.saveConnector(connector);
 
+        String descripcion = "Usuario " + account2.getEmail() + " eliminó un conector con el nombre: " + connector.getAlias();
+        auditLogService.recordAction(descripcion, account2);
+
         mensaje = "Conector desactivado correctamente";
         return ResponseEntity.ok(mensaje);
     }
 
     @GetMapping("/connector-types")
-    public TypeConnector[] getAllTypeConnectors() {
+    public List<TypeConnectorDTO> getAllTypeConnectors() {
         return connectorService.getAllTypeConnectors();
+    }
+
+    @PostMapping("/connector-types")
+    public ResponseEntity<String> createTypeConnector(@RequestBody @Valid NewTypeConnectorDTO newTypeConnectorDTO) {
+        connectorService.saveTypeConnector(newTypeConnectorDTO);
+        return new ResponseEntity<>("Tipo de conector creado con éxito", HttpStatus.CREATED);
     }
 
     @PatchMapping("/connectorStatus/change-active-status")

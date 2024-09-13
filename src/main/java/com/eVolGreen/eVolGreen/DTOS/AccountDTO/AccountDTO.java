@@ -48,6 +48,8 @@ public class AccountDTO {
     private String nombre;
     private String apellidoPaterno;
     private String apellidoMaterno;
+    private Boolean alarmaCorreo;
+    private Boolean alarmaError;
 
 
     public AccountDTO() {}
@@ -68,6 +70,8 @@ public class AccountDTO {
         this.apellidoPaterno = account.getApellidoPaterno();
         this.apellidoMaterno = account.getApellidoMaterno();
         this.empresa = new EmpresaDTO(account.getEmpresa());
+        this.alarmaCorreo = account.getAlarmaCorreo();;
+        this.alarmaError = account.getAlarmaError();;
     }
 
     public long getId() {
@@ -128,6 +132,9 @@ public class AccountDTO {
     public EmpresaDTO getEmpresa() {
         return empresa;
     }
+    public boolean getAlarmaCorreo() {return alarmaCorreo;};
+
+    public boolean getAlarmaError() {return alarmaError;};
 
     public void setId(long id) {
         this.id = id;
@@ -189,6 +196,14 @@ public class AccountDTO {
         this.empresa = empresa;
     }
 
+    public void setAlarmaCorreo(Boolean alarmaCorreo) {
+        this.alarmaCorreo = alarmaCorreo;
+    }
+
+    public void setAlarmaError(Boolean alarmaError) {
+        this.alarmaError = alarmaError;
+    }
+
     @Override
     public String toString() {
         return "AccountDTO{" +
@@ -207,6 +222,8 @@ public class AccountDTO {
                 ", apellidoPaterno='" + apellidoPaterno + '\'' +
                 ", apellidoMaterno='" + apellidoMaterno + '\'' +
                 ", empresa=" + (empresa != null ? empresa.getNombre() : "null") +
+                ", alarmaCorreo=" + alarmaCorreo +
+                ", alarmaError="+ alarmaError +
                 '}';
     }
 }

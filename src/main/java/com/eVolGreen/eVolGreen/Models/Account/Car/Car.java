@@ -17,28 +17,28 @@ public class Car {
 
     @Id
     @GenericGenerator(name = "native", strategy = "native")
-    @GeneratedValue(strategy = GenerationType.AUTO, generator = "native")
+    @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "native")
     private long id;
 
     @NotNull(message = "La Patente es obligatoria")
     private String patente;
 
-    @NotNull(message = "El modelo es obligatorio")
+
     private String modelo;
 
     @NotNull(message = "El VIN es obligatorio")
     private String vin;
 
-    @NotNull(message = "El Color es obligatorio")
+
     private String color;
 
-    @NotNull(message = "La Marca es obligatoria")
+
     private String marca;
 
-    @NotNull(message = "El Año de Fabricación es obligatorio")
+
     private String anoFabricacion;
 
-    @NotNull(message = "La Capacidad de Potencia es obligatoria")
+
     private BigDecimal capacidadPotencia;
 
     @OneToMany(mappedBy = "auto", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
@@ -52,9 +52,11 @@ public class Car {
 
     private Boolean activo = false;
 
+    private String alias;
+
     public Car() { }
 
-    public Car(String patente, String modelo, String vin, String color, String marca, String anoFabricacion, BigDecimal capacidadPotencia, Empresa empresa, Boolean activo) {
+    public Car(String patente, String modelo, String vin, String color, String marca, String anoFabricacion, BigDecimal capacidadPotencia, Empresa empresa, Boolean activo, String alias) {
         this.patente = patente;
         this.modelo = modelo;
         this.vin = vin;
@@ -64,6 +66,7 @@ public class Car {
         this.capacidadPotencia = capacidadPotencia;
         this.empresa = empresa;
         this.activo = activo;
+        this.alias = alias;
     }
 
     public long getId() {
@@ -153,6 +156,14 @@ public class Car {
         this.activo = activo;
     }
 
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
+    }
+
     @Override
     public String toString() {
         return "Car{" +
@@ -167,6 +178,7 @@ public class Car {
                 ", rfid=" + rfid +
                 ", empresa=" + empresa +
                 ", activo=" + activo +
+                ", alias=" + alias +
                 '}';
     }
 }

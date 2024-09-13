@@ -10,14 +10,23 @@ import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Repositories.CarRepository;
 import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
+import com.eVolGreen.eVolGreen.Services.AccountService.AuditLogService;
 import com.eVolGreen.eVolGreen.Services.AccountService.CarService;
 import com.eVolGreen.eVolGreen.Services.AccountService.DeviceIdentifierService;
+import org.apache.poi.ss.usermodel.*;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,6 +39,9 @@ public class CarController {
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Autowired
     private CarRepository carRepository;
@@ -97,30 +109,30 @@ public class CarController {
             mensaje = "La patente es necesaria";
             return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (carDTO.getModelo() == null) {
-            mensaje = "El modelo es necesario";
-            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
-        }
+//        if (carDTO.getModelo() == null) {
+//            mensaje = "El modelo es necesario";
+//            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+//        }
         if (carDTO.getVin() == null) {
             mensaje = "El VIN es necesario";
             return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
         }
-        if (carDTO.getColor() == null) {
-            mensaje = "El color del auto es necesario";
-            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
-        }
-        if (carDTO.getMarca() == null) {
-            mensaje = "La marca es necesaria en el auto";
-            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
-        }
-        if (carDTO.getAnoFabricacion() == null) {
-            mensaje = "El año de fabricación es necesario";
-            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
-        }
-        if (carDTO.getCapacidadPotencia() == null) {
-            mensaje = "La capacidad de potencia máxima del auto es necesaria";
-            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
-        }
+//        if (carDTO.getColor() == null) {
+//            mensaje = "El color del auto es necesario";
+//            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+//        }
+//        if (carDTO.getMarca() == null) {
+//            mensaje = "La marca es necesaria en el auto";
+//            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+//        }
+//        if (carDTO.getAnoFabricacion() == null) {
+//            mensaje = "El año de fabricación es necesario";
+//            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+//        }
+//        if (carDTO.getCapacidadPotencia() == null) {
+//            mensaje = "La capacidad de potencia máxima del auto es necesaria";
+//            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+//        }
 
         Car nuevoAuto = new Car(
                 carDTO.getPatente(),
@@ -131,10 +143,15 @@ public class CarController {
                 carDTO.getAnoFabricacion(),
                 carDTO.getCapacidadPotencia(),
                 empresa,  
-                true
+                true,
+                carDTO.getAlias()
         );
       
         carService.saveCar(nuevoAuto);
+
+        String descripcion = "Usuario " + account.getEmail() + " creó un auto de patente: " + carDTO.getPatente();
+        auditLogService.recordAction(descripcion, account);
+
 
         mensaje = "El auto se ha creado con éxito";
         return new ResponseEntity<>(mensaje, HttpStatus.CREATED);
@@ -188,6 +205,9 @@ public class CarController {
 
         carService.saveCar(existingCar);
 
+        String descripcion = "Usuario " + account.getEmail() + " modificó un auto de patente: " + carDTO.getPatente();
+        auditLogService.recordAction(descripcion, account);
+
         return new ResponseEntity<>("El auto se ha actualizado con éxito", HttpStatus.OK);
     }
 
@@ -212,6 +232,9 @@ public class CarController {
         car.setActivo(false);
         carService.saveCar(car);
 
+        String descripcion = "Usuario " + account.getEmail() + " eliminó un auto de patente: " + car.getPatente();
+        auditLogService.recordAction(descripcion, account);
+
         // Desactivar los dispositivos de identificación asociados al auto
         List<DeviceIdentifier> deviceIdentifiers = deviceIdentifierRepository.findByAuto(car);
         for (DeviceIdentifier deviceIdentifier : deviceIdentifiers) {
@@ -222,6 +245,100 @@ public class CarController {
         }
 
         return ResponseEntity.ok("El auto y sus dispositivos de identificación han sido desactivados correctamente.");
+    }
+
+    @GetMapping("/cars/template")
+    public ResponseEntity<byte[]> downloadCarTemplate() throws IOException {
+        // Crear el archivo Excel
+        XSSFWorkbook workbook = new XSSFWorkbook();
+        Sheet sheet = workbook.createSheet("Plantilla de Autos");
+        Row headerRow = sheet.createRow(0);
+
+        // Agregar los headers
+        String[] headers = {"Patente", "VIN", "Modelo", "Alias"};
+        for (int i = 0; i < headers.length; i++) {
+            Cell cell = headerRow.createCell(i);
+            cell.setCellValue(headers[i]);
+        }
+
+        // Escribir los datos a un array de bytes
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        workbook.write(outputStream);
+        workbook.close();
+
+        // Configurar las cabeceras para la descarga
+        HttpHeaders headersResponse = new HttpHeaders();
+        headersResponse.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        headersResponse.set(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=plantilla_autos.xlsx");
+
+        return ResponseEntity.ok()
+                .headers(headersResponse)
+                .body(outputStream.toByteArray());
+    }
+
+    @PostMapping("/cars/upload")
+    public ResponseEntity<String> uploadCars(@RequestParam("file") MultipartFile file, Authentication authentication) throws IOException {
+        Optional<Account> accountOpt = accountService.findByEmail(authentication.getName());
+        if (accountOpt.isEmpty()) {
+            return new ResponseEntity<>("Cuenta no encontrada", HttpStatus.NOT_FOUND);
+        }
+        Account account = accountOpt.get();
+
+        // Obtener la empresa del usuario
+        Empresa empresa = account.getEmpresa();
+        if (empresa == null) {
+            return new ResponseEntity<>("La cuenta no está asociada a ninguna empresa", HttpStatus.FORBIDDEN);
+        }
+        List<Car> cars = new ArrayList<>();
+
+        // Leer el archivo Excel
+        Workbook workbook = WorkbookFactory.create(file.getInputStream());
+        Sheet sheet = workbook.getSheetAt(0);
+
+        // Iterar sobre las filas (comenzando en 1 para evitar los headers)
+        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+
+            // Leer las celdas
+            String patente = getCellAsString(row.getCell(0));
+            String vin = getCellAsString(row.getCell(1));
+            String modelo = getCellAsString(row.getCell(2));
+            String alias = getCellAsString(row.getCell(3));
+
+            // Crear una instancia de Car y agregarla a la lista
+            Car car = new Car();
+            car.setPatente(patente);
+            car.setVin(vin);
+            car.setModelo(modelo);
+            car.setAlias(alias);
+            car.setEmpresa(empresa);
+            car.setActivo(true);
+            cars.add(car);
+        }
+
+        // Guardar los autos en la base de datos
+        for (Car car : cars) {
+            carService.saveCar(car);
+        }
+
+        return ResponseEntity.ok("Autos subidos correctamente");
+    }
+
+    private String getCellAsString(Cell cell) {
+        if (cell == null) {
+            return ""; // Retorna cadena vacía si la celda está vacía
+        }
+        switch (cell.getCellType()) {
+            case STRING:
+                return cell.getStringCellValue();
+            case NUMERIC:
+                // Si es numérica, la convertimos a cadena
+                return String.valueOf((long) cell.getNumericCellValue()); // Convertimos a entero si es necesario
+            case BOOLEAN:
+                return String.valueOf(cell.getBooleanCellValue());
+            default:
+                return ""; // Otros tipos de celdas se ignoran
+        }
     }
 
 

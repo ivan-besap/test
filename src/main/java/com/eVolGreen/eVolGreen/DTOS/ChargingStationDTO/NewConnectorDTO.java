@@ -40,6 +40,7 @@ public class NewConnectorDTO {
     private Long tarifa;
 
 
+
     public NewConnectorDTO() { }
 
     public NewConnectorDTO(Connector Conector) {

@@ -8,6 +8,7 @@ import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.Account.Fee.Fee;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
+import com.eVolGreen.eVolGreen.Services.AccountService.AuditLogService;
 import com.eVolGreen.eVolGreen.Services.AccountService.FeeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,6 +26,9 @@ public class FeeController {
 
     @Autowired
     private FeeService feeService;
+
+    @Autowired
+    private AuditLogService auditLogService;
 
     @Autowired
     private AccountService accountService;
@@ -111,19 +115,29 @@ public class FeeController {
                 feeDTO.getDiasDeLaSemana(),
                 feeDTO.getPrecioTarifa(),
                 true,
-                empresa
+                empresa,
+                feeDTO.getConsumoDeEnergiaAlarma()
         );
 
         feeService.saveFee(nuevaTarifa);
+
+        String descripcion = "Usuario " + account.getEmail() + " creó una nueva tarifa con el nombre: " + feeDTO.getNombreTarifa();
+        auditLogService.recordAction(descripcion, account);
 
         mensaje = "Se ha creado una nueva tarifa";
         return new ResponseEntity<>(mensaje, HttpStatus.CREATED);
     }
 
     @PutMapping("/fees/{id}")
-    public ResponseEntity<Object> updateFee(@PathVariable Long id, @RequestBody NewFeeDTO feeDTO) {
-
+    public ResponseEntity<Object> updateFee(Authentication authentication, @PathVariable Long id, @RequestBody NewFeeDTO feeDTO) {
         String mensaje;
+
+        Optional<Account> optionalAccount = accountService.findByEmail(authentication.getName());
+        if (optionalAccount.isEmpty()) {
+            mensaje = "La cuenta no se encontró";
+            return new ResponseEntity<>(mensaje, HttpStatus.NOT_FOUND);
+        }
+        Account account = optionalAccount.get();
 
         // Buscar la tarifa existente por su ID
         Fee existingFee = feeService.findById(id);
@@ -174,14 +188,24 @@ public class FeeController {
         // Guardar los cambios en la base de datos
         feeService.saveFee(existingFee);
 
+        String descripcion = "Usuario " + account.getEmail() + " modificó una tarifa con el nombre: " + existingFee.getNombreTarifa();
+        auditLogService.recordAction(descripcion, account);
+
         mensaje = "La tarifa fue actualizada exitosamente";
         return ResponseEntity.status(HttpStatus.OK).body(mensaje);
     }
 
     @PatchMapping("/fees/{id}/delete")
-    public ResponseEntity<Object> deleteFee(@PathVariable Long id) {
+    public ResponseEntity<Object> deleteFee(Authentication authentication,@PathVariable Long id) {
 
         String mensaje;
+
+        Optional<Account> optionalAccount = accountService.findByEmail(authentication.getName());
+        if (optionalAccount.isEmpty()) {
+            mensaje = "La cuenta no se encontró";
+            return new ResponseEntity<>(mensaje, HttpStatus.NOT_FOUND);
+        }
+        Account account = optionalAccount.get();
 
         // Buscar la tarifa existente por su ID
         Fee existingFee = feeService.findById(id);
@@ -199,6 +223,9 @@ public class FeeController {
         // Desactivar la tarifa
         existingFee.setActivo(false);
         feeService.saveFee(existingFee);
+
+        String descripcion = "Usuario " + account.getEmail() + " eliminó una tarifa con el nombre: " + existingFee.getNombreTarifa();
+        auditLogService.recordAction(descripcion, account);
 
         mensaje = "La tarifa fue desactivada exitosamente";
         return ResponseEntity.ok(mensaje);

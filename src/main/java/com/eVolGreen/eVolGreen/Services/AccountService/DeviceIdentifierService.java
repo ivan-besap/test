@@ -18,4 +18,6 @@ public interface DeviceIdentifierService {
     DeviceIdentifier findById(Long id);
 
     List<DeviceIdentifierDTO> getDeviceIdentifiersByEmpresa(Empresa empresa);
+
+
 }

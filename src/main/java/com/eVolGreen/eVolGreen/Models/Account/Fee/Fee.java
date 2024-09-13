@@ -53,9 +53,11 @@ public class Fee {
 
     private Boolean activo = false;
 
+    private String consumoDeEnergiaAlarma;
+
     public Fee() {}
 
-    public Fee(String nombreTarifa, LocalDate fechaInicio, LocalDate fechaFin, LocalTime horaInicio, LocalTime horaFin, Set<String> diasDeLaSemana, BigDecimal precioTarifa, Boolean activo, Empresa empresa) {
+    public Fee(String nombreTarifa, LocalDate fechaInicio, LocalDate fechaFin, LocalTime horaInicio, LocalTime horaFin, Set<String> diasDeLaSemana, BigDecimal precioTarifa, Boolean activo, Empresa empresa, String consumoDeEnergiaAlarma) {
         this.nombreTarifa = nombreTarifa;
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
@@ -65,6 +67,7 @@ public class Fee {
         this.precioTarifa = precioTarifa;
         this.activo = activo;
         this.empresa = empresa;
+        this.consumoDeEnergiaAlarma = consumoDeEnergiaAlarma;
     }
 
     public long getId() {
@@ -148,6 +151,14 @@ public class Fee {
         this.activo = activo;
     }
 
+    public String getConsumoDeEnergiaAlarma() {
+        return consumoDeEnergiaAlarma;
+    }
+
+    public void setConsumoDeEnergiaAlarma(String consumoDeEnergiaAlarma) {
+        this.consumoDeEnergiaAlarma = consumoDeEnergiaAlarma;
+    }
+
     @Override
     public String toString() {
         return "Fee{" +
@@ -161,6 +172,7 @@ public class Fee {
                 ", precioTarifa=" + precioTarifa +
                 ", activo=" + activo +
                 ", empresa=" + empresa +
+                ", consumoDeEnergiaAlarma='" + consumoDeEnergiaAlarma + '\'' +
                 '}';
     }
 }

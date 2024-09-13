@@ -21,4 +21,5 @@ public interface DeviceIdentifierRepository extends JpaRepository<DeviceIdentifi
     List<DeviceIdentifier> findUnassignedDeviceIdentifiersByEmpresa(@Param("empresa") Empresa empresa);
 
     List<DeviceIdentifier> findByAuto(Car auto);
+
 }

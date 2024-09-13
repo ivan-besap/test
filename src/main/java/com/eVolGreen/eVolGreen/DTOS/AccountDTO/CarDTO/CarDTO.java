@@ -38,6 +38,8 @@ public class CarDTO {
 
     private Boolean activo = false;
 
+    private String alias;
+
     public CarDTO() {}
 
     public CarDTO(Car car) {
@@ -54,6 +56,7 @@ public class CarDTO {
                 .collect(Collectors.toSet());
         this.empresaId = car.getEmpresa().getId();
         this.activo = car.getActivo();
+        this.alias = car.getAlias();
     }
 
     public long getId() {
@@ -100,6 +103,14 @@ public class CarDTO {
         return activo;
     }
 
+    public String getAlias() {
+        return alias;
+    }
+
+    public void setAlias(String alias) {
+        this.alias = alias;
+    }
+
     @Override
     public String toString() {
         return "CarDTO{" +
@@ -114,6 +125,7 @@ public class CarDTO {
                 ", rfid=" + rfid +
                 ", empresaId=" + empresaId +
                 ", activo=" + activo +
+                ", alias=" + alias +
                 '}';
     }
 }

@@ -24,11 +24,15 @@ public interface AccountRepository extends JpaRepository <Account, Long> {
     @Query("SELECT a FROM Account a JOIN FETCH a.role r LEFT JOIN FETCH r.permisos WHERE a.email = :email")
     Optional<Account> findByEmailWithRoleAndPermissions(@Param("email") String email);
 
-    List<Account> findByEmpresaAndTipoCuenta(Empresa empresa, TypeAccounts tipoCuenta);
+    List<Account> findByEmpresaAndActivo(Empresa empresa, boolean activo);
 
     List<Account> findByEmpresaAndTipoCuentaAndActivo(Empresa empresa, TypeAccounts tipoCuenta, Boolean activo);
 
     Account findByEmpresaAndTipoCuentaAndActivoAndId(Empresa empresa, TypeAccounts typeAccounts, boolean activo, Long id);
+
+    List<Account> findByEmpresaIdAndAlarmaCorreoTrue(Long empresaId);
+
+    List<Account> findByEmpresaIdAndAlarmaErrorTrue(Long empresaId);
 }
 
 

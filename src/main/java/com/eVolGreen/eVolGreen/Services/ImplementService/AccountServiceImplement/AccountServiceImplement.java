@@ -66,4 +66,5 @@ public class AccountServiceImplement implements AccountService {
     public Optional<Account> findByEmail(String email) {
         return accountRepository.findByEmailWithRoleAndPermissions(email);
     }
+
 }

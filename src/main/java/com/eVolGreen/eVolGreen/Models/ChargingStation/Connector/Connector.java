@@ -25,10 +25,10 @@ public class Connector {
     @NotNull(message = "El Alias es obligatorio")
     private String Alias;
 
-    @NotNull(message = "El Tipo de Conector es obligatorio")
-    @Column(name = "Tipo_Conector")
-    @Enumerated(EnumType.STRING)
-    private TypeConnector TipoConector;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "Tipo_Conector_id", nullable = false)
+    @JsonBackReference("TypeConnector-Connector")
+    private TypeConnector tipoConector;
 
     @NotNull(message = "El N° de Conector es obligatorio")
     private String NConector;
@@ -71,14 +71,14 @@ public class Connector {
 
     public Connector() { }
 
-    public Connector(String Alias, TypeConnector TipoConector, String NConector, BigDecimal VoltajeMaximo, BigDecimal PotenciaMaxima, BigDecimal CorrienteMaxima, Charger charger, ChargingStation terminal, Fee tarifa, ConnectorStatus EstadoConector, boolean Activo) {
+    public Connector(String Alias, TypeConnector TipoConector, String NConector, BigDecimal VoltajeMaximo, BigDecimal PotenciaMaxima, BigDecimal CorrienteMaxima, Charger cargador, ChargingStation terminal, Fee tarifa, ConnectorStatus EstadoConector, boolean Activo) {
         this.Alias = Alias;
-        this.TipoConector = TipoConector;
+        this.tipoConector = TipoConector;
         this.NConector = NConector;
         this.VoltajeMaximo = VoltajeMaximo;
         this.PotenciaMaxima = PotenciaMaxima;
         this.CorrienteMaxima = CorrienteMaxima;
-        this.cargador = charger;
+        this.cargador = cargador;
         this.terminal = terminal;
         this.EstadoConector = EstadoConector;
         this.Activo = Activo;
@@ -102,11 +102,11 @@ public class Connector {
     }
 
     public @NotNull(message = "El Tipo de Conector es obligatorio") TypeConnector getTipoConector() {
-        return TipoConector;
+        return tipoConector;
     }
 
     public void setTipoConector(@NotNull(message = "El Tipo de Conector es obligatorio") TypeConnector tipoConector) {
-        TipoConector = tipoConector;
+        this.tipoConector = tipoConector;
     }
 
     public @NotNull(message = "El N° de Conector es obligatorio") String getNConector() {
@@ -162,7 +162,7 @@ public class Connector {
     }
 
     public void setCargador(Charger cargador) {
-        cargador = cargador;
+        this.cargador = cargador;
     }
 
     public Set<Reservation> getReservaciones() {
@@ -197,7 +197,7 @@ public class Connector {
         return "Connector{" +
                 "id=" + id +
                 ", Alias='" + Alias + '\'' +
-                ", TipoConector=" + TipoConector +
+                ", TipoConector=" + tipoConector +
                 ", NConector='" + NConector + '\'' +
                 ", VoltajeMaximo=" + VoltajeMaximo +
                 ", PotenciaMaxima=" + PotenciaMaxima +

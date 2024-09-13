@@ -63,10 +63,13 @@ public class Account{
     @JsonBackReference
     private Empresa empresa;
 
+    private Boolean alarmaCorreo = false;
+    private Boolean alarmaError = false;
+
 
     public Account() {}
 
-    public Account(String nombre, String apellidoPaterno, String apellidoMaterno ,String numeroDeCuenta, String nombreCuenta, LocalDate fechaDeCreacion, String email, String password, TypeAccounts tipoCuenta, Role role, String telefono, String rut, Empresa empresa,Boolean activo) {
+    public Account(String nombre, String apellidoPaterno, String apellidoMaterno ,String numeroDeCuenta, String nombreCuenta, LocalDate fechaDeCreacion, String email, String password, TypeAccounts tipoCuenta, Role role, String telefono, String rut, Empresa empresa,Boolean activo, Boolean alarmaCorreo, Boolean alarmaError) {
 
         this.nombre = nombre;
         this.apellidoPaterno = apellidoPaterno;
@@ -82,6 +85,8 @@ public class Account{
         this.rut = rut;
         this.empresa = empresa;
         this.activo = activo;
+        this.alarmaCorreo = alarmaCorreo;
+        this.alarmaError = alarmaError;
     }
 
     public long getId() {
@@ -212,6 +217,23 @@ public class Account{
         this.empresa = empresa;
     }
 
+    public Boolean getAlarmaCorreo() {
+        return alarmaCorreo;
+    }
+
+    public void setAlarmaCorreo(Boolean alarmaCorreo) {
+        this.alarmaCorreo = alarmaCorreo;
+    }
+
+    public Boolean getAlarmaError() {
+        return alarmaError;
+    }
+
+    public void setAlarmaError(Boolean alarmaError) {
+        this.alarmaError = alarmaError;
+    }
+
+
 
     @Override
     public String toString() {
@@ -228,6 +250,8 @@ public class Account{
                 ", rut='" + rut + '\'' +
                 ", empresa=" + empresa +
                 ", activo=" + activo +
+                ", alarmaCorreo=" + alarmaCorreo +
+                ", alarmaError=" + alarmaError +
                 '}';
     }
 

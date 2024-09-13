@@ -10,6 +10,7 @@ import com.eVolGreen.eVolGreen.Models.Account.Permission.Permission;
 import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.TypeAccounts;
 import com.eVolGreen.eVolGreen.Models.User.Role;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
+import com.eVolGreen.eVolGreen.Services.AccountService.EmailService;
 import com.eVolGreen.eVolGreen.Services.AccountService.EmpresaService;
 import com.eVolGreen.eVolGreen.Services.AccountService.RoleService;
 import lombok.RequiredArgsConstructor;
@@ -42,6 +43,9 @@ public class AuthController {
     private AccountService accountService;
 
     @Autowired
+    private EmailService emailService;
+
+    @Autowired
     private RoleService roleService;
 
 
@@ -61,13 +65,17 @@ public class AuthController {
     @PostMapping("/register")
     public ResponseEntity<String> register(@RequestBody RegisterRequestDTO request) {
 
+        if (accountService.findByEmail(request.getEmail()).isPresent()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Ya existe un usuario con ese email");
+        }
+
 
         Empresa empresa = new Empresa();
         empresa.setNombre(request.getNombreEmpresa());
         empresaService.saveEmpresa(empresa);
 
 
-        Role globalAdminRole = roleService.findByNombre("ADMIN")
+        Role globalAdminRole = roleService.findById(1L)
                 .orElseThrow(() -> new RuntimeException("Rol 'ADMIN' no encontrado"));
 
 
@@ -103,6 +111,9 @@ public class AuthController {
         account.setApellidoMaterno(request.getApellidoMaterno());
 
         accountService.saveAccount(account);
+
+        String verificationUrl = "http://localhost:8080/api/verify-account?email=" + account.getEmail();
+        emailService.sendVerificationEmail(account.getEmail(), verificationUrl);
 
         return ResponseEntity.status(HttpStatus.CREATED).body("Registro exitoso");
     }

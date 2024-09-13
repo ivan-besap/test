@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO;
 
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.FeeDTO.FeeDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Fee.Fee;
 import com.eVolGreen.eVolGreen.Models.Account.Reservation;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
@@ -20,7 +21,7 @@ public class ConnectorDTO {
     private String Alias;
 
     @NotNull(message = "El Tipo de Conector es obligatorio")
-    private TypeConnector TipoConector;
+    private TypeConnectorDTO tipoConector;
 
     @NotNull(message = "El N° de Conector es obligatorio")
     private String NConector;
@@ -46,7 +47,7 @@ public class ConnectorDTO {
 
     private Set<Reservation> Reservaciones;
 
-    private Fee tarifa;
+    private FeeDTO tarifa;
 
     private String IdCargador;
 
@@ -62,11 +63,15 @@ public class ConnectorDTO {
         CorrienteMaxima = Conector.getCorrienteMaxima();
         EstadoConector = Conector.getEstadoConector();
         Cargador = Conector.getCargador().getId();
-        TipoConector = Conector.getTipoConector();
+        this.tipoConector = new TypeConnectorDTO(Conector.getTipoConector());
         Terminal = Conector.getTerminal().getId();
         nombreTerminal = Conector.getTerminal().getNombreTerminal();
         Reservaciones = Conector.getReservaciones();
-        tarifa = Conector.getTarifa();
+        if (Conector.getTarifa() != null) {
+            this.tarifa = new FeeDTO(Conector.getTarifa());
+        } else {
+            this.tarifa = null;
+        }
         IdCargador = Conector.getCargador().getoCPPid();
     }
 
@@ -78,8 +83,8 @@ public class ConnectorDTO {
         return Alias;
     }
 
-    public @NotNull(message = "El Tipo de Conector es obligatorio") TypeConnector getTipoConector() {
-        return TipoConector;
+    public @NotNull(message = "El Tipo de Conector es obligatorio") TypeConnectorDTO getTipoConector() {
+        return tipoConector;
     }
 
     public @NotNull(message = "El N° de Conector es obligatorio") String getNConector() {
@@ -114,7 +119,7 @@ public class ConnectorDTO {
         return Reservaciones;
     }
 
-    public Fee getTarifa() {
+    public FeeDTO getTarifa() {
         return tarifa;
     }
 
@@ -131,7 +136,7 @@ public class ConnectorDTO {
         return "ConnectorDTO{" +
                 "id=" + id +
                 ", Alias='" + Alias + '\'' +
-                ", TipoConector=" + TipoConector +
+                ", TipoConector=" + tipoConector +
                 ", NConector='" + NConector + '\'' +
                 ", VoltajeMaximo=" + VoltajeMaximo +
                 ", PotenciaMaxima=" + PotenciaMaxima +

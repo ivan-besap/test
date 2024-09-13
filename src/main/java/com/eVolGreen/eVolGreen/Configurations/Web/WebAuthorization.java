@@ -35,6 +35,7 @@ public class WebAuthorization {
                         .requestMatchers(HttpMethod.POST, "api/adminCompany/updateAdminCompany&CompanyUser").permitAll()
                         .requestMatchers("http://localhost:53672", "http://localhost:8081").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/fees/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/verify-account").permitAll()
                         .anyRequest().authenticated()
                 )
 //                .headers(headers -> headers.frameOptions().disable())

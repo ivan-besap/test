@@ -46,4 +46,5 @@ public class DeviceIdentifierServiceImplement implements DeviceIdentifierService
                 .map(DeviceIdentifierDTO::new)
                 .collect(Collectors.toList());
     }
+
 }
