@@ -18,10 +18,10 @@ public class CorsConfig implements WebMvcConfigurer {
             @Override
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
-                        .allowedOrigins("*") // Cambia el puerto según el puerto de tu front-end http://localhost:8081
+                        .allowedOrigins("https://app.evolgreen.com") // Cambia el puerto según el puerto de tu front-end
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH")
                         .allowedHeaders("*")
-                        .allowCredentials(false);
+                        .allowCredentials(true);
             }
         };
     }

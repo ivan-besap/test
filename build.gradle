@@ -2,6 +2,7 @@ plugins {
 	id 'java'
 	id 'org.springframework.boot' version '3.2.5'
 	id 'io.spring.dependency-management' version '1.1.4'
+	id 'org.asciidoctor.convert' version '1.5.8'
 //	id 'war'
 }
 
@@ -55,9 +56,13 @@ dependencies {
 	// JAXB dependencies
 	implementation 'javax.xml.bind:jaxb-api:2.3.1'
 	implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.2'
+	implementation 'javax.validation:validation-api:2.0.1.Final'
 
 	// Jakarta Validation API
 	implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+
+	// Soap
+	implementation 'javax.xml.soap:javax.xml.soap-api:1.4.0'
 
 	//	runtimeOnly 'org.springframework.boot:spring-boot-devtools'
 
@@ -67,6 +72,19 @@ dependencies {
 tasks.named('test') {
 	useJUnitPlatform()
 }
+
+tasks.register('generateJavadocs', Javadoc) {
+	source = sourceSets.main.allJava
+	classpath = sourceSets.main.compileClasspath
+	destinationDir = file("$buildDir/docs/javadoc")
+}
+
+tasks.register('javadocJar', Jar) {
+	dependsOn javadoc
+	classifier = 'javadoc'
+	from javadoc.destinationDir
+}
+
 
 bootRun {
 	sourceResources(sourceSets.main)

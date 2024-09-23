@@ -9,6 +9,7 @@ import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -33,18 +34,19 @@ public class WebAuthorization {
                         .requestMatchers(HttpMethod.POST, "/auth/registerCompany").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/adminCompany/registerAdminCompany").permitAll()
                         .requestMatchers(HttpMethod.POST, "api/adminCompany/updateAdminCompany&CompanyUser").permitAll()
-                        .requestMatchers("http://localhost:53672", "http://localhost:8081").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/fees/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/verify-account").permitAll()
                         .anyRequest().authenticated()
                 )
-//                .headers(headers -> headers.frameOptions().disable())
+                .headers(headers -> headers
+                        .frameOptions(frameOptions -> frameOptions.sameOrigin()) // Permite iframes del mismo origen
+                )
                 .sessionManagement(sessionManager -> sessionManager
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authenticationProvider(authProvider)
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-                .csrf(csrf -> csrf.disable())
+                .csrf(AbstractHttpConfigurer::disable)
                 .cors( withDefaults() );
 
 
