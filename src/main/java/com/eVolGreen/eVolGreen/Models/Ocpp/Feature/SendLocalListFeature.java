@@ -3,8 +3,8 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.SendLocalListConfirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.SendLocalListRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Confirmations.SendLocalListConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Request.SendLocalListRequest;
 
 
 /**
@@ -19,8 +19,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.SendLocalListReq
  * Ejemplo de uso:
  * <pre>
  *     SendLocalListFeature sendLocalListFeature = new SendLocalListFeature(perfilPropietario);
- *     Class<? extends Request> requestType = sendLocalListFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = sendLocalListFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = sendLocalListFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = sendLocalListFeature.getConfirmationType();}
  *     String action = sendLocalListFeature.getAction();
  * </pre>
  */

@@ -14,8 +14,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.UnlockConnectorR
  * Ejemplo de uso:
  * <pre>
  *     UnlockConnectorFeature unlockConnectorFeature = new UnlockConnectorFeature(perfilPropietario);
- *     Class<? extends Request> requestType = unlockConnectorFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = unlockConnectorFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = unlockConnectorFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = unlockConnectorFeature.getConfirmationType();}
  *     String action = unlockConnectorFeature.getAction();
  * </pre>
  */

@@ -2,10 +2,11 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.GetLocalListVersionFeature;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ClientLocalAuthListEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.ProfileFeature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.SendLocalListFeature;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.GetLocalListVersionRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.SendLocalListRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Request.GetLocalListVersionRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Request.SendLocalListRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import java.util.ArrayList;

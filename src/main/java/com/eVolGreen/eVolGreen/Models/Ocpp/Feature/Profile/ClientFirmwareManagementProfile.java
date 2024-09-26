@@ -3,7 +3,10 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.*;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.*;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ClientFirmwareManagementEventHandler;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Confirmations.Enums.DiagnosticsStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Request.*;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Request.Enums.FirmwareStatus;
 
 
 import java.util.HashSet;

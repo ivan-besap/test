@@ -19,8 +19,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.ClearCacheReques
  * Ejemplo de uso:
  * <pre>
  *     ClearCacheFeature clearCacheFeature = new ClearCacheFeature(perfilPropietario);
- *     Class<? extends Request> requestType = clearCacheFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = clearCacheFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = clearCacheFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = clearCacheFeature.getConfirmationType();}
  *     String action = clearCacheFeature.getAction();
  * </pre>
  */

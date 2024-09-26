@@ -17,8 +17,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.ResetRequest;
  * Ejemplo de uso:
  * <pre>
  *     ResetFeature resetFeature = new ResetFeature(perfilPropietario);
- *     Class<? extends Request> requestType = resetFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = resetFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = resetFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = resetFeature.getConfirmationType();}
  *     String action = resetFeature.getAction();
  * </pre>
  */

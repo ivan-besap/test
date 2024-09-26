@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Enums.RemoteStartStopStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.RemoteStartTransactionRequest;
 
 import javax.validation.constraints.NotNull;

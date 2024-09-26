@@ -1,6 +1,8 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Utils.KeyValueType;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.GetConfigurationRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlElement;

@@ -4,10 +4,11 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.CancelReservationFeature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Feature;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ClientReservationEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.ProfileFeature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.ReserveNowFeature;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.CancelReservationRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.ReserveNowRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.Request.CancelReservationRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.Request.ReserveNowRequest;
 
 import java.util.HashSet;
 import java.util.UUID;
@@ -23,7 +24,7 @@ import java.util.UUID;
  *     <li>Manejar solicitudes para reservar un conector en una estación de carga.</li>
  *     <li>Manejar solicitudes para cancelar una reserva previamente hecha.</li>
  * </ul>
- * </p>
+ *
  *
  * <p>Ejemplo de uso:</p>
  * <pre>

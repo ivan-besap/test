@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Configuration;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.ClientCoreEventHandler;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ClientCoreEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.ClientCoreProfile;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

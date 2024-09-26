@@ -3,9 +3,10 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Feature;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ClientRemoteTriggerEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.ProfileFeature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.TriggerMessageFeature;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.TriggerMessageRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Request.TriggerMessageRequest;
 
 import java.util.ArrayList;
 import java.util.UUID;

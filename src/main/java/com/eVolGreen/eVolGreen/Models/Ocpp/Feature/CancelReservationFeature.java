@@ -1,11 +1,10 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Feature;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.CancelReservationConfirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.CancelReservationRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.Confirmations.CancelReservationConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.Request.CancelReservationRequest;
 
 
 /**
@@ -19,8 +18,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.CancelReservationR
  * Ejemplo de uso:
  * <pre>
  *     CancelReservationFeature cancelReservationFeature = new CancelReservationFeature(perfilPropietario);
- *     Class<? extends Request> requestType = cancelReservationFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = cancelReservationFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = cancelReservationFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = cancelReservationFeature.getConfirmationType();}
  *     String action = cancelReservationFeature.getAction();
  * </pre>
  */

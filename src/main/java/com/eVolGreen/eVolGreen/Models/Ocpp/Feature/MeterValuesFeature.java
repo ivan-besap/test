@@ -15,8 +15,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.MeterValuesReque
  * Ejemplo de uso:
  * <pre>
  *     MeterValuesFeature meterValuesFeature = new MeterValuesFeature(perfilPropietario);
- *     Class<? extends Request> requestType = meterValuesFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = meterValuesFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = meterValuesFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = meterValuesFeature.getConfirmationType();}
  *     String action = meterValuesFeature.getAction();
  * </pre>
  */

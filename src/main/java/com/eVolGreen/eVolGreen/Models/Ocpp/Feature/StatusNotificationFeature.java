@@ -17,8 +17,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.StatusNotificati
  * Ejemplo de uso:
  * <pre>
  *     StatusNotificationFeature statusNotificationFeature = new StatusNotificationFeature(perfilPropietario);
- *     Class<? extends Request> requestType = statusNotificationFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = statusNotificationFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = statusNotificationFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = statusNotificationFeature.getConfirmationType();}
  *     String action = statusNotificationFeature.getAction();
  * </pre>
  */

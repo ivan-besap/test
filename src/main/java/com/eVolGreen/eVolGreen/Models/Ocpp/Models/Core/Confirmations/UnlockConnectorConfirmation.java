@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Enums.UnlockStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.UnlockConnectorRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
@@ -18,7 +19,7 @@ import java.util.Objects;
  *   <li>{@code Unlocked} - El conector fue desbloqueado con éxito.</li>
  *   <li>{@code UnlockFailed} - La operación de desbloqueo falló.</li>
  *   <li>{@code NotSupported} - El Punto de Carga no soporta el desbloqueo del conector especificado.</li>
- * </ul></p>
+ * </ul>
  *
  * <b>Ejemplo de uso:</b>
  * <pre>

@@ -1,10 +1,11 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.*;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.DiagnosticsStatusNotificationRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.FirmwareStatusNotificationRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.GetDiagnosticsRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.UpdateFirmwareRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ServerFirmwareManagementEventHandler;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Request.DiagnosticsStatusNotificationRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Request.FirmwareStatusNotificationRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Request.GetDiagnosticsRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Request.UpdateFirmwareRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import java.time.ZonedDateTime;

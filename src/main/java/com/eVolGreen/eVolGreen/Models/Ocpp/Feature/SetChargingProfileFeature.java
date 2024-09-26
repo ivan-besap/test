@@ -3,8 +3,8 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.SetChargingProfileConfirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.SetChargingProfileRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Confirmations.SetChargingProfileConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Request.SetChargingProfileRequest;
 
 
 /**
@@ -18,8 +18,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.SetChargingProfi
  * Ejemplo de uso:
  * <pre>
  *     SetChargingProfileFeature setChargingProfileFeature = new SetChargingProfileFeature(perfilPropietario);
- *     Class<? extends Request> requestType = setChargingProfileFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = setChargingProfileFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = setChargingProfileFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = setChargingProfileFeature.getConfirmationType();}
  *     String action = setChargingProfileFeature.getAction();
  * </pre>
  */

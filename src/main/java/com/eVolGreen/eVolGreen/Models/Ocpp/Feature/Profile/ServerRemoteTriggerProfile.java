@@ -5,8 +5,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.ProfileFeature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.TriggerMessageFeature;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.TriggerMessageRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.TriggerMessageRequestType;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Request.TriggerMessageRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Request.Enums.TriggerMessageRequestType;
 import java.util.HashSet;
 import java.util.UUID;
 

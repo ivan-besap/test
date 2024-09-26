@@ -2,6 +2,9 @@ package com.eVolGreen.eVolGreen.Models.Ocpp;
 
 import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.*;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Enums.AuthorizationStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Enums.DataTransferStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Utils.IdTagInfo;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jms.core.JmsTemplate;
@@ -84,6 +87,7 @@ public class OcppHandler {
      *
      * @param request La solicitud de inicio de transacción.
      */
+    @SuppressWarnings("deprecation")
     public void handleStartTransaction(StartTransactionRequest request) {
         StartTransactionConfirmation confirmation = new StartTransactionConfirmation();
         confirmation.setTransactionId(12345); // Ejemplo: ID de transacción
@@ -126,6 +130,7 @@ public class OcppHandler {
      *
      * @param request La solicitud de transferencia de datos.
      */
+    @SuppressWarnings("deprecation")
     public void handleDataTransfer(DataTransferRequest request) {
         DataTransferConfirmation confirmation = new DataTransferConfirmation();
         confirmation.setStatus(DataTransferStatus.Accepted);

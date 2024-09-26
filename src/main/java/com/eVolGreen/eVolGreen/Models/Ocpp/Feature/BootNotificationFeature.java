@@ -19,8 +19,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.BootNotification
  * Ejemplo de uso:
  * <pre>
  *     BootNotificationFeature bootNotificationFeature = new BootNotificationFeature(perfilPropietario);
- *     Class<? extends Request> requestType = bootNotificationFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = bootNotificationFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = bootNotificationFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = bootNotificationFeature.getConfirmationType();}
  *     String action = bootNotificationFeature.getAction();
  * </pre>
  */

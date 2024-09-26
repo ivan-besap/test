@@ -3,8 +3,8 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.GetLocalListVersionConfirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.GetLocalListVersionRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Confirmations.GetLocalListVersionConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Request.GetLocalListVersionRequest;
 
 
 /**
@@ -18,8 +18,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.GetLocalListVers
  * Ejemplo de uso:
  * <pre>
  *     GetLocalListVersionFeature feature = new GetLocalListVersionFeature(perfilPropietario);
- *     Class<? extends Request> requestType = feature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = feature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = feature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = feature.getConfirmationType();}
  *     String action = feature.getAction();
  * </pre>
  */

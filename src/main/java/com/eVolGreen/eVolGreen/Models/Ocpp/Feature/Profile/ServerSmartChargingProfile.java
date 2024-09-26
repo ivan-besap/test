@@ -3,10 +3,10 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.*;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.ChargingProfile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.ClearChargingProfileRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.GetCompositeScheduleRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.SetChargingProfileRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingProfile;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Request.ClearChargingProfileRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Request.GetCompositeScheduleRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Request.SetChargingProfileRequest;
 
 import java.util.HashSet;
 import java.util.UUID;

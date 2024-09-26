@@ -18,8 +18,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.DataTransferRequ
  * <p>Ejemplo de uso:
  * <pre>
  *     DataTransferFeature dataTransferFeature = new DataTransferFeature(perfilPropietario);
- *     Class<? extends Request> requestType = dataTransferFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = dataTransferFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = dataTransferFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = dataTransferFeature.getConfirmationType();}
  *     String action = dataTransferFeature.getAction();
  * </pre>
  */

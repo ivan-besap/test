@@ -18,8 +18,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.ChangeConfigurat
  * Ejemplo de uso:
  * <pre>
  *     ChangeConfigurationFeature changeConfigurationFeature = new ChangeConfigurationFeature(perfilPropietario);
- *     Class<? extends Request> requestType = changeConfigurationFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = changeConfigurationFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = changeConfigurationFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = changeConfigurationFeature.getConfirmationType();}
  *     String action = changeConfigurationFeature.getAction();
  * </pre>
  */

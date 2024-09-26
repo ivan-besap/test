@@ -9,7 +9,7 @@ import java.util.Map;
  * <p>Este enum asocia versiones de OCPP con sus respectivos nombres de subprotocolo WebSocket, permitiendo
  * realizar un mapeo eficiente de estos valores cuando se maneja la comunicación OCPP.</p>
  *
- * <h3>Uso de Protocolo:</h3>
+ * <h2>Uso de Protocolo:</h2>
  * <ul>
  *   <li><b>OCPP 1.6:</b> Representado por "ocpp1.6".</li>
  *   <li><b>OCPP 2.0.1:</b> Representado por "ocpp2.0.1".</li>

@@ -16,8 +16,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.HeartbeatRequest
  * Ejemplo de uso:
  * <pre>
  *     HeartbeatFeature heartbeatFeature = new HeartbeatFeature(perfilPropietario);
- *     Class<? extends Request> requestType = heartbeatFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = heartbeatFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = heartbeatFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = heartbeatFeature.getConfirmationType();}
  *     String action = heartbeatFeature.getAction();
  * </pre>
  */

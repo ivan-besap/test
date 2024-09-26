@@ -3,8 +3,8 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.TriggerMessageConfirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.TriggerMessageRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Confirmations.TriggerMessageConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Request.TriggerMessageRequest;
 
 
 /**
@@ -18,8 +18,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.TriggerMessageRe
  * Ejemplo de uso:
  * <pre>
  *     TriggerMessageFeature triggerMessageFeature = new TriggerMessageFeature(perfilPropietario);
- *     Class<? extends Request> requestType = triggerMessageFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = triggerMessageFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = triggerMessageFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = triggerMessageFeature.getConfirmationType();}
  *     String action = triggerMessageFeature.getAction();
  * </pre>
  */

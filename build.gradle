@@ -81,7 +81,7 @@ tasks.register('generateJavadocs', Javadoc) {
 
 tasks.register('javadocJar', Jar) {
 	dependsOn javadoc
-	classifier = 'javadoc'
+	archiveClassifier.set('javadoc')
 	from javadoc.destinationDir
 }
 
@@ -92,6 +92,7 @@ bootRun {
 
 tasks.withType(JavaCompile) {
 	options.compilerArgs << "-Xlint:deprecation"
+	options.compilerArgs << "-Xlint:unchecked"
 }
 //bootWar {
 //	archiveFileName = 'eVolGreen.war'

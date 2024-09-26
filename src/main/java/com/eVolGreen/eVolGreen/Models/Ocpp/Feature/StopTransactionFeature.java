@@ -18,8 +18,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.StopTransactionR
  * Ejemplo de uso:
  * <pre>
  *     StopTransactionFeature stopTransactionFeature = new StopTransactionFeature(perfilPropietario);
- *     Class<? extends Request> requestType = stopTransactionFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = stopTransactionFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = stopTransactionFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = stopTransactionFeature.getConfirmationType();}
  *     String action = stopTransactionFeature.getAction();
  * </pre>
  */

@@ -18,8 +18,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.ChangeAvailabili
  * Ejemplo de uso:
  * <pre>
  *     ChangeAvailabilityFeature changeAvailabilityFeature = new ChangeAvailabilityFeature(perfilPropietario);
- *     Class<? extends Request> requestType = changeAvailabilityFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = changeAvailabilityFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = changeAvailabilityFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = changeAvailabilityFeature.getConfirmationType();}
  *     String action = changeAvailabilityFeature.getAction();
  * </pre>
  */

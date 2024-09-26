@@ -22,6 +22,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Implementación de WebSocket del Transmitter.
  */
+@SuppressWarnings("deprecation")
 public class WebSocketTransmitter implements Transmitter {
     private static final Logger logger = LoggerFactory.getLogger(WebSocketTransmitter.class);
 

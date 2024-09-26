@@ -3,8 +3,8 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.GetCompositeScheduleConfirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.GetCompositeScheduleRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Confirmations.GetCompositeScheduleConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Request.GetCompositeScheduleRequest;
 
 
 /**
@@ -18,8 +18,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.GetCompositeSche
  * Ejemplo de uso:
  * <pre>
  *     GetCompositeScheduleFeature feature = new GetCompositeScheduleFeature(perfilPropietario);
- *     Class<? extends Request> requestType = feature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = feature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = feature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = feature.getConfirmationType();}
  *     String action = feature.getAction();
  * </pre>
  */

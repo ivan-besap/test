@@ -17,8 +17,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.StartTransaction
  * Ejemplo de uso:
  * <pre>
  *     StartTransactionFeature startTransactionFeature = new StartTransactionFeature(perfilPropietario);
- *     Class<? extends Request> requestType = startTransactionFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = startTransactionFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = startTransactionFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = startTransactionFeature.getConfirmationType();}
  *     String action = startTransactionFeature.getAction();
  * </pre>
  */

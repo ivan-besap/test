@@ -101,6 +101,7 @@ public class JSONConfiguration {
      * @param name El nombre del parámetro.
      * @return El valor del parámetro, o null si no existe.
      */
+    @SuppressWarnings("unchecked") // Suprime la advertencia
     public <T> T getParameter(String name) {
         //noinspection unchecked
         return (T) parameters.get(name);
@@ -113,6 +114,7 @@ public class JSONConfiguration {
      * @param defaultValue El valor por defecto a devolver si el parámetro no existe.
      * @return El valor del parámetro, o el valor por defecto si no existe.
      */
+    @SuppressWarnings("unchecked") // Suprime la advertencia
     public <T> T getParameter(String name, T defaultValue) {
         //noinspection unchecked
         T value = (T) parameters.get(name);

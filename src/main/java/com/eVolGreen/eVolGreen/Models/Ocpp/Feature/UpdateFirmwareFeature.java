@@ -3,8 +3,8 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.UpdateFirmwareConfirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.UpdateFirmwareRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Confirmations.UpdateFirmwareConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Request.UpdateFirmwareRequest;
 
 
 /**
@@ -15,8 +15,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.UpdateFirmwareRequest
  * Ejemplo de uso:
  * <pre>
  *     UpdateFirmwareFeature updateFirmwareFeature = new UpdateFirmwareFeature(perfilPropietario);
- *     Class<? extends Request> requestType = updateFirmwareFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = updateFirmwareFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = updateFirmwareFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = updateFirmwareFeature.getConfirmationType();}
  *     String action = updateFirmwareFeature.getAction();
  * </pre>
  */

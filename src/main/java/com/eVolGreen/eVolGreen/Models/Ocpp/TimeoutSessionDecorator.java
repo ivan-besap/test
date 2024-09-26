@@ -8,7 +8,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.IFeatureRe
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.ISession;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.SessionEvents;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.BootNotificationConfirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.RegistrationStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Enums.RegistrationStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Utils.TimeoutTimer;
 
 import java.util.UUID;

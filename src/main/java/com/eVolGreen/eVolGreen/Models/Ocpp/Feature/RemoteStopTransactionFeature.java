@@ -17,8 +17,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.RemoteStopTransa
  * Ejemplo de uso:
  * <pre>
  *     RemoteStopTransactionFeature feature = new RemoteStopTransactionFeature(perfilPropietario);
- *     Class<? extends Request> requestType = feature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = feature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = feature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = feature.getConfirmationType();}
  *     String action = feature.getAction();
  * </pre>
  */

@@ -3,8 +3,8 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.DiagnosticsStatusNotificationConfirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.DiagnosticsStatusNotificationRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Confirmations.DiagnosticsStatusNotificationConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Request.DiagnosticsStatusNotificationRequest;
 
 
 /**
@@ -18,8 +18,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.DiagnosticsStatusNoti
  * Ejemplo de uso:
  * <pre>
  *     DiagnosticsStatusNotificationFeature feature = new DiagnosticsStatusNotificationFeature(perfilPropietario);
- *     Class<? extends Request> requestType = feature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = feature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = feature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = feature.getConfirmationType();}
  *     String action = feature.getAction();
  * </pre>
  */

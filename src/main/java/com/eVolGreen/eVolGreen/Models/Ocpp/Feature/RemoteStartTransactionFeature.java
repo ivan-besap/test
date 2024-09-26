@@ -17,8 +17,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.RemoteStartTrans
  * Ejemplo de uso:
  * <pre>
  *     RemoteStartTransactionFeature feature = new RemoteStartTransactionFeature(perfilPropietario);
- *     Class<? extends Request> requestType = feature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = feature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = feature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = feature.getConfirmationType();}
  *     String action = feature.getAction();
  * </pre>
  */

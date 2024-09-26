@@ -3,8 +3,8 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.ReserveNowConfirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.ReserveNowRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.Confirmations.ReserveNowConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.Request.ReserveNowRequest;
 
 /**
  * La clase {@code ReserveNowFeature} gestiona la funcionalidad de reservar un punto de carga
@@ -17,8 +17,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.ReserveNowRequest;
  * Ejemplo de uso:
  * <pre>
  *     ReserveNowFeature reserveNowFeature = new ReserveNowFeature(perfilPropietario);
- *     Class<? extends Request> requestType = reserveNowFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = reserveNowFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = reserveNowFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = reserveNowFeature.getConfirmationType();}
  *     String action = reserveNowFeature.getAction();
  * </pre>
  */

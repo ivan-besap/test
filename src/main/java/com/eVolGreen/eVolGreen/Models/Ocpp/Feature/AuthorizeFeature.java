@@ -17,8 +17,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.AuthorizeRequest
  * Ejemplo de uso:
  * <pre>
  *     AuthorizeFeature authorizeFeature = new AuthorizeFeature(perfilPropietario);
- *     Class<? extends Request> requestType = authorizeFeature.getRequestType();
- *     Class<? extends Confirmation> confirmationType = authorizeFeature.getConfirmationType();
+ *     {@code Class<? extends Request> requestType = authorizeFeature.getRequestType();}
+ *     {@code Class<? extends Confirmation> confirmationType = authorizeFeature.getConfirmationType();}
  *     String action = authorizeFeature.getAction();
  * </pre>
  */
