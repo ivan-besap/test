@@ -4,9 +4,10 @@ import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
+
 import org.hibernate.annotations.GenericGenerator;
 
+import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
 
 @Entity

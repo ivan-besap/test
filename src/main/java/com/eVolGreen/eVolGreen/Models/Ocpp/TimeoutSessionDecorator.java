@@ -1,15 +1,16 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.OccurenceConstraintException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.UnsupportedFeatureException;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.IFeatureRepository;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.ISession;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.SessionEvents;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.IFeatureRepository;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.ISession;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.SessionInformation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.SessionEvents;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.BootNotificationConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Enums.RegistrationStatus;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Utils.TimeoutTimer;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.TimeoutTimer;
 
 import java.util.UUID;
 
@@ -119,6 +120,11 @@ public class TimeoutSessionDecorator implements ISession {
         this.session.close();
     }
 
+    @Override
+    public void registerSession(SessionEvents eventHandler) {
+
+    }
+
     /**
      * Crea un manejador de eventos (SessionEvents) que extiende el comportamiento de los eventos
      * originales con la capacidad de reiniciar y gestionar el temporizador de timeout.
@@ -164,6 +170,21 @@ public class TimeoutSessionDecorator implements ISession {
             public void handleConnectionClosed() {
                 eventHandler.handleConnectionClosed();
                 stopTimer();
+            }
+
+            @Override
+            public void onError(String ocppMessageId, String internalError, String errorProcessingRequest, Request request) {
+
+            }
+
+            @Override
+            public void newSession(UUID sessionIndex, SessionInformation information) {
+
+            }
+
+            @Override
+            public void lostSession(UUID sessionIndex) {
+
             }
 
             @Override

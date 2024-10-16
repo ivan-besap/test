@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Confirmations;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Confirmations.Enums.ChargingProfileStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Request.SetChargingProfileRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;

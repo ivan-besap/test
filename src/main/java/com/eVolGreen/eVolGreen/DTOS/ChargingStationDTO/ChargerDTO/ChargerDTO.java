@@ -8,8 +8,8 @@ import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargingUnit;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 
-import jakarta.validation.constraints.NotNull;
 
+import javax.validation.constraints.NotNull;
 import java.net.ConnectException;
 import java.time.LocalDate;
 import java.util.HashSet;

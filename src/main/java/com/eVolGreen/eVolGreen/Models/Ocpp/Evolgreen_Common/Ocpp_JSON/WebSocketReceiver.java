@@ -1,7 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.RadioEvents;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.Receiver;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.RadioEvents;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Receiver;
 
 /**
  * Clase que implementa el comportamiento del receptor WebSocket para recibir y manejar

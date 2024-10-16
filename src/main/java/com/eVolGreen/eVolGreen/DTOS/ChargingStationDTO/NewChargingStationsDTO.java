@@ -1,7 +1,9 @@
 package com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.LocationDTO.LocationChargingStationDTO;
-import jakarta.validation.constraints.NotNull;
+
+import javax.validation.constraints.NotNull;
+
 
 public class NewChargingStationsDTO {
 

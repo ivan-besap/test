@@ -1,7 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Feature;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Confirmations.SendLocalListConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Request.SendLocalListRequest;

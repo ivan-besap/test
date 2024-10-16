@@ -1,9 +1,9 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.RequestWithId;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.RequestWithId;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargePointErrorCode;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargePointStatus;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Utils.ModelUtil;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.ModelUtil;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
@@ -13,6 +13,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 import java.time.ZonedDateTime;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Representa una solicitud de notificación de estado enviada desde el punto de carga al sistema central.
@@ -179,6 +180,16 @@ public class StatusNotificationRequest extends RequestWithId {
     @Override
     public boolean transactionRelated() {
         return false;
+    }
+
+    @Override
+    public String getAction() {
+        return "";
+    }
+
+    @Override
+    public UUID getSessionIndex() {
+        return null;
     }
 
     @Override

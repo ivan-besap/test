@@ -2,7 +2,9 @@ package com.eVolGreen.eVolGreen.DTOS.AccountDTO;
 
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import jakarta.persistence.JoinColumn;
-import jakarta.validation.constraints.NotNull;
+
+import javax.validation.constraints.NotNull;
+
 
 public class EmployeeRegisterDTO {
 

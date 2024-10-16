@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Confirmations;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Request.DiagnosticsStatusNotificationRequest;
 
 import javax.xml.bind.annotation.XmlRootElement;

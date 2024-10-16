@@ -1,8 +1,9 @@
 package com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO;
 
 import com.eVolGreen.eVolGreen.Models.Account.Car.Car;
-import jakarta.validation.constraints.NotNull;
 
+
+import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.Set;
 import java.util.stream.Collectors;

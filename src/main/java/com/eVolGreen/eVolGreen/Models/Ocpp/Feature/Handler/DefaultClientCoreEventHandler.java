@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.*;
+import org.springframework.context.annotation.Primary;
 import org.springframework.stereotype.Component;
 
 /**
@@ -9,7 +10,7 @@ import org.springframework.stereotype.Component;
  * Esta clase maneja las solicitudes entrantes del sistema central y devuelve las confirmaciones correspondientes.
  */
 @Component
-@SuppressWarnings("deprecation") // Ignora advertencias de deprecación temporalmente
+@Primary
 public class DefaultClientCoreEventHandler implements ClientCoreEventHandler {
 
     @Override

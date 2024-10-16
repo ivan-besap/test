@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Confirmations;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Confirmations.Enums.UpdateStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Request.SendLocalListRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;

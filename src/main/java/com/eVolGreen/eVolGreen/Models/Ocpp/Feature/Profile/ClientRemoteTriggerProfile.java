@@ -1,12 +1,13 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ClientRemoteTriggerEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.ProfileFeature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.TriggerMessageFeature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Request.TriggerMessageRequest;
+import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.UUID;
@@ -16,6 +17,7 @@ import java.util.UUID;
  * Esta clase permite gestionar las solicitudes y respuestas relacionadas con mensajes que activan
  * acciones remotas en un punto de carga.
  */
+@Component
 public class ClientRemoteTriggerProfile implements Profile {
     private ClientRemoteTriggerEventHandler eventHandler;
     private ArrayList<Feature> features;

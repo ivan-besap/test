@@ -7,9 +7,9 @@ import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.ConnectorStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.TypeConnector;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
 
 
+import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.util.Set;
 

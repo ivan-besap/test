@@ -6,8 +6,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Request.DiagnosticsSt
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Request.FirmwareStatusNotificationRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Request.GetDiagnosticsRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Request.UpdateFirmwareRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import java.time.ZonedDateTime;
 import java.util.HashSet;
 import java.util.UUID;

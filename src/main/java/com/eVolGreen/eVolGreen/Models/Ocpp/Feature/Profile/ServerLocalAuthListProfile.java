@@ -7,8 +7,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.SendLocalListFeature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Request.GetLocalListVersionRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Request.SendLocalListRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Request.Enums.UpdateType;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import java.util.HashSet;
 import java.util.UUID;
 

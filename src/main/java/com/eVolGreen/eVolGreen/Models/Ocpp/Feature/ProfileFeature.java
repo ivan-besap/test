@@ -3,8 +3,8 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Feature;
 //import com.eVolGreen.eVolGreen.Models.Ocpp.feature.profile.Profile;
 //import com.eVolGreen.eVolGreen.Models.Ocpp.model.Confirmation;
 //import com.eVolGreen.eVolGreen.Models.Ocpp.model.Request;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
 
 import java.util.UUID;

@@ -1,7 +1,9 @@
 package com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO;
 
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargingUnit;
-import jakarta.validation.constraints.NotNull;
+
+import javax.validation.constraints.NotNull;
+
 
 public class ChargingUnitDTO {
 

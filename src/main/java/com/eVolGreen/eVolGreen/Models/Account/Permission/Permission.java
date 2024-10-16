@@ -1,7 +1,9 @@
 package com.eVolGreen.eVolGreen.Models.Account.Permission;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
+
+import javax.validation.constraints.NotNull;
+
 
 @Entity
 public class Permission {

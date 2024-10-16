@@ -1,7 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Account;
 import com.fasterxml.jackson.annotation.JsonManagedReference;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
+import javax.validation.constraints.NotNull;
 import java.util.HashSet;
 import java.util.Set;
 @Entity

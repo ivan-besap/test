@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO;
 
-import jakarta.validation.constraints.NotNull;
+
+import javax.validation.constraints.NotNull;
 
 public class NewTypeConnectorDTO {
 

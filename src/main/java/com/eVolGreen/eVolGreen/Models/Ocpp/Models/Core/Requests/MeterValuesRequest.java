@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.RequestWithId;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.RequestWithId;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.MeterValue;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
@@ -10,6 +10,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Representa una solicitud de MeterValues enviada por el Punto de Carga al Sistema Central en OCPP 1.6.
@@ -154,6 +155,16 @@ public class MeterValuesRequest extends RequestWithId {
     @Override
     public boolean transactionRelated() {
         return true;
+    }
+
+    @Override
+    public String getAction() {
+        return "";
+    }
+
+    @Override
+    public UUID getSessionIndex() {
+        return null;
     }
 
     @Override

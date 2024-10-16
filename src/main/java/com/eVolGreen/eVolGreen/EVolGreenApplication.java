@@ -1,15 +1,5 @@
 package com.eVolGreen.eVolGreen;
 
-import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.NewTypeConnectorDTO;
-import com.eVolGreen.eVolGreen.Models.Account.Account;
-import com.eVolGreen.eVolGreen.Models.Account.Empresa;
-import com.eVolGreen.eVolGreen.Models.Account.Location;
-import com.eVolGreen.eVolGreen.Models.Account.Permission.Permission;
-import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.TypeAccounts;
-import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargerManufacturer;
-import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargerModel;
-import com.eVolGreen.eVolGreen.Models.Ocpp.OcppClient;
-import com.eVolGreen.eVolGreen.Models.User.Role;
 import com.eVolGreen.eVolGreen.Repositories.*;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerManufacturerService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerModelService;
@@ -22,10 +12,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.net.URI;
-import java.time.LocalDate;
-import java.util.List;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 @SpringBootApplication
 public class EVolGreenApplication {
@@ -333,8 +319,8 @@ public class EVolGreenApplication {
 		return String.valueOf(randomNumber);
 	}
 
-	@Bean
-	public OcppClient ocppClient() {
-		return new OcppClient(URI.create("ws://localhost:8080/ocpp"));
-	}
+//	@Bean
+//	public OcppClient ocppClient() {
+//		return new OcppClient(URI.create("ws://localhost:8088/ocpp"));
+//	}
 }

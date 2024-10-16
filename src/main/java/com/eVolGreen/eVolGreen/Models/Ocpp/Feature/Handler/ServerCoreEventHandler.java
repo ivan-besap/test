@@ -1,7 +1,13 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler;
 
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.AuthenticationException;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.UnsupportedFeatureException;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.SessionInformation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.*;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Request.TriggerMessageRequest;
 
 import java.util.UUID;
 
@@ -11,6 +17,18 @@ import java.util.UUID;
  * punto de carga al backend y requieren una respuesta adecuada.
  */
 public interface ServerCoreEventHandler {
+
+    void authenticateSession(SessionInformation information, String username, String password) throws AuthenticationException;
+
+    void newSession(UUID sessionIndex, SessionInformation information);
+
+    void lostSession(UUID sessionIndex);
+
+    void handleError(String uniqueId, String errorCode, String errorDescription, Object payload);
+
+    void handleConfirmation(String uniqueId, Confirmation confirmation);
+
+    Confirmation handleRequest(Request request) throws UnsupportedFeatureException;
 
     /**
      * Maneja una solicitud de autorización y devuelve una confirmación de autorización.
@@ -83,4 +101,6 @@ public interface ServerCoreEventHandler {
      * @return una confirmación de finalización de transacción {@link StopTransactionConfirmation}.
      */
     StopTransactionConfirmation handleStopTransactionRequest(UUID sessionIndex, StopTransactionRequest request);
+
+    void handleRequest(TriggerMessageRequest request);
 }

@@ -1,8 +1,9 @@
 package com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO;
 
 import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
-import jakarta.validation.constraints.NotNull;
 
+
+import javax.validation.constraints.NotNull;
 import java.time.LocalDate;
 
 public class NewDeviceIdentifierDTO {

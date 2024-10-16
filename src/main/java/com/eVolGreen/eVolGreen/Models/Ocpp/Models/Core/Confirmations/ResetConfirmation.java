@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Enums.ResetStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.ResetRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;

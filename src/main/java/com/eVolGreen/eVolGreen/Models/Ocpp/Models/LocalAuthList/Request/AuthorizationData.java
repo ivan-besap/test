@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Request;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Validatable;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Validatable;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Utils.IdTagInfo;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;

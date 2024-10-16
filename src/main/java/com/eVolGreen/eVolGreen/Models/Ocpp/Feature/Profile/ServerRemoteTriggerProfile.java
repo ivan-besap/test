@@ -1,7 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.ProfileFeature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.TriggerMessageFeature;

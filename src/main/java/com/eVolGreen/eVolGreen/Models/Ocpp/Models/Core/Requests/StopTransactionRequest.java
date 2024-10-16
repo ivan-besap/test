@@ -1,9 +1,9 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.RequestWithId;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.RequestWithId;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.StopTransactionReason;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.MeterValue;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Utils.ModelUtil;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.ModelUtil;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
@@ -15,6 +15,7 @@ import javax.xml.bind.annotation.XmlType;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Representa una solicitud para detener una transacción en OCPP 1.6.
@@ -159,6 +160,16 @@ public class StopTransactionRequest extends RequestWithId {
     @Override
     public boolean transactionRelated() {
         return true;
+    }
+
+    @Override
+    public String getAction() {
+        return "";
+    }
+
+    @Override
+    public UUID getSessionIndex() {
+        return null;
     }
 
     @Override

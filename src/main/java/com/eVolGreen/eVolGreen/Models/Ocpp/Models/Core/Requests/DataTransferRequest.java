@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.RequestWithId;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.RequestWithId;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -8,6 +8,7 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Representa una solicitud de transferencia de datos que puede ser enviada tanto por el sistema central como por el punto de carga.
@@ -142,6 +143,16 @@ public class DataTransferRequest extends RequestWithId {
     @Override
     public boolean transactionRelated() {
         return false;
+    }
+
+    @Override
+    public String getAction() {
+        return "";
+    }
+
+    @Override
+    public UUID getSessionIndex() {
+        return null;
     }
 
     @Override

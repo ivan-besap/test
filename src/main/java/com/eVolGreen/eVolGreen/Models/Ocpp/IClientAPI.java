@@ -3,11 +3,11 @@ package com.eVolGreen.eVolGreen.Models.Ocpp;
 //import com.evolgreen.ocpp.feature.profile.Profile;
 //import com.evolgreen.ocpp.model.Confirmation;
 //import com.evolgreen.ocpp.model.Request;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.OccurenceConstraintException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.UnsupportedFeatureException;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.ClientEvents;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.ClientEvents;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
 
 import java.util.UUID;
@@ -32,7 +32,7 @@ public interface IClientAPI {
      * @param url la URL del servidor.
      * @param clientEvents eventos asociados a la conexión del cliente.
      */
-    void connect(String url, ClientEvents clientEvents);
+    void connect(String url, ClientEvents clientEvents) throws InterruptedException;
 
     /**
      * Envía una solicitud al servidor.

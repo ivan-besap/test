@@ -1,12 +1,13 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Request;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.RequestWithId;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.RequestWithId;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Firmware.Confirmations.Enums.DiagnosticsStatus;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Representa la solicitud enviada desde el Punto de Carga al Sistema Central para notificar el estado del diagnóstico.
@@ -88,6 +89,16 @@ public class DiagnosticsStatusNotificationRequest extends RequestWithId {
     @Override
     public boolean transactionRelated() {
         return false;
+    }
+
+    @Override
+    public String getAction() {
+        return "";
+    }
+
+    @Override
+    public UUID getSessionIndex() {
+        return null;
     }
 
     @Override

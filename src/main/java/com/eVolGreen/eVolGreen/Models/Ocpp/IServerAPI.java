@@ -1,11 +1,11 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.NotConnectedException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.OccurenceConstraintException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.UnsupportedFeatureException;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.ServerEvents;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.ServerEvents;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
 
 import java.util.UUID;

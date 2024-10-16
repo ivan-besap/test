@@ -1,7 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
+
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Objects;
 

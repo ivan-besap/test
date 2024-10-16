@@ -2,7 +2,8 @@ package com.eVolGreen.eVolGreen.DTOS.AccountDTO.PermissionCredentialDTO;
 
 import com.eVolGreen.eVolGreen.Models.Account.Permission.Permission;
 
-import jakarta.validation.constraints.NotNull;
+import javax.validation.constraints.NotNull;
+
 
 public class PermissionDTO {
 

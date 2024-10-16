@@ -1,13 +1,15 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.CallErrorMessage;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.CallMessage;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.CallResultMessage;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Message;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.Communicator;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.Radio;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.CommunicatorEvents;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.NotConnectedException;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.CallErrorMessage;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.CallMessage;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.CallResultMessage;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Message;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Communicator;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Radio;
 
-import com.nimbusds.jose.shaded.gson.*;
+import com.google.gson.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -18,10 +20,25 @@ import java.lang.annotation.Target;
 import java.lang.reflect.Type;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 
 /**
  * Manejador de la comunicación JSON para el protocolo OCPP en eVolGreen.
  * Gestiona los mensajes JSON entre el cliente y el servidor.
+ * <p>
+ * Esta clase utiliza Gson para serializar y deserializar objetos a JSON y viceversa.
+ * También maneja la estructura de mensajes OCPP, como CallMessage, CallResultMessage y CallErrorMessage.
+ * </p>
+ *
+ * Ejemplo de uso:
+ * <pre>
+ * {@code
+ * Radio radio = new Radio();
+ * JSONCommunicator communicator = new JSONCommunicator(radio);
+ * CallMessage message = new CallMessage();
+ * String payload = communicator.packPayload(message);
+ * }
+ * </pre>
  */
 public class JSONCommunicator extends Communicator {
 
@@ -71,28 +88,55 @@ public class JSONCommunicator extends Communicator {
         super(radio, enableTransactionQueue);
     }
 
+    @Override
+    public void connect(String uri, CommunicatorEvents events) {
+
+    }
+
     /**
-     * Anotación para excluir campos en la serialización.
+     * Anotación personalizada que excluye ciertos campos de la serialización JSON.
      */
     @Retention(RetentionPolicy.RUNTIME)
     @Target(ElementType.FIELD)
     public @interface Exclude {}
 
     /**
-     * Serializador y Deserializador para manejar ZonedDateTime en JSON.
+     * Serializador y Deserializador para manejar objetos {@link ZonedDateTime} en JSON.
+     * <p>
+     * Convierte objetos de tipo {@link ZonedDateTime} a su representación ISO 8601.
+     * </p>
+     *
+     * Ejemplo:
+     * <pre>
+     * {@code
+     * ZonedDateTimeSerializer serializer = new ZonedDateTimeSerializer();
+     * ZonedDateTime dateTime = ZonedDateTime.now();
+     * JsonElement json = serializer.serialize(dateTime, ZonedDateTime.class, new JsonSerializationContext());
+     * }
+     * </pre>
      */
     private static class ZonedDateTimeSerializer implements JsonSerializer<ZonedDateTime>, JsonDeserializer<ZonedDateTime> {
+        private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.nnnnnnnnnX");
+
         @Override
         public JsonElement serialize(ZonedDateTime zonedDateTime, Type type, JsonSerializationContext jsonSerializationContext) {
-            return new JsonPrimitive(zonedDateTime.format(DateTimeFormatter.ISO_INSTANT));
+            return new JsonPrimitive(zonedDateTime.format(formatter));
         }
 
         @Override
         public ZonedDateTime deserialize(JsonElement jsonElement, Type type, JsonDeserializationContext jsonDeserializationContext) throws JsonParseException {
-            return ZonedDateTime.parse(jsonElement.getAsJsonPrimitive().getAsString());
+            try {
+                // Intentar con el nuevo patrón para precisión de nanosegundos
+                return ZonedDateTime.parse(jsonElement.getAsString(), formatter);
+            } catch (DateTimeParseException e) {
+                // Manejo alternativo en caso de un error de formato
+                throw new JsonParseException("Formato de fecha no soportado: " + jsonElement.getAsString(), e);
+            }
         }
     }
 
+
+    // Gson con un custom serializer para ZonedDateTime y estrategia de exclusión para campos anotados con @Exclude
     private static final Gson gson;
 
     static {
@@ -113,31 +157,127 @@ public class JSONCommunicator extends Communicator {
         gson = builder.disableHtmlEscaping().create();
     }
 
+    /**
+     * Desempaqueta un payload JSON y lo convierte en un objeto del tipo especificado.
+     *
+     * @param payload El objeto JSON a desempaquetar.
+     * @param type    El tipo de clase al que se desea convertir el payload.
+     * @param <T>     El tipo genérico del objeto de retorno.
+     * @return El objeto deserializado.
+     * @throws Exception Si ocurre un error durante la deserialización.
+     *
+     * Ejemplo:
+     * <pre>
+     * {@code
+     * String payload = "{\"name\":\"example\"}";
+     * MyObject obj = communicator.unpackPayload(payload, MyObject.class);
+     * }
+     * </pre>
+     */
     @Override
     public <T> T unpackPayload(Object payload, Class<T> type) throws Exception {
         return gson.fromJson(payload.toString(), type);
     }
 
+    /**
+     * Empaqueta un objeto como una cadena JSON.
+     *
+     * @param payload El objeto a convertir en JSON.
+     * @return El objeto convertido en una cadena JSON.
+     *
+     * Ejemplo:
+     * <pre>
+     * {@code
+     * MyObject obj = new MyObject();
+     * String json = communicator.packPayload(obj);
+     * }
+     * </pre>
+     */
     @Override
     public Object packPayload(Object payload) {
         return gson.toJson(payload);
     }
 
+    /**
+     * Genera un mensaje CallResult OCPP con un payload dado.
+     *
+     * @param uniqueId El ID único del mensaje.
+     * @param action   La acción del mensaje.
+     * @param payload  El contenido del payload.
+     * @return El mensaje CallResult como cadena JSON.
+     *
+     * Ejemplo:
+     * <pre>
+     * {@code
+     * String callResult = communicator.makeCallResult("12345", "SomeAction", new MyPayload());
+     * }
+     * </pre>
+     */
     @Override
     protected Object makeCallResult(String uniqueId, String action, Object payload) {
         return String.format(CALLRESULT_FORMAT, uniqueId, payload);
     }
 
+    /**
+     * Genera un mensaje Call OCPP con un payload dado.
+     *
+     * @param uniqueId El ID único del mensaje.
+     * @param action   La acción del mensaje.
+     * @param payload  El contenido del payload.
+     * @return El mensaje Call como cadena JSON.
+     *
+     * Ejemplo:
+     * <pre>
+     * {@code
+     * String call = communicator.makeCall("12345", "SomeAction", new MyPayload());
+     * }
+     * </pre>
+     */
     @Override
     protected Object makeCall(String uniqueId, String action, Object payload) {
         return String.format(CALL_FORMAT, uniqueId, action, payload);
     }
 
+    /**
+     * Genera un mensaje CallError OCPP.
+     *
+     * @param uniqueId        El ID único del mensaje.
+     * @param action          La acción del mensaje.
+     * @param errorCode       El código de error.
+     * @param errorDescription La descripción del error.
+     * @return El mensaje CallError como cadena JSON.
+     *
+     * Ejemplo:
+     * <pre>
+     * {@code
+     * String callError = communicator.makeCallError("12345", "SomeAction", "ErrorCode", "ErrorDescription");
+     * }
+     * </pre>
+     */
     @Override
     protected Object makeCallError(String uniqueId, String action, String errorCode, String errorDescription) {
         return String.format(CALLERROR_FORMAT, uniqueId, errorCode, errorDescription, "{}");
     }
 
+    @Override
+    public boolean isClosed() {
+        return false;
+    }
+
+    /**
+     * Analiza una cadena JSON y la convierte en un objeto de tipo {@link Message}.
+     *
+     * @param json La cadena JSON que contiene el mensaje.
+     * @return El objeto {@link Message} representando el mensaje analizado.
+     *
+     * Ejemplo:
+     * <pre>
+     * {@code
+     * String json = "{\"messageId\":\"12345\", \"action\":\"SomeAction\"}";
+     * Message message = communicator.parse(json);
+     * }
+     * </pre>
+     */
     @Override
     protected Message parse(Object json) {
         Message message;

@@ -1,9 +1,10 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.LocalAuthList.Request;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.RequestWithId;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.RequestWithId;
 
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Representa una solicitud enviada desde el Sistema Central al Punto de Carga para obtener la versión actual de la lista local de autorizaciones.
@@ -51,6 +52,16 @@ public class GetLocalListVersionRequest extends RequestWithId {
     @Override
     public boolean transactionRelated() {
         return false;
+    }
+
+    @Override
+    public String getAction() {
+        return "";
+    }
+
+    @Override
+    public UUID getSessionIndex() {
+        return null;
     }
 
     @Override

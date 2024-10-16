@@ -1,7 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ServerCoreEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.*;
@@ -30,22 +30,38 @@ public class ServerCoreProfile implements Profile {
     public ServerCoreProfile(ServerCoreEventHandler handler) {
         this.handler = handler;
         features = new HashSet<>();
+        initializeFeatures();
+    }
+
+    /**
+     * Método para establecer el manejador de eventos.
+     *
+     * @param handler el manejador de eventos para procesar solicitudes entrantes.
+     */
+    public void setEventHandler(ServerCoreEventHandler handler) {
+        this.handler = handler;
+    }
+
+    /**
+     * Inicializa las características soportadas por el perfil.
+     */
+    private void initializeFeatures() {
         features.add(new AuthorizeFeature(this));
         features.add(new BootNotificationFeature(this));
-        features.add(new ChangeAvailabilityFeature(null));
-        features.add(new ChangeConfigurationFeature(null));
-        features.add(new ClearCacheFeature(null));
+        features.add(new ChangeAvailabilityFeature(this));
+        features.add(new ChangeConfigurationFeature(this));
+        features.add(new ClearCacheFeature(this));
         features.add(new DataTransferFeature(this));
-        features.add(new GetConfigurationFeature(null));
+        features.add(new GetConfigurationFeature(this));
         features.add(new HeartbeatFeature(this));
         features.add(new MeterValuesFeature(this));
-        features.add(new RemoteStartTransactionFeature(null));
-        features.add(new RemoteStopTransactionFeature(null));
-        features.add(new ResetFeature(null));
+        features.add(new RemoteStartTransactionFeature(this));
+        features.add(new RemoteStopTransactionFeature(this));
+        features.add(new ResetFeature(this));
         features.add(new StartTransactionFeature(this));
         features.add(new StatusNotificationFeature(this));
         features.add(new StopTransactionFeature(this));
-        features.add(new UnlockConnectorFeature(null));
+        features.add(new UnlockConnectorFeature(this));
     }
 
     /**
@@ -62,7 +78,7 @@ public class ServerCoreProfile implements Profile {
      * Maneja una solicitud OCPP y devuelve la confirmación correspondiente.
      *
      * @param sessionIndex el identificador único de la sesión.
-     * @param request la solicitud OCPP que necesita ser procesada.
+     * @param request      la solicitud OCPP que necesita ser procesada.
      * @return una confirmación que responde a la solicitud recibida.
      */
     @Override

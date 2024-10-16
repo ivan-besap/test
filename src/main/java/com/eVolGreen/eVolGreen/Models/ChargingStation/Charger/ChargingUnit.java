@@ -2,8 +2,10 @@ package com.eVolGreen.eVolGreen.Models.ChargingStation.Charger;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotNull;
+
 import org.hibernate.annotations.GenericGenerator;
+
+import javax.validation.constraints.NotNull;
 
 @Entity
 public class ChargingUnit {

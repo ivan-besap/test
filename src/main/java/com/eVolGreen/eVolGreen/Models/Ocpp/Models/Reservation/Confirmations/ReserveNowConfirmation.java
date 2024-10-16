@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.Confirmations;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.Confirmations.Enums.ReservationStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Reservation.Request.ReserveNowRequest;
 import com.fasterxml.jackson.annotation.JsonProperty;

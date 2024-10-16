@@ -1,17 +1,17 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp;
 
-import java.io.IOException;
-import java.util.Collections;
-import java.util.UUID;
-import java.util.concurrent.CompletionStage;
-import javax.net.ssl.SSLContext;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
+import com.eVolGreen.eVolGreen.Configurations.MQ.AmazonMQCommunicator;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.OccurenceConstraintException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.UnsupportedFeatureException;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.*;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Request;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.*;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.JSONCommunicator;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.JSONConfiguration;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WSS.BaseWssSocketBuilder;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WSS.WssSocketBuilder;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WebSocketTransmitter;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.ClientCoreProfile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
 import org.java_websocket.drafts.Draft;
@@ -20,8 +20,19 @@ import org.java_websocket.protocols.Protocol;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.net.ssl.SSLContext;
+import java.io.IOException;
+import java.util.Collections;
+import java.util.UUID;
+import java.util.concurrent.CompletionStage;
+
 /**
- * Implementación del cliente para OCA OCPP versión 1.6 JSON Web Socket.
+ * Implementation of the OCPP 1.6 JSON WebSocket client with optional Amazon MQ support.
+ * <p>
+ * This client supports connecting, sending requests, and receiving confirmations
+ * according to the OCPP 1.6 JSON protocol over WebSocket and optionally integrates
+ * with Amazon MQ for message queuing support.
+ * </p>
  */
 public class JSONClient implements IClientAPI {
 
@@ -32,192 +43,131 @@ public class JSONClient implements IClientAPI {
     private final FeatureRepository featureRepository;
     private final Client client;
     private final String identity;
+    private final AmazonMQCommunicator amazonMQCommunicator;
 
     /**
-     * Constructor que utiliza el perfil core del cliente.
+     * Constructor that initializes the client with the specified core profile.
      *
-     * @param coreProfile Implementación del perfil de características core.
+     * @param coreProfile The core profile that defines the features of the client.
      */
     public JSONClient(ClientCoreProfile coreProfile) {
-        this(coreProfile, null);
+        this(coreProfile, null, JSONConfiguration.get(), null);
     }
 
     /**
-     * Constructor que crea la raíz compuesta de la aplicación para un cliente JSON.
-     * El perfil de características core es requerido como mínimo.
+     * Constructs a JSONClient instance with a specified core profile, identity,
+     * JSON configuration, and Amazon MQ communicator.
      *
-     * @param coreProfile Implementación del perfil de características core.
-     * @param identity Si se establece, se añadirá la identidad a la URL.
-     * @param configuration Configuración de red para un cliente JSON.
+     * @param coreProfile     The core profile that defines the features of the client.
+     * @param identity        Optional identity to add to the URL.
+     * @param configuration   JSON configuration settings for the client.
+     * @param mqCommunicator  Optional AmazonMQCommunicator instance for MQ communication.
      */
-    public JSONClient(
-            ClientCoreProfile coreProfile, String identity, JSONConfiguration configuration) {
+    public JSONClient(ClientCoreProfile coreProfile, String identity, JSONConfiguration configuration, AmazonMQCommunicator mqCommunicator) {
         this.identity = identity;
-        draftOcppOnly =
-                new Draft_6455(Collections.emptyList(), Collections.singletonList(new Protocol("ocpp1.6")));
-        transmitter = new WebSocketTransmitter(configuration, draftOcppOnly);
-        JSONCommunicator communicator = new JSONCommunicator(transmitter);
-        featureRepository = new FeatureRepository();
-        ISession session = new SessionFactory(featureRepository).createSession(communicator);
-        client = new Client(session, new PromiseRepository());
-        featureRepository.addFeatureProfile(coreProfile);
+        this.amazonMQCommunicator = mqCommunicator;
+        this.draftOcppOnly = new Draft_6455(Collections.emptyList(), Collections.singletonList(new Protocol("ocpp1.6")));
+
+        // Initialize the WebSocket transmitter
+        this.transmitter = new WebSocketTransmitter(configuration, this.draftOcppOnly);
+
+        // Create the JSON communicator using the WebSocket transmitter
+        JSONCommunicator communicator = new JSONCommunicator(this.transmitter);
+
+        // Initialize the feature repository and session
+        this.featureRepository = new FeatureRepository();
+        ISession session = new SessionFactory(this.featureRepository).createSession(communicator);
+
+        // Initialize the client with the session and promise repository
+        this.client = new Client(session, this.featureRepository, new PromiseRepository());
+
+        // Add the core profile to the feature repository
+        this.featureRepository.addFeatureProfile(coreProfile);
     }
 
     /**
-     * Constructor que crea la raíz compuesta de la aplicación para un cliente JSON.
-     * El perfil de características core es requerido como mínimo.
+     * Enables WSS (Secure WebSocket) support using the provided SSLContext.
      *
-     * @param coreProfile Implementación del perfil de características core.
-     * @param identity Si se establece, se añadirá la identidad a la URL.
-     */
-    public JSONClient(ClientCoreProfile coreProfile, String identity) {
-        this(coreProfile, identity, JSONConfiguration.get());
-    }
-
-    /**
-     * Constructor que crea la raíz compuesta de la aplicación para un cliente JSON.
-     * El perfil de características core es requerido como mínimo.
-     *
-     * @param coreProfile Implementación del perfil de características core.
-     * @param identity Si se establece, se añadirá la identidad a la URL.
-     * @param wssSocketBuilder Para construir {@link java.net.Socket} para soportar wss://.
-     * @param configuration Configuración de red para un cliente JSON.
-     */
-    public JSONClient(
-            ClientCoreProfile coreProfile,
-            String identity,
-            WssSocketBuilder wssSocketBuilder,
-            JSONConfiguration configuration) {
-        this(coreProfile, identity, configuration);
-        enableWSS(wssSocketBuilder);
-    }
-
-    /**
-     * Constructor que crea la raíz compuesta de la aplicación para un cliente JSON.
-     * El perfil de características core es requerido como mínimo.
-     *
-     * @param coreProfile Implementación del perfil de características core.
-     * @param identity Si se establece, se añadirá la identidad a la URL.
-     * @param wssSocketBuilder Para construir {@link java.net.Socket} para soportar wss://.
-     */
-    public JSONClient(
-            ClientCoreProfile coreProfile, String identity, WssSocketBuilder wssSocketBuilder) {
-        this(coreProfile, identity, wssSocketBuilder, JSONConfiguration.get());
-    }
-
-    /**
-     * Habilita la conexión WSS al punto final.
-     * Este método es para asegurar la compatibilidad hacia atrás de la API expuesta.
-     *
-     * @param sslContext El contexto SSL a utilizar.
-     * @throws IOException Si ocurre un error de E/S.
+     * @param sslContext SSLContext used for secure socket connections.
+     * @throws IOException If an I/O error occurs during initialization.
      */
     public void enableWSS(SSLContext sslContext) throws IOException {
-        WssSocketBuilder wssSocketBuilder =
-                BaseWssSocketBuilder.builder().sslSocketFactory(sslContext.getSocketFactory());
-        enableWSS(wssSocketBuilder);
+        WssSocketBuilder wssSocketBuilder = BaseWssSocketBuilder.builder().sslSocketFactory(sslContext.getSocketFactory());
+        this.enableWSS(wssSocketBuilder);
     }
 
     /**
-     * Habilita la conexión WSS al punto final. El {@code wssSocketBuilder} debe ser inicializado
-     * en ese paso (ya que los parámetros requeridos establecidos pueden variar dependiendo de la implementación,
-     * se utiliza {@link WssSocketBuilder#verify()} para asegurar la inicialización).
+     * Enables WSS (Secure WebSocket) support.
      *
-     * @param wssSocketBuilder Constructor para proporcionar socket SSL.
-     * @throws IllegalStateException Si el cliente ya está conectado.
-     * @throws IllegalStateException Si {@code wssSocketBuilder} no está inicializado correctamente.
+     * @param wssSocketBuilder WssSocketBuilder instance used to verify and initialize WSS support.
+     * @return The current JSONClient instance with WSS enabled.
      */
     public JSONClient enableWSS(WssSocketBuilder wssSocketBuilder) {
         wssSocketBuilder.verify();
-        transmitter.enableWSS(wssSocketBuilder);
+        this.transmitter.enableWSS(wssSocketBuilder);
         return this;
     }
 
     /**
-     * Aplica cambios de JSONConfiguration cuando ya está conectado.
-     * Específicamente, el intervalo de ping de WebSocket puede cambiarse sin reconectar llamando a este método.
-     */
-    public void reconfigure() {
-        transmitter.configure();
-    }
-
-    /**
-     * Añade un perfil de características al repositorio de características.
+     * Adds an additional feature profile to the client.
      *
-     * @param profile El perfil de características a añadir.
+     * @param profile The feature profile to be added.
      */
-    @Override
     public void addFeatureProfile(Profile profile) {
-        featureRepository.addFeatureProfile(profile);
+        this.featureRepository.addFeatureProfile(profile);
     }
 
     /**
-     * Conecta al cliente a la URL especificada.
+     * Connects the client to the specified URL with the provided client events handler.
      *
-     * @param url La URL a la que conectarse.
-     * @param clientEvents Los eventos del cliente a manejar.
+     * @param url           The URL to connect to.
+     * @param clientEvents  The client events handler to manage connection events.
      */
-    @Override
-    public void connect(String url, ClientEvents clientEvents) {
-        logger.debug("Feature repository: {}", featureRepository);
-
-        String identityUrl = (identity != null) ? String.format("%s/%s", url, identity) : url;
-        client.connect(identityUrl, clientEvents);
+    public void connect(String url, ClientEvents clientEvents) throws InterruptedException {
+        logger.debug("Feature repository: {}", this.featureRepository);
+        String identityUrl = this.identity != null ? String.format("%s/%s", url, this.identity) : url;
+        this.client.connect(identityUrl, clientEvents);
     }
 
     /**
-     * Envía una solicitud al servidor.
+     * Sends a request to the connected server.
      *
-     * @param request La solicitud a enviar.
-     * @return Una etapa de finalización que se completará con la confirmación.
-     * @throws OccurenceConstraintException Si se viola una restricción de ocurrencia.
-     * @throws UnsupportedFeatureException Si la característica no está soportada.
+     * @param request The request to be sent.
+     * @return A CompletionStage that, when completed, contains the confirmation.
+     * @throws OccurenceConstraintException   If the request violates occurrence constraints.
+     * @throws UnsupportedFeatureException    If the request contains an unsupported feature.
      */
-    @Override
-    public CompletionStage<Confirmation> send(Request request)
-            throws OccurenceConstraintException, UnsupportedFeatureException {
-        return client.send(request);
+    public CompletionStage<Confirmation> send(Request request) throws OccurenceConstraintException, UnsupportedFeatureException {
+        return this.client.send(request);
     }
 
-    /**
-     * Completa de forma asíncrona una solicitud pendiente.
-     *
-     * @param uniqueId El ID único de la solicitud.
-     * @param confirmation La confirmación para completar la solicitud.
-     * @return true si la solicitud pendiente se completó con éxito, false en caso contrario.
-     * @throws UnsupportedFeatureException Si la característica no está soportada.
-     * @throws OccurenceConstraintException Si se viola una restricción de ocurrencia.
-     */
     @Override
     public boolean asyncCompleteRequest(String uniqueId, Confirmation confirmation) throws UnsupportedFeatureException, OccurenceConstraintException {
-        return client.asyncCompleteRequest(uniqueId, confirmation);
+        return false;
     }
 
     /**
-     * Desconecta al cliente del servidor.
+     * Disconnects the client from the server.
      */
-    @Override
     public void disconnect() {
-        client.disconnect();
+        this.client.disconnect();
     }
 
     /**
-     * Verifica si la conexión está cerrada.
+     * Checks if the WebSocket transmitter is closed.
      *
-     * @return true si la conexión está cerrada, false en caso contrario.
+     * @return True if the transmitter is closed; otherwise, false.
      */
-    @Override
     public boolean isClosed() {
-        return transmitter.isClosed();
+        return this.transmitter.isClosed();
     }
 
     /**
-     * Obtiene el ID de la sesión actual.
+     * Retrieves the session ID of the current session.
      *
-     * @return El UUID de la sesión actual.
+     * @return The UUID of the session.
      */
-    @Override
     public UUID getSessionId() {
-        return client.getSessionId();
+        return this.client.getSessionId();
     }
 }

@@ -1,8 +1,9 @@
 package com.eVolGreen.eVolGreen.DTOS.AccountDTO.ReservationDTO;
 
 import com.eVolGreen.eVolGreen.Models.Account.Reservation;
-import jakarta.validation.constraints.NotNull;
 
+
+import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 public class ReservationClientDTO {

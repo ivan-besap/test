@@ -1,11 +1,12 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.RequestWithId;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.RequestWithId;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.AvailabilityType;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 import javax.xml.bind.annotation.XmlRootElement;
+import java.util.UUID;
 
 /**
  * La clase {@code ChangeAvailabilityRequest} representa una solicitud enviada desde el sistema
@@ -115,6 +116,11 @@ public class ChangeAvailabilityRequest extends RequestWithId {
         return false;
     }
 
+    @Override
+    public String getAction() {
+        return "";
+    }
+
     /**
      * Devuelve una representación en formato de cadena de texto de esta solicitud, incluyendo su
      * validez actual.
@@ -128,5 +134,10 @@ public class ChangeAvailabilityRequest extends RequestWithId {
                 ", type=" + type +
                 ", isValid=" + validate() +
                 '}';
+    }
+
+    @Override
+    public UUID getSessionIndex() {
+        return null; // O devuelve el UUID específico si aplica.
     }
 }

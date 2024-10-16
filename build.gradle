@@ -15,59 +15,67 @@ repositories {
 }
 
 dependencies {
-	implementation 'org.apache.poi:poi:5.2.3'
-	implementation 'org.apache.poi:poi-ooxml:5.2.3'
-	implementation 'org.apache.commons:commons-compress:1.21'
+	// Dependencias relacionadas con Web y WebSocket (incluyendo seguridad)
 	implementation 'org.springframework.boot:spring-boot-starter-web'
-	implementation 'org.springframework.boot:spring-boot-starter-websocket'
-	implementation 'org.java-websocket:Java-WebSocket:1.5.3'
-	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
-	implementation 'org.springframework.boot:spring-boot-starter-security'
-	implementation 'org.springframework.boot:spring-boot-starter-data-rest'
-//	runtimeOnly 'com.h2database:h2'
-//	runtimeOnly 'org.postgresql:postgresql'
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
+	implementation 'org.springframework.boot:spring-boot-starter-websocket' // WebSocket
+	implementation 'org.java-websocket:Java-WebSocket:1.5.3' // WebSocket nativo de Java
 
-	compileOnly 'org.projectlombok:lombok'
-	annotationProcessor 'org.projectlombok:lombok'
+	// Dependencias de seguridad, incluyendo WebSocket
+	implementation 'org.springframework.boot:spring-boot-starter-security' // Seguridad
+	implementation 'org.springframework.security:spring-security-web:6.1.6' // Seguridad web
+	implementation 'org.springframework.security:spring-security-config:6.1.6' // Configuración de seguridad
+	implementation 'org.springframework.security:spring-security-messaging:6.1.6' // Seguridad para WebSocket
 
-	// JJWT dependency
-	implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
-	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5'
-	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5'
+	// Dependencias de JPA y base de datos
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa' // JPA
+	implementation 'org.springframework.boot:spring-boot-starter-data-rest' // Repositorios expuestos como API REST
+	runtimeOnly 'mysql:mysql-connector-java:8.0.33' // Conector MySQL
 
-	implementation 'org.springframework.boot:spring-boot-starter-mail'
-	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf'
+	// Dependencias de mensajería (ActiveMQ)
+	implementation 'org.springframework.boot:spring-boot-starter-activemq' // Integración con ActiveMQ
+	implementation 'org.apache.activemq:activemq-broker' // Broker ActiveMQ
 
-	implementation 'org.springframework.security:spring-security-oauth2-jose'
-	implementation 'com.amazonaws:aws-java-sdk-cognitoidp:1.12.725'
+	// Dependencias de OCPP y SOAP
+	implementation 'com.fasterxml.jackson.core:jackson-databind' // JSON handling
+	implementation 'javax.xml.bind:jaxb-api:2.3.1' // API JAXB
+	implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.2' // Runtime JAXB
+	implementation 'javax.validation:validation-api:2.0.1.Final' // Validaciones con Javax
+	implementation 'javax.xml.soap:javax.xml.soap-api:1.4.0' // Soporte SOAP
 
-	// MySQL Connector
-	runtimeOnly 'mysql:mysql-connector-java:8.0.33'
+	// JJWT (para autenticación y tokens JWT)
+	implementation 'io.jsonwebtoken:jjwt-api:0.11.5' // API de JWT
+	runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.11.5' // Implementación de JWT
+	runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.11.5' // Integración con Jackson para JWT
 
-	// Dependencias de activemq
-	implementation 'org.springframework.boot:spring-boot-starter-activemq'
-	implementation 'org.apache.activemq:activemq-broker'
-	
+	// AWS SDK (Cognito y Amazon MQ)
+	implementation 'com.amazonaws:aws-java-sdk-cognitoidp:1.12.725' // SDK AWS Cognito
+	implementation 'com.amazonaws:aws-java-sdk-mq:1.12.725' // SDK de Amazon MQ
 
-	// Dependencias de OCPP
-	implementation 'com.fasterxml.jackson.core:jackson-databind'
+	// Otras dependencias (Apache POI y otras librerías)
+	implementation 'org.apache.poi:poi:5.2.3' // Apache POI para manejo de documentos Excel
+	implementation 'org.apache.poi:poi-ooxml:5.2.3' // Apache POI para OOXML (formatos de Excel)
+	implementation 'org.apache.commons:commons-compress:1.21' // Compresión de archivos
+	implementation 'org.apache.tomcat.embed:tomcat-embed-websocket' // WebSocket nativo de Tomcat
 
-	// JAXB dependencies
-	implementation 'javax.xml.bind:jaxb-api:2.3.1'
-	implementation 'org.glassfish.jaxb:jaxb-runtime:2.3.2'
-	implementation 'javax.validation:validation-api:2.0.1.Final'
+	// Librerías de Spring para correos y plantillas
+	implementation 'org.springframework.boot:spring-boot-starter-mail' // Envío de emails
+	implementation 'org.springframework.boot:spring-boot-starter-thymeleaf' // Plantillas Thymeleaf
 
-	// Jakarta Validation API
-	implementation 'jakarta.validation:jakarta.validation-api:3.0.2'
+	// Test
+	testImplementation 'org.springframework.boot:spring-boot-starter-test' // Librerías de testing
 
-	// Soap
-	implementation 'javax.xml.soap:javax.xml.soap-api:1.4.0'
+	// Lombok
+	compileOnly 'org.projectlombok:lombok' // Lombok para simplificar código
+	annotationProcessor 'org.projectlombok:lombok' // Procesador de anotaciones de Lombok
 
-	//	runtimeOnly 'org.springframework.boot:spring-boot-devtools'
+	// Gson
+	implementation 'com.google.code.gson:gson:2.10.1'
 
-//	providedRuntime 'org.springframework.boot:spring-boot-starter-tomcat'
+
+	implementation 'com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.4'
+
 }
+
 
 tasks.named('test') {
 	useJUnitPlatform()
@@ -85,7 +93,6 @@ tasks.register('javadocJar', Jar) {
 	from javadoc.destinationDir
 }
 
-
 bootRun {
 	sourceResources(sourceSets.main)
 }
@@ -94,6 +101,7 @@ tasks.withType(JavaCompile) {
 	options.compilerArgs << "-Xlint:deprecation"
 	options.compilerArgs << "-Xlint:unchecked"
 }
+
 //bootWar {
 //	archiveFileName = 'eVolGreen.war'
 //}

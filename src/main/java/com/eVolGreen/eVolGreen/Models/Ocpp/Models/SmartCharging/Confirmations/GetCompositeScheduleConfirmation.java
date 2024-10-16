@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Confirmations;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingSchedule;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Confirmations.Enums.GetCompositeScheduleStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Request.GetCompositeScheduleRequest;

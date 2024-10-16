@@ -1,9 +1,10 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.RequestWithId;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.RequestWithId;
 import com.fasterxml.jackson.annotation.JsonRootName;
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Representa una solicitud enviada por el sistema central al punto de carga para limpiar la caché.
@@ -37,6 +38,16 @@ public class ClearCacheRequest extends RequestWithId {
     @Override
     public boolean transactionRelated() {
         return false;
+    }
+
+    @Override
+    public String getAction() {
+        return "";
+    }
+
+    @Override
+    public UUID getSessionIndex() {
+        return null;
     }
 
     @Override

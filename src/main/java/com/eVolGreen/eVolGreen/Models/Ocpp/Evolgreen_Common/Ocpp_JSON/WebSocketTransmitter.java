@@ -10,8 +10,9 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.NotConnectedException;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.RadioEvents;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.Transmitter;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WSS.WssSocketBuilder;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.RadioEvents;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Transmitter;
 import org.java_websocket.client.WebSocketClient;
 import org.java_websocket.drafts.Draft;
 import org.java_websocket.exceptions.WebsocketNotConnectedException;

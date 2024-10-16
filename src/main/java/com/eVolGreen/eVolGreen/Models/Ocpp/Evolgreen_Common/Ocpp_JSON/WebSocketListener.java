@@ -1,10 +1,12 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.AuthenticationException;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.SessionInformation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.ISessionFactory;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.Listener;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.ListenerEvents;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.ISessionFactory;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Listener;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.ListenerEvents;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.SessionInformation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WSS.WssFactoryBuilder;
+
 import org.java_websocket.WebSocket;
 import org.java_websocket.drafts.Draft;
 import org.java_websocket.exceptions.InvalidDataException;
@@ -44,7 +46,7 @@ public class WebSocketListener implements Listener {
     private final JSONConfiguration configuration;
     private volatile WebSocketServer server;
     private WssFactoryBuilder wssFactoryBuilder;
-    private final Map<WebSocket, WebSocketReceiver> sockets;
+    private final Map<WebSocket, WebSocketReceiver> sockets = new ConcurrentHashMap<>();
     private volatile boolean closed = true;
     private boolean handleRequestAsync;
 
@@ -59,7 +61,6 @@ public class WebSocketListener implements Listener {
         this.sessionFactory = sessionFactory;
         this.configuration = configuration;
         this.drafts = Arrays.asList(drafts);
-        this.sockets = new ConcurrentHashMap<>();
     }
 
     /**
@@ -79,13 +80,8 @@ public class WebSocketListener implements Listener {
      * @param port     Puerto donde el servidor escuchará.
      * @param handler  Manejador de eventos del servidor.
      */
-    @Override
     public void open(String hostname, int port, ListenerEvents handler) {
-        server = new WebSocketServer(
-                new InetSocketAddress(hostname, port),
-                configuration.getParameter(JSONConfiguration.WEBSOCKET_WORKER_COUNT, DEFAULT_WEBSOCKET_WORKER_COUNT),
-                drafts
-        ) {
+        server = new WebSocketServer(new InetSocketAddress(hostname, port), configuration.getParameter(JSONConfiguration.WEBSOCKET_WORKER_COUNT, DEFAULT_WEBSOCKET_WORKER_COUNT), drafts) {
             @Override
             public void onOpen(WebSocket webSocket, ClientHandshake clientHandshake) {
                 if (Draft_HttpHealthCheck.isHttp(clientHandshake)) {
@@ -256,21 +252,11 @@ public class WebSocketListener implements Listener {
         }
     }
 
-    /**
-     * Verifica si el servidor WebSocket está cerrado.
-     *
-     * @return true si el servidor está cerrado, de lo contrario false.
-     */
     @Override
     public boolean isClosed() {
         return closed;
     }
 
-    /**
-     * Establece si el manejador de solicitudes debe ser asíncrono o no.
-     *
-     * @param async booleano que indica si el manejador debe procesar solicitudes de manera asíncrona.
-     */
     @Override
     public void setAsyncRequestHandler(boolean async) {
         this.handleRequestAsync = async;

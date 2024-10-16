@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Validatable;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Validatable;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;

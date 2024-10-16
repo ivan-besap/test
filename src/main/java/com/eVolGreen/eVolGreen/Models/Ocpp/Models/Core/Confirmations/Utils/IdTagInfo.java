@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Utils;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Validatable;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Validatable;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.AuthorizeConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Enums.AuthorizationStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.StartTransactionConfirmation;
