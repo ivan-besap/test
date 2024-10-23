@@ -1,10 +1,9 @@
 package com.eVolGreen.eVolGreen.Configurations.MQ;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.NotConnectedException;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.OccurenceConstraintException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.UnsupportedFeatureException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.ConfirmationCompletedHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.SessionInformation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.DefaultClientCoreEventHandler;
@@ -17,6 +16,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Enums.AuthorizationStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Enums.DataTransferStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Enums.RegistrationStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Enums.RemoteStartStopStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Utils.IdTagInfo;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargePointStatus;
@@ -44,10 +44,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 
 /**
  * {@code WebSocketHandler} maneja las conexiones WebSocket, gestionando el ciclo de vida de las sesiones
@@ -57,7 +54,10 @@ import java.util.concurrent.TimeUnit;
 public class WebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketHandler.class);
-    private static final Map<UUID, ISession> sessionStore = new ConcurrentHashMap<>();
+
+    private static final Map<UUID, Session> sessionStore = new ConcurrentHashMap<>();
+    private static final Map<UUID, WebSocketSession> webSocketSessionStorage = new ConcurrentHashMap<>();
+
     private final List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
 
     private final ISessionFactory sessionFactory;
@@ -72,6 +72,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private ServerRemoteTriggerProfile serverRemoteTriggerProfile;
     private DefaultClientCoreEventHandler clientCoreEventHandler;
     private AmazonMQCommunicator amazonMQCommunicator;
+    private long RECONNECT_INTERVAL_SECONDS;
+    private Queue queue;
+    private PromiseFulfiller fulfiller;
+    private IFeatureRepository featureRepository;
 
 
     /**
@@ -90,12 +94,16 @@ public class WebSocketHandler extends TextWebSocketHandler {
      */
     public WebSocketHandler(ISessionFactory sessionFactory, Communicator communicator,
                             JSONServer jsonServer, ServerCoreProfile coreProfile,
-                            AmazonMQCommunicator amazonMQCommunicator) {
+                            AmazonMQCommunicator amazonMQCommunicator,
+                            Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository) {
 
         this.sessionFactory = sessionFactory;
         this.communicator = communicator;
         this.jsonServer = jsonServer;
         this.amazonMQCommunicator = amazonMQCommunicator;
+        this.queue = queue;
+        this.fulfiller = fulfiller;
+        this.featureRepository = featureRepository;
         this.objectMapper = new ObjectMapper()
                 .registerModule(new JavaTimeModule())
                 .configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false)
@@ -116,494 +124,721 @@ public class WebSocketHandler extends TextWebSocketHandler {
         this.clientCoreEventHandler = new DefaultClientCoreEventHandler();
     }
 
-
-
-
-
-
+//1
     /**
-     * Al establecer una conexión WebSocket, crea y registra una sesión.
+     * Maneja el establecimiento de una nueva conexión WebSocket. Valida el subprotocolo aceptado por el cliente
+     * y, si es compatible, crea una nueva sesión OCPP, la registra en Amazon MQ, y la almacena en sessionStore.
+     * Si el protocolo no es soportado, la sesión se cierra con un error.
      *
-     * @param session la sesión WebSocket recién establecida.
+     * @param webSocketSession La sesión WebSocket recién establecida.
+     * @throws IOException Si ocurre un error al cerrar una sesión con protocolo no soportado.
      */
     @Override
-    public void afterConnectionEstablished(WebSocketSession session) throws IOException {
-        // Obtiene el subprotocolo aceptado del cliente
-        String acceptedProtocol = session.getAcceptedProtocol();
-        logger.debug("Subprotocolo solicitado por el cliente (sec-websocket-protocol): {}", acceptedProtocol);
+    public void afterConnectionEstablished(WebSocketSession webSocketSession) throws IOException {
+        // Obtener el subprotocolo desde los atributos de la sesión
+        String acceptedProtocol = (String) webSocketSession.getAttributes().get("subProtocol");
+        logger.debug("Subprotocolo aceptado en la sesión (después de handshake): {}", acceptedProtocol);
 
-        // Verifica si el subprotocolo es compatible o está definido en el enum ProtocolVersion
-        if (acceptedProtocol != null && ProtocolVersion.fromSubProtocolName(acceptedProtocol) != null) {
-            UUID sessionId = UUID.randomUUID();
-
-            // Registra la sesión con el subprotocolo aceptado
-            amazonMQCommunicator.addSession(sessionId, session);
-            logger.info("Sesión WebSocket registrada con subprotocolo {}: {}", acceptedProtocol, sessionId);
-
-        } else {
-            // Si el subprotocolo es nulo o no está soportado, cierra la sesión y registra el evento
-            String protocolMessage = acceptedProtocol == null ? "Ninguno" : acceptedProtocol;
-            logger.warn("Subprotocolo no soportado o no definido: {}. Cerrando la sesión: {}", protocolMessage, session.getId());
-
-            try {
-                session.close(CloseStatus.PROTOCOL_ERROR);
-            } catch (IOException e) {
-                logger.error("Error al cerrar la sesión debido a un subprotocolo no soportado: {}", e.getMessage());
-            }
-        }
-    }
-
-
-    /**
-     * Procesa mensajes entrantes de texto y los maneja según el tipo de acción especificada.
-     *
-     * @param session la sesión WebSocket.
-     * @param message el mensaje recibido.
-     * @throws Exception si ocurre un error al procesar el mensaje.
-     */
-    @Override
-    protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-        String payload = message.getPayload();
-        logger.debug("Payload recibido: {}", payload);
-
-        // Validar el formato básico del mensaje
-        if (!payload.contains("[")) {
-            logger.warn("Formato de mensaje no válido recibido: {}", payload);
-            sendError(session, null, "Formato no válido: el mensaje debe estar en formato JSON");
+        // Verificar si el subprotocolo es el esperado
+        if (!"ocpp1.6".equals(acceptedProtocol)) {
+            handleUnsupportedProtocol(webSocketSession, acceptedProtocol);
             return;
         }
 
         try {
-            Object[] array = objectMapper.readValue(payload, Object[].class);
-            String messageId = (String) array[1];
-            String action = (String) array[2];
-            Object requestPayload = array[3];
+            // Utilizar el ID proporcionado por la sesión WebSocket en lugar de generar uno nuevo
+            String sessionId = webSocketSession.getId();
+            UUID sessionUUID = UUID.fromString(sessionId);
 
-            logger.debug("Acción recibida: {} con payload: {}", action, requestPayload.toString());
+            // Crear e inicializar la sesión OCPP con el ID de la sesión WebSocket
+            Session session = initializeSession(sessionUUID, webSocketSession);
 
-            switch (action) {
-                case "Authorize":
-                    handleAuthorize(session, requestPayload, messageId);
-                    break;
-                case "BootNotification":
-                    handleBootNotification(session, requestPayload, messageId);
-                    break;
-                case "Heartbeat":
-                    handleHeartbeat(session, requestPayload, messageId);
-                    break;
-                case "MeterValues":
-                    handleMeterValues(session, requestPayload, messageId);
-                    break;
-                case "StartTransaction":
-                    handleStartTransaction(session, requestPayload, messageId);
-                    break;
-                case "StopTransaction":
-                    handleStopTransaction(session, requestPayload, messageId);
-                    break;
-                case "StatusNotification":
-                    handleStatusNotification(session, requestPayload, messageId);
-                    break;
-                case "DataTransfer":
-                    handleDataTransfer(session, requestPayload, messageId);
-                    break;
-                case "Available":
-                    handleAvailable(session, requestPayload, messageId);
-                    break;
-                case "Preparing":
-                    handlePreparing(session, requestPayload, messageId);
-                    break;
-                case "Charging":
-                    handleCharging(session, requestPayload, messageId);
-                    break;
-                case "TriggerMessage":
-                    handleServerTriggerMessage(session, requestPayload, messageId);
-                    break;
-                case "ChangeAvailability":
-                    handleChangeAvailability(session, requestPayload, messageId);
-                    break;
-                case "GetConfiguration":
-                    handleGetConfiguration(session, requestPayload, messageId);
-                    break;
-                case "RemoteStartTransaction":
-                    handleRemoteStartTransaction(session, requestPayload, messageId);
-                    break;
-                case "RemoteStopTransaction":
-                    handleRemoteStopTransaction(session, requestPayload, messageId);
-                    break;
-                case "ClearCache":
-                    handleClearCache(session, requestPayload, messageId);
-                    break;
-                case "ChangeConfiguration":
-                    handleChangeConfiguration(session, requestPayload, messageId);
-                    break;
-                default:
-                    sendError(session, messageId, "Acción no soportada: " + action);
-                    break;
+            // Vincular el sessionUUID con la WebSocketSession
+            webSocketSession.getAttributes().put("sessionId", sessionUUID);
+
+            // Almacenar la sesión en sessionStore
+            sessionStore.put(sessionUUID, session);
+
+            // Almacenar la sesión WebSocket en webSocketSessionStorage
+            webSocketSessionStorage.put(sessionUUID, webSocketSession);
+
+            // Registrar en Amazon MQ
+            amazonMQCommunicator.addSession(sessionUUID, webSocketSession);
+
+            logger.info("Sesión WebSocket registrada exitosamente con ID: {} y subprotocolo: {}", sessionUUID, acceptedProtocol);
+
+        } catch (Exception e) {
+            logger.error("Error al establecer la conexión WebSocket: {}", e.getMessage(), e);
+            webSocketSession.close(CloseStatus.SERVER_ERROR);
+        }
+    }
+
+
+
+
+    /**
+     * Inicializa una nueva instancia de una sesión OCPP asociada a una sesión WebSocket.
+     * <p>
+     * Este método crea una sesión OCPP con un UUID proporcionado y la vincula a la sesión WebSocket
+     * correspondiente. La sesión OCPP es registrada y configurada con los eventos necesarios
+     * para su manejo. Además, la sesión es almacenada y registrada en el sistema de mensajería Amazon MQ.
+     * </p>
+     *
+     * @param sessionUUID     El identificador único (UUID) de la sesión que será inicializada.
+     * @param webSocketSession La sesión WebSocket asociada que se utilizará para la comunicación.
+     * @return La instancia de {@link ISession} que representa la sesión OCPP inicializada.
+     * @throws IllegalStateException Si la sesión creada no es una instancia válida de {@link Session}.
+     */
+    private Session initializeSession(UUID sessionUUID, WebSocketSession webSocketSession) {
+        // Crear sesión como ISession
+        ISession iSession = sessionFactory.createSession(sessionUUID, communicator, queue, fulfiller, featureRepository);
+
+        // Hacer casting explícito si es necesario
+        if (iSession instanceof Session) {
+            Session session = (Session) iSession;
+
+            // Registra la sesión con sus eventos
+            session.registerSession(createSessionEvents(session));
+
+            logger.info("Sesión OCPP inicializada con ID: {}", sessionUUID);
+
+            return session;
+        } else {
+            logger.error("Error: La instancia creada no es de tipo 'Session'.");
+            throw new IllegalStateException("El tipo de sesión no es compatible.");
+        }
+    }
+
+
+
+    /**
+     * Verifica si el protocolo proporcionado es soportado por el servidor.
+     *
+     * @param acceptedProtocol El subprotocolo aceptado por el cliente durante la conexión.
+     * @return true si el protocolo es soportado; de lo contrario, false.
+     */
+    private boolean isProtocolSupported(String acceptedProtocol) {
+        return acceptedProtocol != null && ProtocolVersion.fromSubProtocolName(acceptedProtocol) != null;
+    }
+
+    /**
+     * Maneja el caso en el que el subprotocolo aceptado por el cliente no es soportado.
+     * Se registra un mensaje de advertencia y se cierra la sesión con un estado de error.
+     *
+     * @param webSocketSession La sesión WebSocket que se debe cerrar.
+     * @param acceptedProtocol El subprotocolo que el cliente intentó utilizar.
+     * @throws IOException Si ocurre un error al cerrar la sesión.
+     */
+    private void handleUnsupportedProtocol(WebSocketSession webSocketSession, String acceptedProtocol) throws IOException {
+        String protocolMessage = acceptedProtocol == null ? "Ninguno" : acceptedProtocol;
+        logger.warn("Subprotocolo no soportado o no definido: {}. Cerrando la sesión: {}", protocolMessage, webSocketSession.getId());
+
+        try {
+            webSocketSession.close(CloseStatus.PROTOCOL_ERROR);
+        } catch (IOException e) {
+            logger.error("Error al cerrar la sesión debido a un subprotocolo no soportado: {}", e.getMessage());
+        }
+    }
+
+//2
+    /**
+     * Procesa mensajes de texto entrantes y los maneja según el tipo de acción especificada.
+     *
+     * @param webSocketSession La sesión WebSocket.
+     * @param message          El mensaje recibido.
+     * @throws Exception Si ocurre un error al procesar el mensaje.
+     */
+    @Override
+    protected void handleTextMessage(WebSocketSession webSocketSession, TextMessage message) throws Exception {
+        String payload = message.getPayload();
+        logger.debug("Payload recibido: {}", payload);
+
+        if (!isValidJsonFormat(payload)) {
+            sendError(null, webSocketSession, null, "Formato no válido: el mensaje debe estar en formato JSON");
+            return;
+        }
+
+        try {
+            // Obtener el sessionId desde los atributos de la WebSocketSession
+            UUID sessionId = (UUID) webSocketSession.getAttributes().get("sessionId");
+            Session session = sessionStore.get(sessionId);
+
+            // Verifica si la sesión es nula y maneja el error en consecuencia
+            if (session == null) {
+                logger.error("No se encontró la sesión OCPP para el ID: {}", sessionId);
+                sendError(null, webSocketSession, null, "Sesión no encontrada");
+                return;
             }
+
+            // Llama a `handleAction` con la instancia de `Session` y `webSocketSession`
+            handleAction(session, webSocketSession, payload);
 
         } catch (JsonProcessingException e) {
             logger.error("Error al analizar el mensaje JSON", e);
-            sendError(session, null, "Formato JSON inválido: " + e.getMessage());
+            sendError(null, webSocketSession, null, "Formato JSON inválido: " + e.getMessage());
         } catch (ClassCastException e) {
             logger.error("Formato de mensaje inesperado", e);
-            sendError(session, null, "Formato de mensaje inesperado");
+            sendError(null, webSocketSession, null, "Formato de mensaje inesperado");
         } catch (Exception e) {
             logger.error("Error al manejar el mensaje", e);
-            sendError(session, null, "Error al manejar el mensaje: " + e.getMessage());
+            sendError(null, webSocketSession, null, "Error al manejar el mensaje: " + e.getMessage());
         }
     }
 
-    @Override
-    public void afterConnectionClosed(WebSocketSession session, CloseStatus status) {
-        amazonMQCommunicator.removeSession(UUID.fromString(session.getId()));
-        logger.info("Sesión WebSocket cerrada: {}", session.getId());
+
+    /**
+     * Verifica si el mensaje tiene un formato JSON básico válido.
+     *
+     * @param payload El contenido del mensaje.
+     * @return true si el formato es válido; de lo contrario, false.
+     */
+    private boolean isValidJsonFormat(String payload) {
+        if (!payload.contains("[")) {
+            logger.warn("Formato de mensaje no válido recibido: {}", payload);
+            return false;
+        }
+        return true;
     }
 
+    /**
+     * Procesa el contenido del mensaje y ejecuta la acción correspondiente.
+     *
+     * @param session          La instancia de la sesión OCPP.
+     * @param webSocketSession La sesión WebSocket.
+     * @param payload          El contenido del mensaje en formato JSON.
+     * @throws IOException Si ocurre un error de procesamiento JSON.
+     */
+    private void handleAction(Session session, WebSocketSession webSocketSession, String payload) throws IOException {
+        Object[] array = objectMapper.readValue(payload, Object[].class);
+        String messageId = (String) array[1];
+        String action = (String) array[2];
+        Object requestPayload = array[3];
+
+        logger.debug("Acción recibida: {} con payload: {}", action, requestPayload.toString());
+
+        switch (action) {
+            case "Authorize" -> handleAuthorize(session, webSocketSession, requestPayload, messageId);
+            case "BootNotification" -> handleBootNotification(session, webSocketSession, requestPayload, messageId);
+            case "Heartbeat" -> handleHeartbeat(session, webSocketSession, requestPayload, messageId);
+            case "MeterValues" -> handleMeterValues(session, webSocketSession, requestPayload, messageId);
+            case "StartTransaction" -> handleStartTransaction(session, webSocketSession, requestPayload, messageId);
+            case "StopTransaction" -> handleStopTransaction(session, webSocketSession, requestPayload, messageId);
+            case "StatusNotification" -> handleStatusNotification(session, webSocketSession, requestPayload, messageId);
+            case "DataTransfer" -> handleDataTransfer(session, webSocketSession, requestPayload, messageId);
+            case "Available" -> handleAvailable(session, webSocketSession, requestPayload, messageId);
+            case "Preparing" -> handlePreparing(session, webSocketSession, requestPayload, messageId);
+            case "Charging" -> handleCharging(session, webSocketSession, requestPayload, messageId);
+            case "TriggerMessage" -> handleServerTriggerMessage(session, webSocketSession, requestPayload, messageId);
+            case "ChangeAvailability" -> handleChangeAvailability(session, webSocketSession, requestPayload, messageId);
+            case "GetConfiguration" -> handleGetConfiguration(session, webSocketSession, requestPayload, messageId);
+            case "RemoteStartTransaction" -> handleRemoteStartTransaction(session, webSocketSession, requestPayload, messageId);
+            case "RemoteStopTransaction" -> handleRemoteStopTransaction(session, webSocketSession, requestPayload, messageId);
+            case "ClearCache" -> handleClearCache(session, webSocketSession, requestPayload, messageId);
+            case "ChangeConfiguration" -> handleChangeConfiguration(session, webSocketSession, requestPayload, messageId);
+            default -> sendError(session, webSocketSession, messageId, "Acción no soportada: " + action);
+        }
+    }
+
+//3
+    /**
+     * Maneja el cierre de la conexión WebSocket, eliminando la sesión del almacén y de Amazon MQ.
+     *
+     * @param webSocketSession La sesión WebSocket que se ha cerrado.
+     * @param status           El estado de cierre de la sesión.
+     */
     @Override
-    public void handleTransportError(WebSocketSession session, Throwable exception) {
+    public void afterConnectionClosed(WebSocketSession webSocketSession, CloseStatus status) {
+        try {
+            UUID sessionId = UUID.fromString(webSocketSession.getId());
+            removeSession(sessionId);
+            logger.info("Sesión cerrada y eliminada: {}", sessionId);
+        } catch (IllegalArgumentException e) {
+            logger.error("Error: ID de sesión no es un UUID válido: {}", webSocketSession.getId(), e);
+        }
+    }
+
+    /**
+     * Elimina la sesión del almacén y de Amazon MQ.
+     *
+     * @param sessionId El identificador único de la sesión.
+     */
+    private void removeSession(UUID sessionId) {
+        // Eliminar la sesión de los almacenes de datos
+        Session ocppSession = sessionStore.remove(sessionId);
+
+        // Asegura que se remueva también de AmazonMQ
+        if (ocppSession != null) {
+            amazonMQCommunicator.removeSession(sessionId);
+            logger.info("Sesión con ID {} removida de AmazonMQ y de sessionStore.", sessionId);
+        } else {
+            logger.warn("No se encontró la sesión para remover: {}", sessionId);
+        }
+    }
+
+//4
+    /**
+     * Maneja errores de transporte en la sesión WebSocket, incluyendo reconexiones en caso de EOFException.
+     *
+     * @param webSocketSession La sesión WebSocket en la que ocurrió el error.
+     * @param exception        La excepción lanzada durante el transporte.
+     */
+    @Override
+    public void handleTransportError(WebSocketSession webSocketSession, Throwable exception) {
         if (exception instanceof EOFException) {
-            logger.warn("EOFException detectada en la sesión: {}", session.getId(), exception);
-            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-                reconnectAttempts++;
-                logger.warn("Intento de reconexión {} de {}", reconnectAttempts, MAX_RECONNECT_ATTEMPTS);
-                if (session.isOpen()) {
-                    try {
-                        session.close(CloseStatus.SERVER_ERROR);
-                    } catch (IOException e) {
-                        logger.error("Error al cerrar la sesión después de EOFException: {}", session.getId(), e);
-                    }
-                }
-                // Implement reconnection logic here
-                reconnect(session);
+            logger.warn("EOFException detectada en la sesión: {}", webSocketSession.getId(), exception);
+            attemptReconnection(webSocketSession);
+        } else {
+            logger.error("Error de transporte en la sesión {}: {}", webSocketSession.getId(), exception.getMessage());
+            closeSessionWithError(webSocketSession);
+        }
+    }
+
+    /**
+     * Intenta reconectar la sesión si no se ha alcanzado el máximo de intentos permitidos.
+     *
+     * @param webSocketSession La sesión WebSocket que necesita reconexión.
+     */
+    private void attemptReconnection(WebSocketSession webSocketSession) {
+        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+            reconnectAttempts++;
+            logger.warn("Intento de reconexión {} de {}", reconnectAttempts, MAX_RECONNECT_ATTEMPTS);
+            closeSessionWithError(webSocketSession);
+
+            // Obtiene la sesión OCPP asociada para reutilizar en la reconexión
+            Session ocppSession = sessionStore.get(UUID.fromString(webSocketSession.getId()));
+            if (ocppSession != null) {
+                reconnect(webSocketSession, ocppSession);
             } else {
-                logger.warn("Se alcanzó el máximo de intentos de reconexión. Cerrando sesión: {}", session.getId());
-                try {
-                    session.close(CloseStatus.SERVER_ERROR);
-                } catch (IOException e) {
-                    logger.error("Error al cerrar la sesión después de alcanzar el máximo de intentos de reconexión: {}", session.getId(), e);
-                }
-                sessions.remove(session);
+                logger.warn("No se encontró la sesión OCPP asociada para reconectar: {}", webSocketSession.getId());
             }
         } else {
-            logger.error("Error de transporte en la sesión {}: {}", session.getId(), exception.getMessage());
-            try {
-                session.close(CloseStatus.SERVER_ERROR);
-            } catch (IOException e) {
-                logger.error("Error al cerrar la sesión después de un error de transporte: {}", session.getId(), e);
-            }
-            sessions.remove(session);
+            logger.warn("Se alcanzó el máximo de intentos de reconexión. Cerrando sesión: {}", webSocketSession.getId());
+            closeSessionWithError(webSocketSession);
+            sessions.remove(webSocketSession);
         }
     }
 
-    private void reconnect(WebSocketSession session) {
-        // Implement your reconnection logic here
-        // For example, you can schedule a task to attempt reconnection after a delay
-        Executors.newSingleThreadScheduledExecutor().schedule(() -> {
-            try {
-                // Attempt to reconnect
-                // You may need to create a new WebSocketSession and re-establish the connection
-                // This is a placeholder for your actual reconnection logic
-                logger.info("Intentando reconectar la sesión: {}", session.getId());
-                // Your reconnection code here
-            } catch (Exception e) {
-                logger.error("Error al intentar reconectar la sesión: {}", session.getId(), e);
-            }
-        }, 5, TimeUnit.SECONDS); // Adjust the delay as needed
-    }
-
     /**
-     * Handles incoming TriggerMessage requests from the server side by utilizing ServerRemoteTriggerProfile.
+     * Cierra la sesión con un estado de error, registrando la excepción.
      *
-     * @param session the WebSocketSession.
-     * @param requestPayload the request payload.
-     * @param messageId the unique message ID.
-     * @throws IOException if an error occurs during processing.
+     * @param webSocketSession La sesión WebSocket que se cerrará.
      */
-    void handleServerTriggerMessage(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
+    private void closeSessionWithError(WebSocketSession webSocketSession) {
         try {
-            TriggerMessageRequest triggerMessageRequest = objectMapper.convertValue(requestPayload, TriggerMessageRequest.class);
-            Confirmation confirmation = serverRemoteTriggerProfile.handleRequest(UUID.fromString(session.getId()), triggerMessageRequest);
-            sendResponse(session, messageId, "ServerTriggerMessage", confirmation);
-            logger.info("Server-triggered message handled successfully for session: {}", session.getId());
-        } catch (Exception e) {
-            logger.error("Error processing ServerTriggerMessage", e);
-            sendError(session, messageId, "Error in ServerTriggerMessage: " + e.getMessage());
-        }
-    }
-
-    void handleAvailable(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
-        // Conversión del payload
-        StatusNotificationRequest statusRequest = objectMapper.convertValue(requestPayload, StatusNotificationRequest.class);
-        statusRequest.setStatus(ChargePointStatus.Available);
-
-        jsonServer.sendMessageToMQ("Connector is now Available");
-        StatusNotificationConfirmation confirmation = new StatusNotificationConfirmation();
-
-        sendResponse(session, messageId, "StatusNotification", confirmation);
-        logger.info("Connector set to Available for session: {}", session.getId());
-    }
-
-    void handlePreparing(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
-        StatusNotificationRequest statusRequest = objectMapper.convertValue(requestPayload, StatusNotificationRequest.class);
-        statusRequest.setStatus(ChargePointStatus.Preparing);
-
-        jsonServer.sendMessageToMQ("Connector is Preparing to start a session");
-        StatusNotificationConfirmation confirmation = new StatusNotificationConfirmation();
-
-        sendResponse(session, messageId, "StatusNotification", confirmation);
-        logger.info("Connector preparing for session: {}", session.getId());
-    }
-
-    void handleCharging(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
-        StatusNotificationRequest statusRequest = objectMapper.convertValue(requestPayload, StatusNotificationRequest.class);
-        statusRequest.setStatus(ChargePointStatus.Charging);
-
-        jsonServer.sendMessageToMQ("Connector is now Charging");
-        StatusNotificationConfirmation confirmation = new StatusNotificationConfirmation();
-
-        sendResponse(session, messageId, "StatusNotification", confirmation);
-        logger.info("Charging session started for session: {}", session.getId());
-    }
-
-
-    /**
-     * Delegate ChangeAvailability request handling to DefaultClientCoreEventHandler.
-     */
-    void handleChangeAvailability(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
-        try {
-            ChangeAvailabilityRequest changeAvailabilityRequest = objectMapper.convertValue(requestPayload, ChangeAvailabilityRequest.class);
-            Confirmation confirmation = clientCoreEventHandler.handleChangeAvailabilityRequest(changeAvailabilityRequest);
-            sendResponse(session, messageId, "ChangeAvailability", confirmation);
-        } catch (Exception e) {
-            logger.error("Error processing ChangeAvailability", e);
-            sendError(session, messageId, "Error in ChangeAvailability: " + e.getMessage());
-        }
-    }
-
-    /**
-     * Delegate GetConfiguration request handling to DefaultClientCoreEventHandler.
-     */
-    void handleGetConfiguration(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
-        try {
-            GetConfigurationRequest getConfigurationRequest = objectMapper.convertValue(requestPayload, GetConfigurationRequest.class);
-            Confirmation confirmation = clientCoreEventHandler.handleGetConfigurationRequest(getConfigurationRequest);
-            sendResponse(session, messageId, "GetConfiguration", confirmation);
-        } catch (Exception e) {
-            logger.error("Error processing GetConfiguration", e);
-            sendError(session, messageId, "Error in GetConfiguration: " + e.getMessage());
+            if (webSocketSession.isOpen()) {
+                webSocketSession.close(CloseStatus.SERVER_ERROR);
+            }
+        } catch (IOException e) {
+            logger.error("Error al cerrar la sesión debido a un error de transporte: {}", webSocketSession.getId(), e);
         }
     }
 
 
-
+//5
     /**
-     * Envía un mensaje de error al cliente.
+     * Programa una serie de reintentos de reconexión para la sesión WebSocket especificada.
+     * Si se alcanzan los intentos máximos sin éxito, se crea una nueva sesión OCPP y se registra.
      *
-     * @param session      la sesión WebSocket.
-     * @param messageId    el ID del mensaje.
-     * @param errorMessage el mensaje de error.
-     * @throws IOException si ocurre un error al enviar el mensaje.
+     * @param webSocketSession La sesión WebSocket que se intentará reconectar.
+     * @param ocppSession      La instancia de la sesión OCPP asociada.
      */
-    void sendError(WebSocketSession session, String messageId, String errorMessage) throws IOException {
+    private void reconnect(WebSocketSession webSocketSession, Session ocppSession) {
+        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+        scheduler.scheduleAtFixedRate(() -> {
+            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                attemptReconnectionLogic(webSocketSession, ocppSession);
+            } else {
+                // Si se alcanzan los intentos máximos, crear una nueva sesión OCPP
+                createAndRegisterNewSession(webSocketSession);
+                scheduler.shutdown();
+            }
+        }, 0, RECONNECT_INTERVAL_SECONDS, TimeUnit.SECONDS);
+    }
+
+    /**
+     * Intenta restablecer la conexión de una sesión WebSocket existente.
+     * Si la sesión está abierta, la cierra de manera controlada para luego intentar la reconexión.
+     * Este método incrementa los intentos de reconexión y verifica el estado de la sesión.
+     *
+     * @param webSocketSession La sesión WebSocket que se intentará reconectar.
+     * @param ocppSession      La instancia de la sesión OCPP asociada.
+     */
+    private void attemptReconnectionLogic(WebSocketSession webSocketSession, Session ocppSession) {
+        try {
+            if (webSocketSession.isOpen()) {
+                webSocketSession.close(CloseStatus.SESSION_NOT_RELIABLE);
+            }
+            logger.info("Intentando reconectar la sesión: {}", webSocketSession.getId());
+
+            // Intentar reconexión reutilizando la misma instancia de Session
+            ocppSession.open(webSocketSession.getUri().toString(), createSessionEvents(ocppSession));
+            reconnectAttempts++;
+        } catch (Exception e) {
+            logger.error("Error al intentar reconectar la sesión: {}", webSocketSession.getId(), e);
+        }
+    }
+
+    /**
+     * Crea una nueva sesión OCPP y la registra en el sistema, reemplazando la sesión actual.
+     * Este método es llamado cuando se alcanzan los intentos máximos de reconexión sin éxito.
+     *
+     * @param webSocketSession La sesión WebSocket original que no pudo ser reconectada.
+     */
+    private void createAndRegisterNewSession(WebSocketSession webSocketSession) {
+        try {
+            UUID newSessionId = UUID.randomUUID();
+
+            // Crear y configurar una nueva sesión OCPP
+            Session newSession = initializeSession(newSessionId, webSocketSession);
+            sessionStore.put(newSessionId, newSession);
+
+            // Registra la nueva sesión en AmazonMQ
+            amazonMQCommunicator.addSession(newSessionId, webSocketSession);
+            logger.info("Nueva sesión creada y registrada después de intentar reconectar: {}", newSessionId);
+
+            // Reinicia el contador de reintentos
+            reconnectAttempts = 0;
+        } catch (Exception e) {
+            logger.error("Error al crear y registrar una nueva sesión después de los intentos de reconexión fallidos", e);
+        }
+    }
+
+//6
+    /**
+     * Enviar respuestas en un formato uniforme para todos los manejadores utilizando la instancia de Session.
+     *
+     * @param session      La sesión de OCPP que envía el mensaje.
+     * @param messageId    El ID del mensaje.
+     * @param action       La acción específica procesada.
+     * @param confirmation La confirmación a enviar al cliente.
+     * @throws IOException Si ocurre un error al enviar el mensaje.
+     */
+    private void sendResponse(Session session, WebSocketSession webSocketSession, String messageId, String action, Object confirmation) throws IOException {
+        String response = objectMapper.writeValueAsString(new Object[]{3, messageId, confirmation});
+
+        // Envía la respuesta a través de la sesión establecida
+        session.sendTextMessage(response, webSocketSession);
+
+        logger.info("Respuesta '{}' enviada para la sesión {}: messageId {}", action, session.getSessionId(), messageId);
+    }
+
+//7
+    /**
+     * Crea una instancia de `SessionEvents` para gestionar el ciclo de vida de la sesión.
+     *
+     * @param session La instancia de sesión que será gestionada.
+     * @return Un objeto `SessionEvents` configurado para la sesión.
+     */
+    private SessionEvents createSessionEvents(Session session) {
+        return new SessionEvents() {
+
+            /**
+             * Maneja la confirmación de una solicitud.
+             *
+             * @param uniqueId     El identificador único de la solicitud.
+             * @param confirmation La confirmación recibida.
+             */
+            @Override
+            public void handleConfirmation(String uniqueId, Confirmation confirmation) {
+                logger.info("Confirmación recibida para la solicitud {}: {}", uniqueId, confirmation);
+            }
+
+            /**
+             * Procesa una solicitud entrante y genera la confirmación correspondiente.
+             *
+             * @param request La solicitud recibida.
+             * @return La confirmación generada, o `null` si no se soporta la solicitud.
+             * @throws UnsupportedFeatureException Si la solicitud no es compatible.
+             */
+            @Override
+            public Confirmation handleRequest(Request request) throws UnsupportedFeatureException {
+                logger.debug("Solicitud recibida: {}", request);
+                // Aquí puedes implementar la lógica para generar una respuesta según el tipo de solicitud.
+                return null;  // Devuelve una respuesta si es necesario
+            }
+
+            /**
+             * Completa asincrónicamente una solicitud pendiente.
+             *
+             * @param uniqueId     El identificador de la solicitud pendiente.
+             * @param confirmation La confirmación que completa la solicitud.
+             * @return `true` si se completa exitosamente; `false` de lo contrario.
+             */
+            @Override
+            public boolean asyncCompleteRequest(String uniqueId, Confirmation confirmation) {
+                // Aquí puedes incluir la lógica para completar una solicitud de manera asincrónica.
+                return false;
+            }
+
+            /**
+             * Gestiona errores que ocurren durante el procesamiento de solicitudes.
+             *
+             * @param uniqueId          El identificador único de la solicitud que provocó el error.
+             * @param errorCode         El código de error.
+             * @param errorDescription  La descripción del error.
+             * @param payload           Datos adicionales sobre el error.
+             */
+            @Override
+            public void handleError(String uniqueId, String errorCode, String errorDescription, Object payload) {
+                logger.error("Error en la solicitud {}: {} - {}", uniqueId, errorCode, errorDescription);
+            }
+
+            /**
+             * Maneja la apertura de la conexión de la sesión.
+             * Registra la sesión en el `sessionStore`.
+             */
+            @Override
+            public void handleConnectionOpened() {
+                sessionStore.put(session.getSessionId(), session);
+                logger.info("Conexión WebSocket abierta y sesión registrada: {}", session.getSessionId());
+            }
+
+            /**
+             * Maneja el cierre de la conexión de la sesión.
+             * Elimina la sesión del `sessionStore`.
+             */
+            @Override
+            public void handleConnectionClosed() {
+                logger.info("Conexión WebSocket cerrada para la sesión: {}", session.getSessionId());
+                sessionStore.remove(session.getSessionId());
+            }
+
+            /**
+             * Maneja errores internos de la sesión.
+             *
+             * @param ocppMessageId El identificador del mensaje OCPP que provocó el error.
+             * @param internalError La descripción del error interno.
+             * @param errorProcessingRequest La descripción del error al procesar la solicitud.
+             * @param request La solicitud que provocó el error.
+             */
+            @Override
+            public void onError(String ocppMessageId, String internalError, String errorProcessingRequest, Request request) {
+                logger.error("Error interno en la solicitud OCPP {}: {}", ocppMessageId, internalError);
+            }
+
+            /**
+             * Maneja la creación de una nueva sesión.
+             *
+             * @param sessionIndex  El identificador de la nueva sesión.
+             * @param information   Información adicional de la sesión.
+             */
+            @Override
+            public void newSession(UUID sessionIndex, SessionInformation information) {
+                logger.info("Nueva sesión iniciada: {}", sessionIndex);
+            }
+
+            /**
+             * Maneja la pérdida de una sesión.
+             *
+             * @param sessionIndex El identificador de la sesión perdida.
+             */
+            @Override
+            public void lostSession(UUID sessionIndex) {
+                logger.warn("Sesión perdida: {}", sessionIndex);
+                sessionStore.remove(sessionIndex);
+            }
+        };
+    }
+
+//8
+    /**
+     * Envía un mensaje de error al cliente utilizando la instancia de Session.
+     *
+     * @param webSocketSession La sesión WebSocket.
+     * @param messageId        El identificador del mensaje.
+     * @param errorMessage     El mensaje de error a enviar.
+     * @throws IOException Si ocurre un error al enviar el mensaje de error.
+     */
+    void sendError(Session session,WebSocketSession webSocketSession, String messageId, String errorMessage) throws IOException {
         logger.error("Error: {}", errorMessage);
+
+        // Formato del mensaje de error
         String errorResponse = objectMapper.writeValueAsString(new Object[]{4, messageId, errorMessage});
-        session.sendMessage(new TextMessage(errorResponse));
+
+        // Enviar mensaje de error a través de la sesión
+        session.sendTextMessage(errorResponse, webSocketSession);
         logger.debug("Mensaje de error enviado: {}", errorMessage);
     }
 
-
+//9
     /**
-     * Maneja las solicitudes de autorización y envía la confirmación al cliente.
+     * Procesa solicitudes de autorización, genera la confirmación y la envía al cliente.
      *
-     * @param session        la sesión WebSocket.
-     * @param requestPayload el contenido de la solicitud.
-     * @param messageId      el ID del mensaje.
-     * @throws IOException si ocurre un error al procesar o enviar la respuesta.
+     * @param session        La instancia de sesión de OCPP.
+     * @param webSocketSession La sesión WebSocket correspondiente a la instancia de sesión OCPP.
+     * @param requestPayload El contenido de la solicitud de autorización.
+     * @param messageId      El identificador del mensaje para rastrear la solicitud.
+     * @throws IOException Si ocurre un error al procesar o enviar la respuesta.
      */
-    void handleAuthorize(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
+    void handleAuthorize(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
         try {
             // Convierte el payload en una instancia de AuthorizeRequest
             AuthorizeRequest authorizeRequest = objectMapper.convertValue(requestPayload, AuthorizeRequest.class);
 
-            // Envía el mensaje a Amazon MQ
+            // Enviar mensaje de log a Amazon MQ
             jsonServer.sendMessageToMQ("Authorize request received for idTag: " + authorizeRequest.getIdTag());
 
-            // Configura los valores de la respuesta
+            // Configurar la respuesta de confirmación con la lógica de negocio
             IdTagInfo idTagInfo = new IdTagInfo();
-            idTagInfo.setStatus(AuthorizationStatus.Accepted); // Ajusta el estado según las reglas de negocio
-            idTagInfo.setExpiryDate(ZonedDateTime.now().plusDays(30)); // Establece una fecha de expiración si es necesario
+            idTagInfo.setStatus(AuthorizationStatus.Accepted);  // Estado aceptado por defecto
+            idTagInfo.setExpiryDate(ZonedDateTime.now().plusDays(30)); // Expira en 30 días
 
-            // Crea el objeto de confirmación e inicializa los campos
+            // Crear y configurar el objeto de confirmación
             AuthorizeConfirmation confirmation = new AuthorizeConfirmation();
-            confirmation.setIdTagInfo(idTagInfo); // Asigna el IdTagInfo a la confirmación
+            confirmation.setIdTagInfo(idTagInfo);
 
-            // Envía la respuesta directamente al cliente
-            sendResponse(session, messageId, "Authorize", confirmation);
-            logger.info("Authorize completado exitosamente para la sesión: {}", session.getId());
+            // Enviar la respuesta a través de la sesión OCPP
+            sendResponse(session, webSocketSession, messageId, "Authorize", confirmation);
+            logger.info("Authorize completado exitosamente para la sesión: {}", session.getSessionId());
 
         } catch (Exception e) {
-            // Cualquier otro error general en el procesamiento
-            logger.error("Error procesando Authorize para la sesión: {}", session.getId(), e);
-            sendError(session, messageId, "Internal server error");
+            // Manejo de cualquier error que ocurra al procesar la solicitud
+            logger.error("Error procesando Authorize para la sesión: {}", session.getSessionId(), e);
+            sendError(session,webSocketSession,messageId, "Internal server error");
         }
     }
 
-
+//10
     /**
-     * Maneja la solicitud de notificación de inicio y envía la confirmación al cliente.
+     * Maneja la solicitud de notificación de inicio y envía la confirmación al cliente a través de la instancia de Session.
      *
-     * @param session        La sesión WebSocket.
-     * @param requestPayload El contenido de la solicitud.
-     * @param messageId      El ID del mensaje.
-     * @throws IOException                   Si ocurre un error al procesar o enviar la respuesta.
-     * @throws NotConnectedException         Si la sesión no está disponible o conectada.
-     * @throws UnsupportedFeatureException   Si una característica no está soportada.
-     * @throws OccurenceConstraintException  Si ocurre una violación de restricciones.
+     * @param session           La instancia de Session para gestionar la lógica de OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param requestPayload    El contenido de la solicitud.
+     * @param messageId         El ID del mensaje.
+     * @throws IOException                    Si ocurre un error al procesar o enviar la respuesta.
+     * @throws IllegalArgumentException       Si el formato de la sesión es inválido.
      */
-    void handleBootNotification(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
+    void handleBootNotification(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
         try {
-            // Configuración de ObjectMapper
-            ObjectMapper mapper = new ObjectMapper();
-            JavaTimeModule module = new JavaTimeModule();
-            module.addDeserializer(ZonedDateTime.class, new CustomZonedDateTimeDeserializer());
-            mapper.registerModule(module);
-            mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-
-            // Deserialización del payload
-            BootNotificationRequest bootNotificationRequest = mapper.convertValue(requestPayload, BootNotificationRequest.class);
+            // Deserializar el payload a BootNotificationRequest
+            BootNotificationRequest bootNotificationRequest = objectMapper.convertValue(requestPayload, BootNotificationRequest.class);
 
             // Log para visualizar el contenido de la solicitud
-            String bootNotificationJson = mapper.writeValueAsString(bootNotificationRequest);
+            String bootNotificationJson = objectMapper.writeValueAsString(bootNotificationRequest);
             logger.info("BootNotificationRequest recibido: {}", bootNotificationJson);
 
             // Enviar el mensaje a Amazon MQ
             jsonServer.sendMessageToMQ("Boot Notification request received: " + bootNotificationJson);
 
-            // Configuración de respuesta
+            // Configuración de la respuesta
             BootNotificationConfirmation confirmation = new BootNotificationConfirmation();
             confirmation.setStatus(RegistrationStatus.Accepted);
             confirmation.setCurrentTime(ZonedDateTime.now(ZoneOffset.UTC));
             confirmation.setInterval(300);
 
             // Enviar la respuesta al cliente
-            sendResponse(session, messageId, "BootNotification", confirmation);
-            logger.info("BootNotification completado exitosamente para la sesión: {}", session.getId());
+            sendResponse(session, webSocketSession, messageId, "BootNotification", confirmation);
+            logger.info("BootNotification completado exitosamente para la sesión: {}", session.getSessionId());
 
         } catch (IllegalArgumentException e) {
-            logger.error("Error: ID de sesión no es válido como UUID. ID: {}", session.getId(), e);
-            sendError(session, messageId, "Invalid session ID format");
+            logger.error("Error: ID de sesión no es válido como UUID. ID: {}", session.getSessionId(), e);
+            sendError(session,webSocketSession, messageId, "Invalid session ID format");
         } catch (Exception e) {
-            logger.error("Error procesando BootNotification para la sesión: {}", session.getId(), e);
-            sendError(session, messageId, "Internal server error");
+            logger.error("Error procesando BootNotification para la sesión: {}", session.getSessionId(), e);
+            sendError(session,webSocketSession, messageId, "Internal server error");
         }
     }
 
-
+//11
     /**
-     * Maneja la solicitud de latido (heartbeat) y envía la confirmación al cliente.
+     * Maneja la solicitud de latido (heartbeat) y envía la confirmación al cliente utilizando la instancia de Session.
      *
-     * @param session        la sesión WebSocket.
-     * @param requestPayload el contenido de la solicitud.
-     * @param messageId      el ID del mensaje.
-     * @throws IOException si ocurre un error al procesar o enviar la respuesta.
+     * @param session           La instancia de Session que gestiona la lógica de OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param requestPayload    El contenido de la solicitud.
+     * @param messageId         El ID del mensaje.
+     * @throws IOException Si ocurre un error al procesar o enviar la respuesta.
      */
-    void handleHeartbeat(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
+    public void handleHeartbeat(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
         try {
+            // Deserialización del payload a HeartbeatRequest
             HeartbeatRequest heartbeatRequest = objectMapper.convertValue(requestPayload, HeartbeatRequest.class);
 
-            // Log detalle del payload convertido a JSON
+            // Log detallado del payload recibido
             String heartbeatJson = objectMapper.writeValueAsString(heartbeatRequest);
-            logger.info("Heartbeat recibido: {}", heartbeatJson);
+            logger.info("Heartbeat recibido en la sesión {}: {}", session.getSessionId(), heartbeatJson);
 
             // Enviar mensaje a Amazon MQ
             jsonServer.sendMessageToMQ("Heartbeat received");
-            logger.debug("Heartbeat enviado a Amazon MQ.");
+            logger.debug("Heartbeat enviado a Amazon MQ para la sesión: {}", session.getSessionId());
 
-            // Configurar respuesta de confirmación
+            // Configuración de la respuesta de confirmación
             HeartbeatConfirmation confirmation = new HeartbeatConfirmation();
             confirmation.setCurrentTime(ZonedDateTime.now(ZoneOffset.UTC));
 
             // Enviar respuesta al cliente
-            sendResponse(session, messageId, "Heartbeat", confirmation);
-            logger.info("Heartbeat completado exitosamente para la sesión: {}", session.getId());
+            sendResponse(session, webSocketSession, messageId, "Heartbeat", confirmation);
+            logger.info("Heartbeat completado exitosamente para la sesión: {}", session.getSessionId());
 
         } catch (IllegalArgumentException e) {
-            logger.error("Error: ID de sesión no es válido como UUID. ID: {}", session.getId(), e);
-            sendError(session, messageId, "Invalid session ID format");
+            logger.error("Error: ID de sesión no es válido como UUID. ID: {}", session.getSessionId(), e);
+            sendError(session,webSocketSession, messageId, "Invalid session ID format");
         } catch (Exception e) {
-            logger.error("Error procesando Heartbeat para la sesión: {}", session.getId(), e);
-            sendError(session, messageId, "Internal server error");
+            logger.error("Error procesando Heartbeat para la sesión: {}", session.getSessionId(), e);
+            sendError(session,webSocketSession, messageId, "Internal server error");
         }
     }
 
-
-
+//12
     /**
      * Maneja la solicitud de valores del medidor y envía la confirmación al cliente.
      *
-     * @param session        la sesión WebSocket.
-     * @param requestPayload el contenido de la solicitud.
-     * @param messageId      el ID del mensaje.
+     * @param session           La instancia de Session que gestiona la lógica de OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param requestPayload    El contenido de la solicitud.
+     * @param messageId         El ID del mensaje.
      * @throws IOException si ocurre un error al procesar o enviar la respuesta.
      */
-    void handleMeterValues(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
+    public void handleMeterValues(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
         try {
-            // Configuración del ObjectMapper con deserializador personalizado
-            ObjectMapper mapper = new ObjectMapper();
-            JavaTimeModule module = new JavaTimeModule();
-            module.addDeserializer(ZonedDateTime.class, new CustomZonedDateTimeDeserializer());
-            mapper.registerModule(module);
-            mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+            logger.debug("Procesando MeterValues con messageId: {}", messageId);
 
-            // Deserialización del payload
-            MeterValuesRequest meterValuesRequest = mapper.convertValue(requestPayload, MeterValuesRequest.class);
+            // Deserializar el payload a MeterValuesRequest
+            MeterValuesRequest meterValuesRequest = objectMapper.convertValue(requestPayload, MeterValuesRequest.class);
+            logger.debug("Payload deserializado: {}", meterValuesRequest);
 
-            // Serializar a JSON para enviar a Amazon MQ y visualizar en logs
-            String meterValuesJson = mapper.writeValueAsString(meterValuesRequest);
+            // Validar que el payload es correcto
+            if (!meterValuesRequest.validate()) {
+                throw new IllegalArgumentException("MeterValuesRequest inválido");
+            }
+
+            // Serializar a JSON para enviar a Amazon MQ y loggear
+            String meterValuesJson = objectMapper.writeValueAsString(meterValuesRequest);
             logger.info("Meter values recibidos: {}", meterValuesJson);
             jsonServer.sendMessageToMQ("Meter values recibidos: " + meterValuesJson);
 
-            // Crear y enviar la confirmación al cliente
+            // Crear y enviar la confirmación de MeterValues
             MeterValuesConfirmation confirmation = new MeterValuesConfirmation();
-            sendResponse(session, messageId, "MeterValues", confirmation);
-            logger.info("MeterValues completado exitosamente para la sesión: {}", session.getId());
+            sendResponse(session, webSocketSession, messageId, "MeterValues", confirmation);
+            logger.info("MeterValues completado exitosamente para la sesión: {}", session.getSessionId());
 
         } catch (IllegalArgumentException e) {
-            logger.error("Error: ID de sesión no es válido como UUID. ID: {}", session.getId(), e);
-            sendError(session, messageId, "Invalid session ID format");
+            logger.error("Error: ID de sesión no es válido o payload inválido. ID: {}, Error: {}", session.getSessionId(), e.getMessage());
+            sendError(session, webSocketSession, messageId, "Invalid session ID or payload");
         } catch (Exception e) {
-            logger.error("Error procesando MeterValues para la sesión: {}", session.getId(), e);
-            sendError(session, messageId, "Internal server error");
+            logger.error("Error procesando MeterValues para la sesión: {}, Error: {}", session.getSessionId(), e.getMessage(), e);
+            sendError(session, webSocketSession, messageId, "Internal server error");
         }
     }
 
-
-
-
+//13
     /**
      * Maneja la solicitud de inicio de transacción y envía la confirmación al cliente.
      *
-     * @param session        la sesión WebSocket.
-     * @param requestPayload el contenido de la solicitud.
-     * @param messageId      el ID del mensaje.
+     * @param session           La instancia de Session que gestiona la lógica de OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param requestPayload    El contenido de la solicitud.
+     * @param messageId         El ID del mensaje.
      * @throws IOException si ocurre un error al procesar o enviar la respuesta.
      */
-    void handleStartTransaction(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
+    void handleStartTransaction(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
         try {
             logger.debug("Procesando StartTransaction con messageId: {}", messageId);
 
-            // Configuración del ObjectMapper y deserialización
-            ObjectMapper mapper = new ObjectMapper();
-            JavaTimeModule module = new JavaTimeModule();
-            module.addDeserializer(ZonedDateTime.class, new CustomZonedDateTimeDeserializer());
-            mapper.registerModule(module);
-            mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
-
-            // Registro del payload recibido
-            logger.info("Mensaje recibido del cargador: {}", requestPayload);
-
-            // Deserialización del payload
-            StartTransactionRequest startTransactionRequest = mapper.readValue(requestPayload.toString(), StartTransactionRequest.class);
+            // Deserializar el payload a StartTransactionRequest
+            StartTransactionRequest startTransactionRequest = objectMapper.convertValue(requestPayload, StartTransactionRequest.class);
             logger.debug("Payload deserializado: {}", startTransactionRequest);
 
             // Enviar el mensaje a Amazon MQ
@@ -614,48 +849,42 @@ public class WebSocketHandler extends TextWebSocketHandler {
             IdTagInfo idTagInfo = new IdTagInfo();
             idTagInfo.setStatus(AuthorizationStatus.Accepted);
             idTagInfo.setExpiryDate(ZonedDateTime.now().plusDays(30));
+
             StartTransactionConfirmation confirmation = new StartTransactionConfirmation();
             confirmation.setIdTagInfo(idTagInfo);
             confirmation.setTransactionId(new Random().nextInt(99999));
 
             // Enviar la respuesta al cliente
-            sendResponse(session, messageId, "StartTransaction", confirmation);
-            logger.info("Respuesta enviada al cliente para el mensaje ID {}: {}", messageId, confirmation);
-            logger.info("StartTransaction completado exitosamente para la sesión: {}", session.getId());
+            sendResponse(session, webSocketSession, messageId, "StartTransaction", confirmation);
+            logger.info("Respuesta enviada para StartTransaction con ID de mensaje {}: {}", messageId, confirmation);
+            logger.info("StartTransaction completado exitosamente para la sesión: {}", session.getSessionId());
 
         } catch (IllegalArgumentException e) {
-            logger.error("Error: ID de sesión no es válido como UUID. ID: {}", session.getId(), e);
-            sendError(session, messageId, "Invalid session ID format");
+            logger.error("Error: ID de sesión no es válido como UUID. ID: {}", session.getSessionId(), e);
+            sendError(session,webSocketSession, messageId, "Invalid session ID format");
         } catch (Exception e) {
-            logger.error("Error procesando StartTransaction para la sesión: {}", session.getId(), e);
-            sendError(session, messageId, "Internal server error");
+            logger.error("Error procesando StartTransaction para la sesión: {}", session.getSessionId(), e);
+            sendError(session,webSocketSession, messageId, "Internal server error");
         }
     }
 
-
-
+//14
     /**
      * Maneja la solicitud de finalización de transacción y envía la confirmación al cliente.
      *
-     * @param session        la sesión WebSocket.
-     * @param requestPayload el contenido de la solicitud.
-     * @param messageId      el ID del mensaje.
+     * @param session           La instancia de Session que gestiona la lógica de OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param requestPayload    El contenido de la solicitud.
+     * @param messageId         El ID del mensaje.
      * @throws IOException si ocurre un error al procesar o enviar la respuesta.
      */
-    void handleStopTransaction(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
+    void handleStopTransaction(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
         try {
-            // Configuración del ObjectMapper con deserializador personalizado
-            ObjectMapper mapper = new ObjectMapper();
-            JavaTimeModule module = new JavaTimeModule();
-            module.addDeserializer(ZonedDateTime.class, new CustomZonedDateTimeDeserializer());
-            mapper.registerModule(module);
-            mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+            // Deserializar el payload a StopTransactionRequest
+            StopTransactionRequest stopTransactionRequest = objectMapper.convertValue(requestPayload, StopTransactionRequest.class);
 
-            // Deserializar el payload en una instancia de StopTransactionRequest
-            StopTransactionRequest stopTransactionRequest = mapper.convertValue(requestPayload, StopTransactionRequest.class);
-
-            // Serializar y loggear el contenido del request
-            String stopTransactionJson = mapper.writeValueAsString(stopTransactionRequest);
+            // Log de la solicitud para referencia
+            String stopTransactionJson = objectMapper.writeValueAsString(stopTransactionRequest);
             logger.info("StopTransaction request recibido: {}", stopTransactionJson);
 
             // Enviar el mensaje a Amazon MQ
@@ -666,92 +895,79 @@ public class WebSocketHandler extends TextWebSocketHandler {
             idTagInfo.setStatus(AuthorizationStatus.Accepted);
             idTagInfo.setExpiryDate(ZonedDateTime.now().plusDays(30));
 
-            // Crear y enviar la respuesta al cliente
+            // Crear la confirmación de StopTransaction y asignar los detalles
             StopTransactionConfirmation confirmation = new StopTransactionConfirmation();
             confirmation.setIdTagInfo(idTagInfo);
-            sendResponse(session, messageId, "StopTransaction", confirmation);
-            logger.info("StopTransaction completado exitosamente para la sesión: {}", session.getId());
+
+            // Enviar la respuesta al cliente
+            sendResponse(session, webSocketSession, messageId, "StopTransaction", confirmation);
+            logger.info("StopTransaction completado exitosamente para la sesión: {}", session.getSessionId());
 
         } catch (IllegalArgumentException e) {
-            logger.error("Error: ID de sesión no es válido como UUID. ID: {}", session.getId(), e);
-            sendError(session, messageId, "Invalid session ID format");
+            logger.error("Error: ID de sesión no es válido como UUID. ID: {}", session.getSessionId(), e);
+            sendError(session,webSocketSession, messageId, "Invalid session ID format");
         } catch (Exception e) {
-            logger.error("Error procesando StopTransaction para la sesión: {}", session.getId(), e);
-            sendError(session, messageId, "Internal server error");
+            logger.error("Error procesando StopTransaction para la sesión: {}", session.getSessionId(), e);
+            sendError(session,webSocketSession, messageId, "Internal server error");
         }
     }
 
-
+//15
     /**
-     * Maneja la solicitud de notificación de estado y envía la confirmación al cliente.
-     * <p>
-     * Este método convierte el `requestPayload` en un objeto `StatusNotificationRequest` y luego
-     * envía un mensaje a Amazon MQ con los detalles del estado. Después, envía una confirmación
-     * al cliente a través de la sesión WebSocket.
-     * </p>
+     * Maneja las notificaciones de estado (StatusNotification) enviadas desde un punto de carga.
      *
-     * @param session        la sesión WebSocket.
-     * @param requestPayload el contenido de la solicitud.
-     * @param messageId      el ID del mensaje.
-     * @throws IOException si ocurre un error al procesar o enviar la respuesta.
+     * Este método procesa la solicitud de notificación de estado, la deserializa, y luego
+     * envía el mensaje a un servidor de mensajes (Amazon MQ). Finalmente, envía una respuesta
+     * de confirmación al cliente.
+     *
+     * @param session La sesión OCPP asociada a la conexión WebSocket.
+     * @param webSocketSession La sesión WebSocket actual.
+     * @param requestPayload El payload de la solicitud de StatusNotification.
+     * @param messageId El ID único del mensaje OCPP.
+     * @throws IOException Si ocurre un error durante el envío del mensaje o el procesamiento de la sesión.
      */
-    void handleStatusNotification(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
+    void handleStatusNotification(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
         try {
-            logger.debug("Procesando StatusNotification con messageId: {}", messageId);
+            logger.debug("Procesando StatusNotification para la sesión {} con messageId: {}", session.getSessionId(), messageId);
 
-            // Configuración del ObjectMapper
-            ObjectMapper mapper = new ObjectMapper();
-            JavaTimeModule module = new JavaTimeModule();
-            module.addDeserializer(ZonedDateTime.class, new CustomZonedDateTimeDeserializer());
-            mapper.registerModule(module);
-            mapper.configure(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS, false);
+            // Deserialización del payload en StatusNotificationRequest
+            StatusNotificationRequest statusNotificationRequest = objectMapper.convertValue(requestPayload, StatusNotificationRequest.class);
+            logger.debug("Payload de StatusNotification deserializado: {}", statusNotificationRequest);
 
-            // Registro del payload recibido
-            logger.info("Mensaje recibido del cargador: {}", requestPayload.toString());
-
-            // Deserialización del payload
-            StatusNotificationRequest statusNotificationRequest = mapper.readValue(requestPayload.toString(), StatusNotificationRequest.class);
-            logger.debug("Payload deserializado: {}", statusNotificationRequest);
-
-            // Envío de mensaje a Amazon MQ
+            // Enviar el mensaje a Amazon MQ
             String messageToMQ = "Status Notification received: " + statusNotificationRequest;
             jsonServer.sendMessageToMQ(messageToMQ);
-            logger.info("Mensaje enviado a Amazon MQ: {}", messageToMQ);
+            logger.info("Mensaje de StatusNotification enviado a Amazon MQ: {}", messageToMQ);
 
-            // Creación de la confirmación
+            // Crear la confirmación de StatusNotification
             StatusNotificationConfirmation confirmation = new StatusNotificationConfirmation();
 
-            // Envío de la respuesta al cliente
-            sendResponse(session, messageId, "StatusNotification", confirmation);
-            logger.info("Respuesta enviada al cliente para el mensaje ID {}: {}", messageId, confirmation);
-            logger.info("Respuesta enviada para StatusNotification: {}", messageId);
-            logger.info("StatusNotification completado exitosamente para la sesión: {}", session.getId());
+            // Enviar la respuesta de confirmación al cliente
+            sendResponse(session, webSocketSession, messageId, "StatusNotification", confirmation);
+            logger.info("StatusNotification completado exitosamente para la sesión: {}", session.getSessionId());
 
         } catch (IllegalArgumentException e) {
-            // Manejo de error para ID de sesión inválido
-            logger.error("Error: ID de sesión no es válido como UUID. ID: {}", session.getId(), e);
-            sendError(session, messageId, "Invalid session ID format");
+            // Manejar errores de formato de ID
+            logger.error("Error: ID de sesión no válido en StatusNotification. ID: {}", session.getSessionId(), e);
+            sendError(session, webSocketSession, messageId, "Invalid session ID format");
         } catch (Exception e) {
-            // Manejo de otros errores
-            logger.error("Error procesando StatusNotification para la sesión: {}", session.getId(), e);
-            sendError(session, messageId, "Internal server error");
+            // Manejar cualquier otro error inesperado
+            logger.error("Error procesando StatusNotification para la sesión: {}", session.getSessionId(), e);
+            sendError(session, webSocketSession, messageId, "Internal server error");
         }
     }
 
-
-
-
-
-
+//16
     /**
      * Maneja la solicitud de transferencia de datos y envía la confirmación al cliente.
      *
-     * @param session        la sesión WebSocket.
-     * @param requestPayload el contenido de la solicitud.
-     * @param messageId      el ID del mensaje.
+     * @param session          La instancia de sesión OCPP.
+     * @param webSocketSession La sesión WebSocket asociada.
+     * @param requestPayload   El contenido de la solicitud.
+     * @param messageId        El ID del mensaje.
      * @throws IOException si ocurre un error al procesar o enviar la respuesta.
      */
-    void handleDataTransfer(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
+    void handleDataTransfer(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
         try {
             // Convertir el payload en una instancia de DataTransferRequest
             DataTransferRequest dataTransferRequest = objectMapper.convertValue(requestPayload, DataTransferRequest.class);
@@ -759,114 +975,195 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // Validar que los campos requeridos estén presentes
             if (dataTransferRequest.getVendorId() == null || dataTransferRequest.getMessageId() == null) {
                 logger.error("Campos requeridos faltantes en DataTransferRequest");
-                sendError(session, messageId, "Missing required fields in DataTransferRequest");
+                sendError(session,webSocketSession, messageId, "Missing required fields in DataTransferRequest");
                 return;
             }
 
             // Enviar el mensaje a Amazon MQ con los detalles de DataTransfer
             jsonServer.sendMessageToMQ("Data Transfer request received: " + dataTransferRequest.toString());
 
-            // Determinar el status de respuesta basado en lógica de negocio (aquí lo configuramos manualmente)
-            DataTransferStatus dataTransferStatus = DataTransferStatus.Accepted;
-            if ("Vendor123".equals(dataTransferRequest.getVendorId())) {
-                dataTransferStatus = DataTransferStatus.Accepted;
-            } else {
-                dataTransferStatus = DataTransferStatus.Rejected;
-            }
+            // Determinar el estado de la respuesta en función de la lógica de negocio
+            DataTransferStatus dataTransferStatus = "Vendor123".equals(dataTransferRequest.getVendorId())
+                    ? DataTransferStatus.Accepted
+                    : DataTransferStatus.Rejected;
 
             // Crear el objeto de confirmación con los campos configurados
             DataTransferConfirmation confirmation = new DataTransferConfirmation();
             confirmation.setStatus(dataTransferStatus);
             confirmation.setData("Datos procesados correctamente para: " + dataTransferRequest.getMessageId());
 
-            // Enviar la respuesta directamente al cliente
-            sendResponse(session, messageId, "DataTransfer", confirmation);
-            logger.info("DataTransfer completado exitosamente para la sesión: {}", session.getId());
+            // Enviar la respuesta al cliente
+            sendResponse(session, webSocketSession, messageId, "DataTransfer", confirmation);
+            logger.info("DataTransfer completado exitosamente para la sesión: {}", session.getSessionId());
 
         } catch (IllegalArgumentException e) {
-            // Manejo de error si el ID de la sesión no es válido
-            logger.error("Error: ID de sesión no es válido como UUID. ID: {}", session.getId(), e);
-            sendError(session, messageId, "Invalid session ID format");
+            logger.error("Error: ID de sesión no es válido como UUID. ID: {}", session.getSessionId(), e);
+            sendError(session,webSocketSession, messageId, "Invalid session ID format");
         } catch (Exception e) {
-            // Cualquier otro error general en el procesamiento
-            logger.error("Error procesando DataTransfer para la sesión: {}", session.getId(), e);
-            sendError(session, messageId, "Internal server error");
+            logger.error("Error procesando DataTransfer para la sesión: {}", session.getSessionId(), e);
+            sendError(session,webSocketSession, messageId, "Internal server error");
         }
     }
 
+//17
     /**
-     * Procesa la solicitud de cambio de configuración, proporcionando detalles específicos.
+     * Maneja la solicitud de disponibilidad del conector y envía una confirmación al cliente.
      *
-     * <p>Ejemplo de llamada:
-     * <pre>
-     *   {
-     *      "messageId": "12345",
-     *      "action": "ChangeConfiguration",
-     *      "payload": {
-     *          "key": "MaxChargingProfile",
-     *          "value": "10"
-     *      }
-     *   }
-     * </pre>
-     *
-     * @param session      la sesión WebSocket activa.
-     * @param requestPayload el payload de la solicitud ChangeConfiguration.
-     * @param messageId    el ID del mensaje que se está procesando.
-     * @throws IOException en caso de error al enviar la respuesta.
+     * @param session          La instancia de sesión OCPP.
+     * @param webSocketSession La sesión WebSocket asociada.
+     * @param requestPayload   El contenido de la solicitud.
+     * @param messageId        El ID del mensaje.
+     * @throws IOException si ocurre un error al procesar o enviar la respuesta.
      */
-    void handleChangeConfiguration(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
-        // Lógica de procesamiento específica para ChangeConfiguration
-        sendResponse(session, messageId, "ChangeConfiguration", new ChangeConfigurationConfirmation());
-        logger.info("ChangeConfiguration completado exitosamente para la sesión: {}", session.getId());
+    void handleAvailable(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        // Conversión del payload
+        StatusNotificationRequest statusRequest = objectMapper.convertValue(requestPayload, StatusNotificationRequest.class);
+        statusRequest.setStatus(ChargePointStatus.Available);
+
+        // Enviar mensaje de disponibilidad a Amazon MQ
+        jsonServer.sendMessageToMQ("Connector is now Available");
+
+        // Crear la confirmación de estado y enviar la respuesta
+        StatusNotificationConfirmation confirmation = new StatusNotificationConfirmation();
+        sendResponse(session, webSocketSession, messageId, "StatusNotification", confirmation);
+
+        logger.info("Conector configurado como Disponible para la sesión: {}", session.getSessionId());
     }
 
+//18
     /**
-     * Maneja la solicitud de ClearCache, con el objetivo de limpiar la caché del punto de carga.
+     * Maneja la solicitud de preparación del conector y envía una confirmación al cliente.
      *
-     * <p>Ejemplo de llamada:
-     * <pre>
-     *   {
-     *      "messageId": "67890",
-     *      "action": "ClearCache"
-     *   }
-     * </pre>
-     *
-     * @param session      la sesión WebSocket activa.
-     * @param requestPayload el payload de la solicitud ClearCache.
-     * @param messageId    el ID del mensaje que se está procesando.
-     * @throws IOException en caso de error al enviar la respuesta.
+     * @param session          La instancia de sesión OCPP.
+     * @param webSocketSession La sesión WebSocket asociada.
+     * @param requestPayload   El contenido de la solicitud.
+     * @param messageId        El ID del mensaje.
+     * @throws IOException si ocurre un error al procesar o enviar la respuesta.
      */
-    void handleClearCache(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
-        // Lógica de procesamiento específica para ClearCache
-        sendResponse(session, messageId, "ClearCache", new ClearCacheConfirmation());
-        logger.info("ClearCache completado exitosamente para la sesión: {}", session.getId());
+    void handlePreparing(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        // Conversión del payload
+        StatusNotificationRequest statusRequest = objectMapper.convertValue(requestPayload, StatusNotificationRequest.class);
+        statusRequest.setStatus(ChargePointStatus.Preparing);
+
+        // Enviar mensaje de preparación a Amazon MQ
+        jsonServer.sendMessageToMQ("Connector is Preparing to start a session");
+
+        // Crear la confirmación de estado y enviar la respuesta
+        StatusNotificationConfirmation confirmation = new StatusNotificationConfirmation();
+        sendResponse(session, webSocketSession, messageId, "StatusNotification", confirmation);
+
+        logger.info("Conector en estado de Preparación para la sesión: {}", session.getSessionId());
     }
 
+//19
     /**
-     * Procesa la solicitud RemoteStopTransaction, deteniendo una transacción de carga remota.
+     * Maneja la solicitud de inicio de carga y envía la confirmación al cliente.
      *
-     * <p>Ejemplo de llamada:
-     * <pre>
-     *   {
-     *      "messageId": "56789",
-     *      "action": "RemoteStopTransaction",
-     *      "payload": {
-     *          "transactionId": 789
-     *      }
-     *   }
-     * </pre>
-     *
-     * @param session      la sesión WebSocket activa.
-     * @param requestPayload el payload de la solicitud RemoteStopTransaction.
-     * @param messageId    el ID del mensaje que se está procesando.
-     * @throws IOException en caso de error al enviar la respuesta.
+     * @param ocppSession      La instancia de sesión OCPP.
+     * @param webSocketSession La sesión WebSocket asociada.
+     * @param requestPayload   El contenido de la solicitud.
+     * @param messageId        El ID del mensaje.
+     * @throws IOException si ocurre un error al procesar o enviar la respuesta.
      */
-    void handleRemoteStopTransaction(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
-        // Lógica de procesamiento específica para RemoteStopTransaction
-        sendResponse(session, messageId, "RemoteStopTransaction", new RemoteStopTransactionConfirmation());
-        logger.info("RemoteStopTransaction completado exitosamente para la sesión: {}", session.getId());
+    void handleCharging(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        // Conversión del payload
+        StatusNotificationRequest statusRequest = objectMapper.convertValue(requestPayload, StatusNotificationRequest.class);
+        statusRequest.setStatus(ChargePointStatus.Charging);
+
+        // Enviar mensaje de carga a Amazon MQ
+        jsonServer.sendMessageToMQ("Connector is now Charging");
+
+        // Crear la confirmación de estado y enviar la respuesta
+        StatusNotificationConfirmation confirmation = new StatusNotificationConfirmation();
+        sendResponse(ocppSession, webSocketSession, messageId, "StatusNotification", confirmation);
+
+        logger.info("Sesión de carga iniciada para la sesión OCPP: {}", ocppSession.getSessionId());
     }
 
+//20
+    /**
+     * Maneja las solicitudes entrantes de TriggerMessage del lado del servidor utilizando ServerRemoteTriggerProfile.
+     *
+     * @param ocppSession      La instancia de la sesión OCPP.
+     * @param webSocketSession La sesión WebSocket asociada.
+     * @param requestPayload   El contenido de la solicitud.
+     * @param messageId        El ID único del mensaje.
+     * @throws IOException si ocurre un error durante el procesamiento.
+     */
+    void handleServerTriggerMessage(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // Convierte el payload en una instancia de TriggerMessageRequest
+            TriggerMessageRequest triggerMessageRequest = objectMapper.convertValue(requestPayload, TriggerMessageRequest.class);
+
+            // Maneja la solicitud con el ServerRemoteTriggerProfile
+            Confirmation confirmation = serverRemoteTriggerProfile.handleRequest(ocppSession.getSessionId(), triggerMessageRequest);
+
+            // Envía la respuesta al cliente
+            sendResponse(ocppSession, webSocketSession, messageId, "ServerTriggerMessage", confirmation);
+            logger.info("Server-triggered message handled successfully for session OCPP: {}", ocppSession.getSessionId());
+        } catch (Exception e) {
+            logger.error("Error processing ServerTriggerMessage", e);
+            sendError(ocppSession,webSocketSession, messageId, "Error in ServerTriggerMessage: " + e.getMessage());
+        }
+    }
+
+//21
+    /**
+     * Maneja la solicitud ChangeAvailability y delega la gestión al DefaultClientCoreEventHandler.
+     *
+     * @param ocppSession      La instancia de la sesión OCPP.
+     * @param webSocketSession La sesión WebSocket asociada.
+     * @param requestPayload   El contenido de la solicitud.
+     * @param messageId        El ID del mensaje.
+     * @throws IOException si ocurre un error al procesar o enviar la respuesta.
+     */
+    void handleChangeAvailability(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // Convierte el payload en una instancia de ChangeAvailabilityRequest
+            ChangeAvailabilityRequest changeAvailabilityRequest = objectMapper.convertValue(requestPayload, ChangeAvailabilityRequest.class);
+
+            // Delegación de la solicitud al manejador de eventos del cliente
+            Confirmation confirmation = clientCoreEventHandler.handleChangeAvailabilityRequest(changeAvailabilityRequest);
+
+            // Envía la respuesta al cliente
+            sendResponse(ocppSession, webSocketSession, messageId, "ChangeAvailability", confirmation);
+            logger.info("ChangeAvailability manejado exitosamente para la sesión: {}", ocppSession.getSessionId());
+        } catch (Exception e) {
+            // Maneja cualquier error que ocurra durante el procesamiento
+            logger.error("Error processing ChangeAvailability", e);
+            sendError(ocppSession,webSocketSession, messageId, "Error in ChangeAvailability: " + e.getMessage());
+        }
+    }
+
+//22
+    /**
+     * Maneja la solicitud GetConfiguration y delega el procesamiento al DefaultClientCoreEventHandler.
+     *
+     * @param ocppSession      La instancia de la sesión OCPP.
+     * @param webSocketSession La sesión WebSocket asociada.
+     * @param requestPayload   El contenido de la solicitud.
+     * @param messageId        El ID del mensaje.
+     * @throws IOException si ocurre un error al procesar o enviar la respuesta.
+     */
+    void handleGetConfiguration(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // Convierte el payload a una instancia de GetConfigurationRequest
+            GetConfigurationRequest getConfigurationRequest = objectMapper.convertValue(requestPayload, GetConfigurationRequest.class);
+
+            // Llama al manejador de eventos del cliente para procesar la solicitud
+            Confirmation confirmation = clientCoreEventHandler.handleGetConfigurationRequest(getConfigurationRequest);
+
+            // Envía la respuesta al cliente
+            sendResponse(ocppSession, webSocketSession, messageId, "GetConfiguration", confirmation);
+            logger.info("GetConfiguration manejado exitosamente para la sesión: {}", ocppSession.getSessionId());
+        } catch (Exception e) {
+            // Maneja cualquier excepción ocurrida durante el procesamiento
+            logger.error("Error processing GetConfiguration", e);
+            sendError(ocppSession,webSocketSession, messageId, "Error in GetConfiguration: " + e.getMessage());
+        }
+    }
+
+//23
     /**
      * Procesa la solicitud RemoteStartTransaction, comenzando una transacción de carga remota.
      *
@@ -882,89 +1179,217 @@ public class WebSocketHandler extends TextWebSocketHandler {
      *   }
      * </pre>
      *
-     * @param session      la sesión WebSocket activa.
-     * @param requestPayload el payload de la solicitud RemoteStartTransaction.
-     * @param messageId    el ID del mensaje que se está procesando.
+     * @param ocppSession     La instancia de la sesión OCPP.
+     * @param webSocketSession La sesión WebSocket activa.
+     * @param requestPayload  El contenido de la solicitud RemoteStartTransaction.
+     * @param messageId       El ID del mensaje que se está procesando.
      * @throws IOException en caso de error al enviar la respuesta.
      */
-    void handleRemoteStartTransaction(WebSocketSession session, Object requestPayload, String messageId) throws IOException {
-        // Lógica de procesamiento específica para RemoteStartTransaction
-        sendResponse(session, messageId, "RemoteStartTransaction", new RemoteStartTransactionConfirmation());
-        logger.info("RemoteStartTransaction completado exitosamente para la sesión: {}", session.getId());
-    }
-
-
     /**
-     * Enviar respuestas en un formato uniforme para todos los manejadores.
+     * Maneja la solicitud de inicio de transacción remota y envía la confirmación al cliente.
      *
-     * @param session      la sesión WebSocket.
-     * @param messageId    el ID del mensaje.
-     * @param action       la acción específica procesada.
-     * @param confirmation la confirmación a enviar al cliente.
-     * @throws IOException si ocurre un error al enviar el mensaje.
+     * @param session           La instancia de Session que gestiona la lógica de OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param requestPayload    El contenido de la solicitud.
+     * @param messageId         El ID del mensaje.
+     * @throws IOException si ocurre un error al procesar o enviar la respuesta.
      */
-    private void sendResponse(WebSocketSession session, String messageId, String action, Object confirmation) throws IOException {
-        String response = objectMapper.writeValueAsString(new Object[]{3, messageId, confirmation});
-        session.sendMessage(new TextMessage(response));
-        logger.info("Respuesta enviada para {}: {}", action, messageId);
+    public void handleRemoteStartTransaction(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            logger.debug("Procesando RemoteStartTransaction con messageId: {}", messageId);
+
+            // Validar que el payload no sea nulo
+            if (requestPayload == null) {
+                throw new IllegalArgumentException("El payload de la solicitud no puede ser nulo.");
+            }
+
+            // Deserializa el payload en un objeto RemoteStartTransactionRequest
+            RemoteStartTransactionRequest remoteStartRequest = objectMapper.convertValue(requestPayload, RemoteStartTransactionRequest.class);
+            logger.debug("Payload deserializado: {}", remoteStartRequest);
+
+            // Verificar si la sesión es válida
+            if (session == null) {
+                throw new IllegalStateException("Sesión OCPP no encontrada para el ID proporcionado.");
+            }
+
+            // Enviar el mensaje de RemoteStartTransaction a Amazon MQ para logging
+            jsonServer.sendMessageToMQ("RemoteStartTransaction request received for idTag: " + remoteStartRequest.getIdTag());
+            logger.info("Mensaje enviado a Amazon MQ para RemoteStartTransaction con idTag: {}", remoteStartRequest.getIdTag());
+
+            // Enviar la solicitud de inicio de transacción remota
+            session.sendRequest("RemoteStartTransaction", remoteStartRequest, messageId);
+
+            // Configurar la respuesta
+            IdTagInfo idTagInfo = new IdTagInfo();
+            idTagInfo.setStatus(AuthorizationStatus.Accepted);
+            idTagInfo.setExpiryDate(ZonedDateTime.now().plusDays(30));
+
+            // Crear y enviar la confirmación de RemoteStartTransaction
+            RemoteStartTransactionConfirmation confirmation = new RemoteStartTransactionConfirmation();
+            confirmation.setStatus(RemoteStartStopStatus.Accepted);  // Establecer el estado como aceptado
+
+            sendResponse(session, webSocketSession, messageId, "RemoteStartTransaction", confirmation);
+
+            logger.info("Respuesta enviada para StartRemotoTransaction con ID de mensaje {}: {}", messageId, confirmation);
+            logger.info("StartRemotoTransaction completado exitosamente para la sesión: {}", session.getSessionId());
+
+
+            // Log de éxito
+            logger.info("RemoteStartTransaction manejado exitosamente para la sesión: {} con estado: {}", session.getSessionId(), confirmation.getStatus());
+
+        } catch (IllegalArgumentException e) {
+            // Manejo de errores con argumentos inválidos
+            logger.error("Error en los argumentos de RemoteStartTransaction: {}", e.getMessage());
+            sendError(session, webSocketSession, messageId, "Error en RemoteStartTransaction: " + e.getMessage());
+        } catch (Exception e) {
+            // Manejo de errores generales
+            logger.error("Error procesando RemoteStartTransaction para la sesión: {}", session != null ? session.getSessionId() : "Sesión no disponible", e);
+            sendError(session, webSocketSession, messageId, "Error en RemoteStartTransaction: " + e.getMessage());
+        }
     }
 
+
+
+//24
     /**
-     * Crea una instancia de eventos de sesión para manejar el ciclo de vida de la sesión.
+     * Procesa la solicitud RemoteStopTransaction, deteniendo una transacción de carga remota.
      *
-     * @param sessionUUID el UUID de la sesión.
-     * @return los eventos de sesión configurados.
+     * <p>Ejemplo de llamada:
+     * <pre>
+     *   {
+     *      "messageId": "56789",
+     *      "action": "RemoteStopTransaction",
+     *      "payload": {
+     *          "transactionId": 789
+     *      }
+     *   }
+     * </pre>
+     *
+     * @param ocppSession      La instancia de la sesión OCPP.
+     * @param webSocketSession La sesión WebSocket activa.
+     * @param requestPayload   El contenido de la solicitud RemoteStopTransaction.
+     * @param messageId        El ID del mensaje que se está procesando.
+     * @throws IOException en caso de error al enviar la respuesta.
      */
-    private SessionEvents createSessionEvents(UUID sessionUUID) {
-        return new SessionEvents() {
-            @Override
-            public void handleConfirmation(String uniqueId, Confirmation confirmation) {
-                logger.info("Confirmación recibida: {}", confirmation);
-            }
+    void handleRemoteStopTransaction(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // Deserializa el payload en un objeto RemoteStopTransactionRequest
+            RemoteStopTransactionRequest remoteStopTransactionRequest = objectMapper.convertValue(requestPayload, RemoteStopTransactionRequest.class);
 
-            @Override
-            public Confirmation handleRequest(Request request) throws UnsupportedFeatureException {
-                logger.debug("Solicitud recibida: {}", request);
-                return null;
-            }
+            // Procesa la lógica específica para detener la transacción remota aquí, si es necesario
 
+            // Crea la confirmación de la respuesta
+            RemoteStopTransactionConfirmation confirmation = new RemoteStopTransactionConfirmation();
 
-            @Override
-            public boolean asyncCompleteRequest(String uniqueId, Confirmation confirmation) {
-                return false;
-            }
+            // Envía la respuesta de confirmación al cliente
+            sendResponse(ocppSession, webSocketSession, messageId, "RemoteStopTransaction", confirmation);
+            logger.info("RemoteStopTransaction completado exitosamente para la sesión: {}", ocppSession.getSessionId());
 
-            @Override
-            public void handleError(String uniqueId, String errorCode, String errorDescription, Object payload) {
-                logger.error("Error en la solicitud: {} - {}", errorCode, errorDescription);
-            }
-
-            @Override
-            public void handleConnectionOpened() {
-                logger.info("Conexión WebSocket abierta: {}", sessionUUID);
-            }
-
-            @Override
-            public void handleConnectionClosed() {
-                logger.info("Conexión WebSocket cerrada: {}", sessionUUID);
-                sessionStore.remove(sessionUUID);
-            }
-
-            @Override
-            public void onError(String ocppMessageId, String internalError, String errorProcessingRequest, Request request) {
-                logger.error("Error interno en la solicitud OCPP: {}", ocppMessageId);
-            }
-
-            @Override
-            public void newSession(UUID sessionIndex, SessionInformation information) {
-                logger.info("Nueva sesión iniciada: {}", sessionIndex);
-            }
-
-            @Override
-            public void lostSession(UUID sessionIndex) {
-                logger.warn("Sesión perdida: {}", sessionIndex);
-                sessionStore.remove(sessionIndex);
-            }
-        };
+        } catch (Exception e) {
+            // Manejo de errores en el proceso y envío de mensaje de error
+            logger.error("Error processing RemoteStopTransaction", e);
+            sendError(ocppSession,webSocketSession, messageId, "Error in RemoteStopTransaction: " + e.getMessage());
+        }
     }
+//25
+    /**
+     * Maneja la solicitud de ClearCache, con el objetivo de limpiar la caché del punto de carga.
+     *
+     * <p>Ejemplo de llamada:
+     * <pre>
+     *   {
+     *      "messageId": "67890",
+     *      "action": "ClearCache"
+     *   }
+     * </pre>
+     *
+     * @param ocppSession      La instancia de la sesión OCPP.
+     * @param webSocketSession La sesión WebSocket activa.
+     * @param requestPayload   El contenido de la solicitud ClearCache.
+     * @param messageId        El ID del mensaje que se está procesando.
+     * @throws IOException en caso de error al enviar la respuesta.
+     */
+    void handleClearCache(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // Deserializa el requestPayload en un objeto ClearCacheRequest
+            ClearCacheRequest clearCacheRequest = objectMapper.convertValue(requestPayload, ClearCacheRequest.class);
+
+            // Procesamiento de la solicitud ClearCache (se puede aplicar lógica adicional si es necesario)
+            jsonServer.sendMessageToMQ("ClearCache request received: " + clearCacheRequest);
+
+            // Crear y enviar la confirmación al cliente
+            ClearCacheConfirmation confirmation = new ClearCacheConfirmation();
+            sendResponse(ocppSession, webSocketSession, messageId, "ClearCache", confirmation);
+            logger.info("ClearCache completado exitosamente para la sesión: {}", ocppSession.getSessionId());
+
+        } catch (Exception e) {
+            // Manejo de excepciones y envío de mensaje de error
+            logger.error("Error processing ClearCache", e);
+            sendError(ocppSession,webSocketSession, messageId, "Error in ClearCache: " + e.getMessage());
+        }
+    }
+
+//26
+    /**
+     * Procesa la solicitud ChangeConfiguration y envía la confirmación correspondiente al cliente.
+     *
+     * <p>Ejemplo de llamada:
+     * <pre>
+     *   {
+     *      "messageId": "12345",
+     *      "action": "ChangeConfiguration",
+     *      "payload": {
+     *          "key": "MaxChargingProfile",
+     *          "value": "10"
+     *      }
+     *   }
+     * </pre>
+     *
+     * @param ocppSession      La instancia de la sesión OCPP.
+     * @param webSocketSession La sesión WebSocket activa.
+     * @param requestPayload   El contenido de la solicitud ChangeConfiguration.
+     * @param messageId        El ID del mensaje que se está procesando.
+     * @throws IOException en caso de error al enviar la respuesta.
+     */
+    void handleChangeConfiguration(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // Conversión del payload a ChangeConfigurationRequest
+            ChangeConfigurationRequest changeConfigurationRequest = objectMapper.convertValue(requestPayload, ChangeConfigurationRequest.class);
+
+            // Lógica de procesamiento específica para ChangeConfiguration
+            // (Aquí se realizarían las validaciones o acciones necesarias con changeConfigurationRequest)
+
+            ChangeConfigurationConfirmation confirmation = new ChangeConfigurationConfirmation();
+
+            // Envía la respuesta de confirmación al cliente
+            sendResponse(ocppSession, webSocketSession, messageId, "ChangeConfiguration", confirmation);
+            logger.info("ChangeConfiguration completado exitosamente para la sesión: {}", ocppSession.getSessionId());
+
+        } catch (Exception e) {
+            // Manejo de excepciones y envío de mensaje de error
+            logger.error("Error processing ChangeConfiguration", e);
+            sendError(ocppSession,webSocketSession, messageId, "Error in ChangeConfiguration: " + e.getMessage());
+        }
+    }
+
+    public Session getSessionById(String sessionId) {
+        try {
+            UUID uuid = UUID.fromString(sessionId);
+            return sessionStore.get(uuid);
+        } catch (IllegalArgumentException e) {
+            logger.error("Formato de UUID inválido para el ID de sesión: {}", sessionId, e);
+            return null;
+        }
+    }
+
+    public WebSocketSession getWebSocketSessionById(String sessionId) {
+        try {
+            UUID uuid = UUID.fromString(sessionId);
+            return webSocketSessionStorage.get(uuid);
+        } catch (IllegalArgumentException e) {
+            logger.error("Formato de UUID inválido para el ID de sesión: {}", sessionId, e);
+            return null;
+        }
+    }
+
 }

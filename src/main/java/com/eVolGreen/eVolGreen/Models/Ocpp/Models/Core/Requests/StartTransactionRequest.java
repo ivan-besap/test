@@ -1,9 +1,14 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests;
 
+import com.eVolGreen.eVolGreen.Configurations.MQ.CustomZonedDateTimeDeserializer;
+import com.eVolGreen.eVolGreen.Configurations.MQ.CustomZonedDateTimeSerializer;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.RequestWithId;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.ModelUtil;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
 import javax.validation.constraints.Size;
@@ -65,10 +70,11 @@ public class StartTransactionRequest extends RequestWithId {
     @JsonProperty("meterStart")
     private Integer meterStart;
 
-    @NotNull(message = "timestamp es obligatorio")
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", timezone = "UTC")
+    @JsonDeserialize(using = CustomZonedDateTimeDeserializer.class)
+    @JsonSerialize(using = CustomZonedDateTimeSerializer.class)
     @JsonProperty("timestamp")
     private ZonedDateTime timestamp;
+
 
     @Positive(message = "reservationId debe ser un número positivo")
     @JsonProperty("reservationId")

@@ -205,7 +205,7 @@ public class AmazonMQCommunicator extends Communicator {
     }
 
     @Override
-    protected Message parse(Object json) {
+    public Message parse(Object json) {
         return null; // Implementación pendiente
     }
 

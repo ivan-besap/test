@@ -68,7 +68,6 @@ public class StatusNotificationRequest extends RequestWithId {
     @JsonProperty("status")
     private ChargePointStatus status;
 
-    @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX")
     @JsonProperty("timestamp")
     private ZonedDateTime timestamp;
 

@@ -218,7 +218,7 @@ public class MQCommunicator extends Communicator {
     }
 
     @Override
-    protected Message parse(Object message) {
+    public Message parse(Object message) {
         return null;
     }
 

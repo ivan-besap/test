@@ -1,7 +1,13 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils;
 
+import com.eVolGreen.eVolGreen.Configurations.MQ.CustomZonedDateTimeDeserializer;
+import com.eVolGreen.eVolGreen.Configurations.MQ.CustomZonedDateTimeSerializer;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Validatable;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
 import javax.xml.bind.annotation.XmlElement;
@@ -39,8 +45,9 @@ import java.util.Objects;
 @XmlType(propOrder = {"timestamp", "sampledValue"})
 public class MeterValue implements Validatable {
 
-    @NotNull(message = "timestamp es obligatorio")
-    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss.SSSXXX", shape = JsonFormat.Shape.STRING)
+    @JsonDeserialize(using = CustomZonedDateTimeDeserializer.class)
+    @JsonSerialize(using = CustomZonedDateTimeSerializer.class)
+    @JsonProperty("timestamp")
     private ZonedDateTime timestamp;
 
     @NotNull(message = "sampledValue es obligatorio")

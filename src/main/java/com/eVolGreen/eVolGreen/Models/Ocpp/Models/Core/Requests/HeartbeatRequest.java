@@ -1,6 +1,8 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.RequestWithId;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.MoreObjects;
+
 import javax.xml.bind.annotation.XmlRootElement;
 import java.util.Objects;
 import java.util.UUID;
@@ -78,6 +80,6 @@ public class HeartbeatRequest extends RequestWithId {
 
     @Override
     public String toString() {
-        return "HeartbeatRequest{isValid=" + validate() + "}";
+        return MoreObjects.toStringHelper(this).add("isValid", validate()).toString();
     }
 }

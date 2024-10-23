@@ -4,18 +4,15 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.mq.AmazonMQ;
 import com.amazonaws.services.mq.AmazonMQClientBuilder;
 import com.eVolGreen.eVolGreen.Configurations.MQ.AmazonMQCommunicator;
-import com.eVolGreen.eVolGreen.Configurations.MQ.AmazonMQServerEvents;
 import com.eVolGreen.eVolGreen.Configurations.MQ.AwsConfig;
 import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.AuthenticationException;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Message;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.SessionInformation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.*;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WebSocketReceiver;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WebSocketReceiverEvents;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ClientCoreEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ClientRemoteTriggerEventHandler;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.DefaultClientCoreEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ServerCoreEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.ClientCoreProfile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.ClientRemoteTriggerProfile;
@@ -26,17 +23,19 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.JSONServer;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.JSONConfiguration;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Confirmations.TriggerMessageConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Request.TriggerMessageRequest;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonParser;
+import com.google.gson.JsonSyntaxException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.socket.server.HandshakeHandler;
-import org.springframework.web.socket.server.support.DefaultHandshakeHandler;
 
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+
+import static com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.JSONCommunicator.*;
 
 /**
  * AppConfig configura y gestiona los beans necesarios para la aplicación eVolGreen OCPP.
@@ -56,6 +55,8 @@ public class AppConfig {
 
     @Value("${spring.activemq.password}")
     private String brokerPassword;
+
+    private Communicator communicator;
 
     /**
      * Almacenamiento compartido de sesiones para manejar las conexiones activas.
@@ -117,8 +118,10 @@ public class AppConfig {
     @Bean
     public WebSocketHandler webSocketHandler(ISessionFactory sessionFactory, Communicator communicator,
                                              JSONServer jsonServer, ServerCoreProfile coreProfile,
-                                             AmazonMQCommunicator amazonMQCommunicator) {
-        return new WebSocketHandler(sessionFactory, communicator, jsonServer, coreProfile, amazonMQCommunicator);
+                                             AmazonMQCommunicator amazonMQCommunicator, Queue queue,
+                                             PromiseFulfiller fulfiller, FeatureRepository featureRepository) {
+
+        return new WebSocketHandler(sessionFactory, communicator, jsonServer, coreProfile, amazonMQCommunicator,queue,fulfiller,featureRepository);
     }
 
     /**
@@ -183,52 +186,7 @@ public class AppConfig {
                 .build();
     }
 
-    /**
-     * Configura y devuelve una instancia de {@link Communicator} para la comunicación OCPP.
-     *
-     * @return una instancia configurada de {@link Communicator}.
-     */
-    @Bean
-    public Communicator communicator() {
-        return new Communicator() {
-            @Override
-            public <T> T unpackPayload(Object payload, Class<T> type) {
-                return null;
-            }
-
-            @Override
-            public Object packPayload(Object payload) {
-                return null;
-            }
-
-            @Override
-            protected Object makeCallResult(String uniqueId, String action, Object payload) {
-                return null;
-            }
-
-            @Override
-            protected Object makeCall(String uniqueId, String action, Object payload) {
-                return null;
-            }
-
-            @Override
-            protected Object makeCallError(String uniqueId, String action, String errorCode, String errorDescription) {
-                return null;
-            }
-
-            @Override
-            public boolean isClosed() {
-                return false;
-            }
-
-            @Override
-            protected Message parse(Object message) {
-                return null;
-            }
-        };
-    }
-
-    /**
+     /**
      * Configura y devuelve una instancia de {@link JSONConfiguration} para la configuración de JSON en OCPP.
      *
      * @return una instancia configurada de {@link JSONConfiguration}.
@@ -314,4 +272,158 @@ public class AppConfig {
             }
         };
     }
+
+    @Bean
+    public Communicator communicator() {
+        return new Communicator() {
+
+            @Override
+            public <T> T unpackPayload(Object payload, Class<T> type) throws Exception {
+                // Deserialización del payload usando la lógica de OCPP y Gson
+                return gson.fromJson(payload.toString(), type);
+            }
+
+            @Override
+            public Object packPayload(Object payload) {
+                // Serialización del payload usando la lógica de OCPP y Gson
+                return gson.toJson(payload);
+            }
+
+            @Override
+            protected Object makeCallResult(String uniqueId, String action, Object payload) {
+                // Genera el CallResult OCPP con el formato adecuado
+                return String.format(CALLRESULT_FORMAT, uniqueId, packPayload(payload));
+            }
+
+            @Override
+            protected Object makeCall(String uniqueId, String action, Object payload) {
+                // Genera el Call OCPP con el formato adecuado
+                return String.format(CALL_FORMAT, uniqueId, action, packPayload(payload));
+            }
+
+            @Override
+            protected Object makeCallError(String uniqueId, String action, String errorCode, String errorDescription) {
+                // Genera el CallError OCPP con el formato adecuado
+                return String.format(CALLERROR_FORMAT, uniqueId, errorCode, errorDescription, "{}");
+            }
+
+            @Override
+            public boolean isClosed() {
+                // Aquí llamamos a la lógica que verifica si la conexión está cerrada
+                return radio.isClosed();
+            }
+
+            @Override
+            public Message parse(Object message) {
+                Message parsedMessage;
+                JsonArray array;
+                String messageId = "-1";
+
+                try {
+                    array = JsonParser.parseString(message.toString()).getAsJsonArray();
+                    messageId = array.get(INDEX_UNIQUEID).getAsString();
+
+                    int messageType = array.get(INDEX_MESSAGEID).getAsInt();
+                    switch (messageType) {
+                        case TYPENUMBER_CALL:
+                            parsedMessage = new CallMessage();
+                            parsedMessage.setAction(array.get(INDEX_CALL_ACTION).getAsString());
+                            parsedMessage.setPayload(array.get(INDEX_CALL_PAYLOAD).toString());
+                            break;
+                        case TYPENUMBER_CALLRESULT:
+                            parsedMessage = new CallResultMessage();
+                            parsedMessage.setPayload(array.get(INDEX_CALLRESULT_PAYLOAD).toString());
+                            break;
+                        case TYPENUMBER_CALLERROR:
+                            parsedMessage = new CallErrorMessage();
+                            ((CallErrorMessage) parsedMessage).setErrorCode(array.get(INDEX_CALLERROR_ERRORCODE).getAsString());
+                            ((CallErrorMessage) parsedMessage).setErrorDescription(array.get(INDEX_CALLERROR_DESCRIPTION).getAsString());
+                            ((CallErrorMessage) parsedMessage).setRawPayload(array.get(INDEX_CALLERROR_PAYLOAD).toString());
+                            break;
+                        default:
+                            logger.error("Tipo de mensaje desconocido: {}. Contenido del mensaje: {}", messageType, message);
+                            sendCallError(messageId, null, "MessageTypeNotSupported", "Tipo de mensaje no soportado: " + messageType);
+                            return null;
+                    }
+                } catch (JsonSyntaxException e) {
+                    logger.error("Error de sintaxis JSON al analizar el mensaje: {}. Error: {}", message, e.getMessage());
+                    sendCallError(messageId, null, "RpcFrameworkError", "Error de sintaxis JSON: " + e.getMessage());
+                    return null;
+                } catch (Exception e) {
+                    logger.error("Error inesperado al analizar el mensaje: {}. Error: {}", message, e.getMessage());
+                    sendCallError(messageId, null, "RpcFrameworkError", "Error inesperado: " + e.getMessage());
+                    return null;
+                }
+
+                parsedMessage.setId(messageId);
+                return parsedMessage;
+            }
+        };
+    }
+
+
+    @Bean
+    public WebSocketReceiverEvents webSocketReceiverEvents(Communicator communicator) {
+        return new WebSocketReceiverEvents() {
+            private boolean closed = false;
+
+            @Override
+            public boolean isClosed() {
+                return closed;
+            }
+
+            @Override
+            public void close() {
+                if (!closed) {
+                    closed = true;
+                    System.out.println("Disconnected from the server");
+                    handleDisconnection();
+                }
+            }
+
+            @Override
+            public void relay(String message) {
+                System.out.println("Received message: " + message);
+                try {
+                    // Usa la instancia de Communicator inyectada para procesar el mensaje
+                    Message parsedMessage = communicator.parse(message);
+                    if (parsedMessage != null) {
+                        handleIncomingMessage(parsedMessage);
+                    } else {
+                        System.err.println("Failed to parse message: " + message);
+                    }
+                } catch (Exception e) {
+                    System.err.println("Error processing message: " + e.getMessage());
+                    e.printStackTrace();
+                }
+            }
+
+            private void handleDisconnection() {
+                System.out.println("Cleaning up resources after disconnection");
+            }
+
+            private void handleIncomingMessage(Message message) {
+                if (message instanceof CallMessage) {
+                    System.out.println("Handling CallMessage: " + message);
+                } else if (message instanceof CallResultMessage) {
+                    System.out.println("Handling CallResultMessage: " + message);
+                } else if (message instanceof CallErrorMessage) {
+                    System.out.println("Handling CallErrorMessage: " + message);
+                } else {
+                    System.out.println("Unknown message type: " + message);
+                }
+            }
+        };
+    }
+
+
+
+    @Bean
+    public Radio radio(WebSocketReceiverEvents receiverEvents) {
+        return new WebSocketReceiver(receiverEvents);
+    }
+
+
+
+
 }

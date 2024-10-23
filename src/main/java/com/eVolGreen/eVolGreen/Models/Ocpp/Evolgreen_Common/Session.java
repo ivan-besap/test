@@ -9,7 +9,10 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.MoreObjects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.web.socket.TextMessage;
+import org.springframework.web.socket.WebSocketSession;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -24,13 +27,15 @@ import static com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.ProtocolVersi
 public class Session implements ISession {
 
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
-    private final UUID sessionId = UUID.randomUUID();
+    private UUID sessionId;
     private final Communicator communicator;
     private final Queue queue;
     private final RequestDispatcher dispatcher;
     private final IFeatureRepository featureRepository;
     private SessionEvents events;
     private final Map<String, AbstractMap.SimpleImmutableEntry<String, CompletableFuture<Confirmation>>> pendingPromises = new ConcurrentHashMap<>();
+    private WebSocketSession webSocketSession;
+    private String webSocketSessionId; // Atributo que almacena el ID de WebSocketSession
 
     /**
      * Constructor que maneja la inyección de dependencias necesarias.
@@ -40,7 +45,8 @@ public class Session implements ISession {
      * @param fulfiller     objeto para gestionar promesas.
      * @param featureRepository el repositorio de características soportadas.
      */
-    public Session(Communicator communicator, Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository) {
+    public Session(UUID sessionId,Communicator communicator, Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository) {
+        this.sessionId = sessionId;
         this.communicator = communicator;
         this.queue = queue;
         this.dispatcher = new RequestDispatcher(fulfiller);
@@ -139,6 +145,26 @@ public class Session implements ISession {
         this.events = eventHandler;
         dispatcher.setEventHandler(eventHandler);
         communicator.accept(new CommunicatorEventHandler());
+    }
+
+    public void sendTextMessage(String message, WebSocketSession webSocketSession) throws IOException {
+        if (webSocketSession.isOpen()) {
+            webSocketSession.sendMessage(new TextMessage(message));
+        } else {
+            throw new IOException("La sesión WebSocket no está abierta.");
+        }
+    }
+
+    public WebSocketSession getWebSocketSession() {
+        return webSocketSession;
+    }
+
+    public String getWebSocketSessionId() {
+        return webSocketSessionId;
+    }
+
+    public void setSessionId(UUID sessionId) {
+        this.sessionId = sessionId;
     }
 
     private class CommunicatorEventHandler implements CommunicatorEvents {

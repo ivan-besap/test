@@ -45,22 +45,22 @@ public class JSONCommunicator extends Communicator {
     private static final Logger logger = LoggerFactory.getLogger(JSONCommunicator.class);
 
     // Constantes para la estructura de los mensajes JSON
-    private static final int INDEX_MESSAGEID = 0;
-    private static final int TYPENUMBER_CALL = 2;
-    private static final int INDEX_CALL_ACTION = 2;
-    private static final int INDEX_CALL_PAYLOAD = 3;
-    private static final int TYPENUMBER_CALLRESULT = 3;
-    private static final int INDEX_CALLRESULT_PAYLOAD = 2;
-    private static final int TYPENUMBER_CALLERROR = 4;
-    private static final int INDEX_CALLERROR_ERRORCODE = 2;
-    private static final int INDEX_CALLERROR_DESCRIPTION = 3;
-    private static final int INDEX_CALLERROR_PAYLOAD = 4;
-    private static final int INDEX_UNIQUEID = 1;
+    public static final int INDEX_MESSAGEID = 0;
+    public static final int TYPENUMBER_CALL = 2;
+    public static final int INDEX_CALL_ACTION = 2;
+    public static final int INDEX_CALL_PAYLOAD = 3;
+    public static final int TYPENUMBER_CALLRESULT = 3;
+    public static final int INDEX_CALLRESULT_PAYLOAD = 2;
+    public static final int TYPENUMBER_CALLERROR = 4;
+    public static final int INDEX_CALLERROR_ERRORCODE = 2;
+    public static final int INDEX_CALLERROR_DESCRIPTION = 3;
+    public static final int INDEX_CALLERROR_PAYLOAD = 4;
+    public static final int INDEX_UNIQUEID = 1;
 
     // Formatos de mensajes
-    private static final String CALL_FORMAT = "[2,\"%s\",\"%s\",%s]";
-    private static final String CALLRESULT_FORMAT = "[3,\"%s\",%s]";
-    private static final String CALLERROR_FORMAT = "[4,\"%s\",\"%s\",\"%s\",%s]";
+    public static final String CALL_FORMAT = "[2,\"%s\",\"%s\",%s]";
+    public static final String CALLRESULT_FORMAT = "[3,\"%s\",%s]";
+    public static final String CALLERROR_FORMAT = "[4,\"%s\",\"%s\",\"%s\",%s]";
 
     // Formatos de fecha
     private static final String DATE_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'";
@@ -137,7 +137,7 @@ public class JSONCommunicator extends Communicator {
 
 
     // Gson con un custom serializer para ZonedDateTime y estrategia de exclusión para campos anotados con @Exclude
-    private static final Gson gson;
+    public static final Gson gson;
 
     static {
         GsonBuilder builder = new GsonBuilder();
@@ -279,7 +279,7 @@ public class JSONCommunicator extends Communicator {
      * </pre>
      */
     @Override
-    protected Message parse(Object json) {
+    public Message parse(Object json) {
         Message message;
         JsonArray array;
         String messageId = "-1";

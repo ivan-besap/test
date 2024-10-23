@@ -6,12 +6,15 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common;
 //import com.eVolGreen.eVolGreen.Promise.SimplePromiseFulfiller;
 //import com.eVolGreen.eVolGreen.Queue.Queue;
 
+import java.util.UUID;
+
 /**
  * Fábrica de sesiones para crear nuevas instancias de sesiones en eVolGreen.
  */
 public class SessionFactory implements ISessionFactory {
 
     private final IFeatureRepository featureRepository;
+    private UUID sessionId;
 
     /**
      * Constructor que recibe el repositorio de características.
@@ -34,6 +37,12 @@ public class SessionFactory implements ISessionFactory {
         AsyncPromiseFulfillerDecorator promiseFulfiller = new AsyncPromiseFulfillerDecorator(new SimplePromiseFulfiller());
 
         // Crea y devuelve una nueva sesión usando el comunicador, una cola, el decorador de promesas y el repositorio de características.
-        return new Session(communicator, new Queue(), promiseFulfiller, this.featureRepository);
+        return new Session(sessionId,communicator, new Queue(), promiseFulfiller, this.featureRepository);
+    }
+
+    @Override
+    public ISession createSession(UUID sessionId, Communicator communicator, Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository) {
+        AsyncPromiseFulfillerDecorator promiseFulfiller = new AsyncPromiseFulfillerDecorator(new SimplePromiseFulfiller());
+        return new Session(sessionId, communicator, queue, promiseFulfiller, featureRepository);
     }
 }

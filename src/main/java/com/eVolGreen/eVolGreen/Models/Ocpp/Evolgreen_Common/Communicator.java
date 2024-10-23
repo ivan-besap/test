@@ -19,7 +19,7 @@ import javax.xml.soap.SOAPMessage;
  * un formato específico.
  */
 public abstract class Communicator {
-    private static final Logger logger = LoggerFactory.getLogger(Communicator.class);
+    protected static final Logger logger = LoggerFactory.getLogger(Communicator.class);
 
     private RetryRunner retryRunner;
     protected Radio radio;
@@ -91,7 +91,7 @@ public abstract class Communicator {
      * @param message el mensaje en bruto
      * @return CallMessage o {@link CallResultMessage}
      */
-    protected abstract Message parse(Object message);
+    public abstract Message parse(Object message);
 
     /**
      * Maneja las inyecciones requeridas.

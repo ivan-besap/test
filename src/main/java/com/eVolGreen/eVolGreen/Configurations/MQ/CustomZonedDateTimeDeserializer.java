@@ -1,37 +1,37 @@
 package com.eVolGreen.eVolGreen.Configurations.MQ;
 
 import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationContext;
 import com.fasterxml.jackson.databind.JsonDeserializer;
+
 import java.io.IOException;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
-import java.time.format.DateTimeParseException;
 
 public class CustomZonedDateTimeDeserializer extends JsonDeserializer<ZonedDateTime> {
-    @Override
-    public ZonedDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException {
-        String date = p.getText();
-        DateTimeFormatter formatter = new DateTimeFormatterBuilder()
-                .append(DateTimeFormatter.ISO_OFFSET_DATE_TIME)
-                .optionalStart()
-                .appendFraction(java.time.temporal.ChronoField.NANO_OF_SECOND, 0, 9, true)
-                .optionalEnd()
-                .optionalStart()
-                .appendLiteral('[')
-                .appendZoneId()
-                .appendLiteral(']')
-                .optionalEnd()
-                .toFormatter();
 
+    @Override
+    public ZonedDateTime deserialize(JsonParser p, DeserializationContext ctxt) throws IOException, JsonProcessingException {
+        String dateString = p.getText().trim();
         try {
-            return ZonedDateTime.parse(date, formatter);
-        } catch (DateTimeParseException e) {
-            throw new IOException("Error deserializando ZonedDateTime con nanosegundos", e);
+            // Si contiene una región, extraemos la parte antes de los corchetes y la zona
+            if (dateString.contains("[")) {
+                String datePart = dateString.substring(0, dateString.indexOf('['));
+                String zonePart = dateString.substring(dateString.indexOf('[') + 1, dateString.indexOf(']'));
+
+                DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSSSSSXXX");
+                ZonedDateTime zonedDateTime = ZonedDateTime.parse(datePart, formatter);
+
+                // Aplicamos la zona extraída
+                return zonedDateTime.withZoneSameInstant(ZoneId.of(zonePart));
+            } else {
+                // Parsear sin región si no está presente
+                return ZonedDateTime.parse(dateString, DateTimeFormatter.ISO_ZONED_DATE_TIME);
+            }
+        } catch (Exception e) {
+            throw new RuntimeException("Failed to parse ZonedDateTime: " + dateString, e);
         }
     }
 }
-
-
-

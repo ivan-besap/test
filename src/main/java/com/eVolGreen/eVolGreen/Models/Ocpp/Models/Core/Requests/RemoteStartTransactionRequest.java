@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests;
 
+
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.RequestWithId;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingProfile;
 import com.fasterxml.jackson.annotation.JsonProperty;

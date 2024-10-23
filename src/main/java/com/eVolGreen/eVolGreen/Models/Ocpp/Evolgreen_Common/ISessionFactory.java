@@ -1,5 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common;
 
+import java.util.UUID;
+
 /**
  * Interfaz que define un método para la creación de sesiones.
  * <p>
@@ -21,4 +23,8 @@ public interface ISessionFactory {
      * @return una instancia de {@link ISession} configurada con el comunicador proporcionado.
      */
     ISession createSession(Communicator communicator);
+
+    ISession createSession(UUID sessionId, Communicator communicator, Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository);
+
+
 }
