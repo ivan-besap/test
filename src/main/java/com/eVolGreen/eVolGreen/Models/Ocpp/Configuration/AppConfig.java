@@ -136,8 +136,8 @@ public class AppConfig {
     @Bean
     public JSONServer jsonServer(ServerCoreProfile coreProfile, AmazonMQCommunicator amazonMQCommunicator,
                                  JSONConfiguration jsonConfiguration, Map<UUID, ISession> sessionStore) {
-        String brokerId = amazonMQCommunicator.getBrokerId();
-        return new JSONServer(coreProfile, jsonConfiguration, amazonMQCommunicator, brokerId, sessionStore);
+//        String brokerId = amazonMQCommunicator.getBrokerId();
+        return new JSONServer(coreProfile, jsonConfiguration, sessionStore);
     }
 
     /**
@@ -169,22 +169,22 @@ public class AppConfig {
      * @param serverEvents Manejador de eventos de servidor.
      * @return una instancia configurada de {@link AmazonMQCommunicator}.
      */
-    @Bean
-    public AmazonMQCommunicator amazonMQCommunicator(AwsConfig awsConfig, ServerEvents serverEvents) {
-        return new AmazonMQCommunicator(awsConfig, brokerUrl, brokerUser, brokerPassword, serverEvents);
-    }
+//    @Bean
+//    public AmazonMQCommunicator amazonMQCommunicator(AwsConfig awsConfig, ServerEvents serverEvents) {
+//        return new AmazonMQCommunicator(awsConfig, brokerUrl, brokerUser, brokerPassword, serverEvents);
+//    }
 
     /**
      * Configura y devuelve una instancia de {@link AmazonMQ}, que es el cliente de Amazon MQ.
      *
      * @return una instancia configurada de {@link AmazonMQ}.
      */
-    @Bean
-    public AmazonMQ amazonMQClient() {
-        return AmazonMQClientBuilder.standard()
-                .withRegion(Regions.US_EAST_2)
-                .build();
-    }
+//    @Bean
+//    public AmazonMQ amazonMQClient() {
+//        return AmazonMQClientBuilder.standard()
+//                .withRegion(Regions.US_EAST_2)
+//                .build();
+//    }
 
      /**
      * Configura y devuelve una instancia de {@link JSONConfiguration} para la configuración de JSON en OCPP.

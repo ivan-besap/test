@@ -42,8 +42,8 @@ public class JSONServer implements IServerAPI {
     private final WebSocketListener listener;
     private final Server server;
     private final FeatureRepository featureRepository;
-    private final AmazonMQCommunicator amazonMQCommunicator;
-    private final String brokerId;
+//    private final AmazonMQCommunicator amazonMQCommunicator;
+//    private final String brokerId;
     private final Map<UUID, ISession> sessionStore;
 
     /**
@@ -51,17 +51,17 @@ public class JSONServer implements IServerAPI {
      *
      * @param coreProfile          Perfil principal del servidor que define los mensajes y operaciones soportadas.
      * @param configuration        Configuración de red para el servidor JSON.
-     * @param amazonMQCommunicator Comunicador de Amazon MQ para entornos distribuidos.
-     * @param brokerId             Identificador del broker de Amazon MQ.
+//     * @param amazonMQCommunicator Comunicador de Amazon MQ para entornos distribuidos.
+//     * @param brokerId             Identificador del broker de Amazon MQ.
      * @param sessionStore         Almacenamiento compartido de sesiones para gestionar conexiones activas.
      */
     public JSONServer(ServerCoreProfile coreProfile, JSONConfiguration configuration,
-                      AmazonMQCommunicator amazonMQCommunicator, String brokerId,
+//                      AmazonMQCommunicator amazonMQCommunicator, String brokerId,
                       Map<UUID, ISession> sessionStore) {
 
         this.featureRepository = new FeatureRepository();
-        this.amazonMQCommunicator = amazonMQCommunicator;
-        this.brokerId = brokerId;
+//        this.amazonMQCommunicator = amazonMQCommunicator;
+//        this.brokerId = brokerId;
         this.sessionStore = sessionStore;
 
         this.draftOcppOnly = initializeDraft();
@@ -129,7 +129,7 @@ public class JSONServer implements IServerAPI {
      * @param messageContent El contenido del mensaje a enviar.
      */
     public void sendMessageToMQ(String messageContent) {
-        amazonMQCommunicator.sendMessageToQueue(brokerId, messageContent);
+//        amazonMQCommunicator.sendMessageToQueue(brokerId, messageContent);
         logger.info("Mensaje enviado a Amazon MQ: {}", messageContent);
     }
 

@@ -44,25 +44,25 @@ public class AmazonMQServerEvents implements ServerCoreEventHandler {
     @Override
     public void newSession(UUID sessionIndex, SessionInformation information) {
         logger.info("Nueva sesión iniciada: {}", sessionIndex);
-        amazonMQCommunicator.sendSessionEvent("Nueva sesión iniciada: " + sessionIndex);
+//        amazonMQCommunicator.sendSessionEvent("Nueva sesión iniciada: " + sessionIndex);
     }
 
     @Override
     public void lostSession(UUID sessionIndex) {
         logger.warn("Sesión perdida: {}", sessionIndex);
-        amazonMQCommunicator.sendSessionEvent("Sesión perdida: " + sessionIndex);
+//        amazonMQCommunicator.sendSessionEvent("Sesión perdida: " + sessionIndex);
     }
 
     @Override
     public void handleError(String uniqueId, String errorCode, String errorDescription, Object payload) {
         logger.error("Error en la solicitud: {} - {}", errorCode, errorDescription);
-        amazonMQCommunicator.sendErrorEvent("Error en la solicitud: " + errorCode + " - " + errorDescription);
+//        amazonMQCommunicator.sendErrorEvent("Error en la solicitud: " + errorCode + " - " + errorDescription);
     }
 
     @Override
     public void handleConfirmation(String uniqueId, Confirmation confirmation) {
         logger.info("Confirmación recibida: {}", confirmation);
-        amazonMQCommunicator.sendConfirmationEvent("Confirmación recibida: " + confirmation.toString());
+//        amazonMQCommunicator.sendConfirmationEvent("Confirmación recibida: " + confirmation.toString());
     }
 
     @Override

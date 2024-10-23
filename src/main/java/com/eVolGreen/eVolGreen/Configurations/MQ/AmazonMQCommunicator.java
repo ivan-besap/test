@@ -43,11 +43,11 @@ import java.util.concurrent.Executors;
 public class AmazonMQCommunicator extends Communicator {
 
     private static final Logger logger = LoggerFactory.getLogger(AmazonMQCommunicator.class);
-    private final ServerEvents serverEvents;
-    private final AmazonMQ amazonMQClient;
-    private final String brokerUrl;
-    private final String brokerUser;
-    private final String brokerPassword;
+//    private final ServerEvents serverEvents;
+//    private final AmazonMQ amazonMQClient;
+//    private final String brokerUrl;
+//    private final String brokerUser;
+//    private final String brokerPassword;
     private String brokerId;
     private final Map<UUID, WebSocketSession> activeSessions = new ConcurrentHashMap<>();
     private final ExecutorService executorService = Executors.newFixedThreadPool(10);
@@ -61,42 +61,42 @@ public class AmazonMQCommunicator extends Communicator {
      * @param brokerPassword contraseña para la conexión al broker.
      * @param serverEvents   instancia de ServerEvents para manejar eventos de sesión.
      */
-    public AmazonMQCommunicator(AwsConfig awsConfig, String brokerUrl, String brokerUser,
-                                String brokerPassword, ServerEvents serverEvents) {
-        this.amazonMQClient = AmazonMQClientBuilder.standard()
-                .withRegion("us-east-2")
-                .withCredentials(new AWSStaticCredentialsProvider(
-                        new BasicAWSCredentials(awsConfig.getAccessKey(), awsConfig.getSecretKey())))
-                .build();
-        this.brokerUrl = brokerUrl;
-        this.brokerUser = brokerUser;
-        this.brokerPassword = brokerPassword;
-        this.serverEvents = serverEvents;
-    }
+//    public AmazonMQCommunicator(AwsConfig awsConfig, String brokerUrl, String brokerUser,
+//                                String brokerPassword, ServerEvents serverEvents) {
+//        this.amazonMQClient = AmazonMQClientBuilder.standard()
+//                .withRegion("us-east-2")
+////                .withCredentials(new AWSStaticCredentialsProvider(
+////                        new BasicAWSCredentials(awsConfig.getAccessKey(), awsConfig.getSecretKey())))
+//                .build();
+//        this.brokerUrl = brokerUrl;
+//        this.brokerUser = brokerUser;
+//        this.brokerPassword = brokerPassword;
+//        this.serverEvents = serverEvents;
+//    }
 
     /**
      * Recupera el ID del broker de Amazon MQ.
      *
      * @return El ID del primer broker disponible, o {@code null} si no se encuentra ninguno.
      */
-    private String retrieveBrokerId() {
-        ListBrokersRequest request = new ListBrokersRequest();
-        try {
-            ListBrokersResult result = amazonMQClient.listBrokers(request);
-            if (!result.getBrokerSummaries().isEmpty()) {
-                BrokerSummary brokerSummary = result.getBrokerSummaries().get(0);
-                String brokerId = brokerSummary.getBrokerId();
-                logger.info("Broker ID recuperado: {}", brokerId);
-                return brokerId;
-            } else {
-                logger.warn("No se encontraron brokers en la cuenta de Amazon MQ.");
-                return null;
-            }
-        } catch (Exception e) {
-            logger.error("Error al recuperar el brokerId: ", e);
-            return null;
-        }
-    }
+//    private String retrieveBrokerId() {
+//        ListBrokersRequest request = new ListBrokersRequest();
+//        try {
+//            ListBrokersResult result = amazonMQClient.listBrokers(request);
+//            if (!result.getBrokerSummaries().isEmpty()) {
+//                BrokerSummary brokerSummary = result.getBrokerSummaries().get(0);
+//                String brokerId = brokerSummary.getBrokerId();
+//                logger.info("Broker ID recuperado: {}", brokerId);
+//                return brokerId;
+//            } else {
+//                logger.warn("No se encontraron brokers en la cuenta de Amazon MQ.");
+//                return null;
+//            }
+//        } catch (Exception e) {
+//            logger.error("Error al recuperar el brokerId: ", e);
+//            return null;
+//        }
+//    }
 
     /**
      * Envía un mensaje a una cola específica en Amazon MQ.
@@ -105,46 +105,46 @@ public class AmazonMQCommunicator extends Communicator {
      * @param queueName El nombre de la cola de destino.
      * @return {@code true} si el mensaje fue enviado con éxito, {@code false} de lo contrario.
      */
-    public boolean sendMessageToQueue(String message, String queueName) {
-        if (brokerId == null && !initializeBrokerId()) {
-            logger.error("No se pudo enviar el mensaje: no se encontró brokerId.");
-            return false;
-        }
-        try {
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerUrl);
-            connectionFactory.setUserName(brokerUser);
-            connectionFactory.setPassword(brokerPassword);
-
-            Connection connection = connectionFactory.createConnection();
-            connection.start();
-            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-            Destination destination = session.createQueue(queueName);
-
-            MessageProducer producer = session.createProducer(destination);
-            TextMessage textMessage = session.createTextMessage(message);
-            producer.send(textMessage);
-
-            producer.close();
-            session.close();
-            connection.close();
-
-            logger.info("Mensaje enviado exitosamente a la cola: {}", queueName);
-            return true;
-        } catch (Exception e) {
-            logger.error("Error al enviar mensaje a la cola {}: ", queueName, e);
-            return false;
-        }
-    }
+//    public boolean sendMessageToQueue(String message, String queueName) {
+//        if (brokerId == null && !initializeBrokerId()) {
+//            logger.error("No se pudo enviar el mensaje: no se encontró brokerId.");
+//            return false;
+//        }
+//        try {
+//            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerUrl);
+//            connectionFactory.setUserName(brokerUser);
+//            connectionFactory.setPassword(brokerPassword);
+//
+//            Connection connection = connectionFactory.createConnection();
+//            connection.start();
+//            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
+//            Destination destination = session.createQueue(queueName);
+//
+//            MessageProducer producer = session.createProducer(destination);
+//            TextMessage textMessage = session.createTextMessage(message);
+//            producer.send(textMessage);
+//
+//            producer.close();
+//            session.close();
+//            connection.close();
+//
+//            logger.info("Mensaje enviado exitosamente a la cola: {}", queueName);
+//            return true;
+//        } catch (Exception e) {
+//            logger.error("Error al enviar mensaje a la cola {}: ", queueName, e);
+//            return false;
+//        }
+//    }
 
     /**
      * Inicializa brokerId si aún no está configurado.
      *
      * @return {@code true} si brokerId se inicializó con éxito, {@code false} de lo contrario.
      */
-    private boolean initializeBrokerId() {
-        this.brokerId = retrieveBrokerId();
-        return this.brokerId != null;
-    }
+//    private boolean initializeBrokerId() {
+//        this.brokerId = retrieveBrokerId();
+//        return this.brokerId != null;
+//    }
 
     /**
      * Cierra la conexión con el cliente de Amazon MQ.
@@ -158,12 +158,12 @@ public class AmazonMQCommunicator extends Communicator {
      *
      * @return El {@code brokerId} actual, o {@code null} si no se pudo recuperar.
      */
-    public String getBrokerId() {
-        if (this.brokerId == null) {
-            this.brokerId = retrieveBrokerId();
-        }
-        return this.brokerId;
-    }
+//    public String getBrokerId() {
+//        if (this.brokerId == null) {
+//            this.brokerId = retrieveBrokerId();
+//        }
+//        return this.brokerId;
+//    }
 
     @Override
     public void connect(String uri, CommunicatorEvents events) {
@@ -246,45 +246,45 @@ public class AmazonMQCommunicator extends Communicator {
     }
 
     // Delegación de eventos de sesión a Amazon MQ
-    public void newSession(UUID sessionIndex, SessionInformation information) {
-        logger.info("Nueva sesión iniciada: {}", sessionIndex);
-        sendSessionEvent("Nueva sesión iniciada: " + sessionIndex);
-        serverEvents.newSession(sessionIndex, information);
-    }
-
-    public void lostSession(UUID sessionIndex) {
-        logger.warn("Sesión perdida: {}", sessionIndex);
-        sendSessionEvent("Sesión perdida: " + sessionIndex);
-        serverEvents.lostSession(sessionIndex);
-    }
-
-    public void handleError(String uniqueId, String errorCode, String errorDescription, Object payload) {
-        logger.error("Error en la solicitud: {} - {}", errorCode, errorDescription);
-        sendErrorEvent("Error en la solicitud: " + errorCode + " - " + errorDescription);
-        serverEvents.handleError(uniqueId, errorCode, errorDescription, payload);
-    }
-
-    public void handleConfirmation(String uniqueId, Confirmation confirmation) {
-        logger.info("Confirmación recibida: {}", confirmation);
-        sendConfirmationEvent("Confirmación recibida: " + confirmation.toString());
-        serverEvents.handleConfirmation(uniqueId, confirmation);
-    }
-
-    public Confirmation handleRequest(Request request) throws UnsupportedFeatureException {
-        logger.debug("Solicitud recibida: {}", request);
-        return serverEvents.handleRequest(request);
-    }
-
-    // Métodos de ayuda para enviar eventos a las colas de Amazon MQ
-    void sendSessionEvent(String message) {
-        sendMessageToQueue(message, "sessionEventsQueue");
-    }
-
-    void sendErrorEvent(String message) {
-        sendMessageToQueue(message, "errorEventsQueue");
-    }
-
-    void sendConfirmationEvent(String message) {
-        sendMessageToQueue(message, "confirmationEventsQueue");
-    }
+//    public void newSession(UUID sessionIndex, SessionInformation information) {
+//        logger.info("Nueva sesión iniciada: {}", sessionIndex);
+//        sendSessionEvent("Nueva sesión iniciada: " + sessionIndex);
+//        serverEvents.newSession(sessionIndex, information);
+//    }
+//
+//    public void lostSession(UUID sessionIndex) {
+//        logger.warn("Sesión perdida: {}", sessionIndex);
+//        sendSessionEvent("Sesión perdida: " + sessionIndex);
+//        serverEvents.lostSession(sessionIndex);
+//    }
+//
+//    public void handleError(String uniqueId, String errorCode, String errorDescription, Object payload) {
+//        logger.error("Error en la solicitud: {} - {}", errorCode, errorDescription);
+//        sendErrorEvent("Error en la solicitud: " + errorCode + " - " + errorDescription);
+//        serverEvents.handleError(uniqueId, errorCode, errorDescription, payload);
+//    }
+//
+//    public void handleConfirmation(String uniqueId, Confirmation confirmation) {
+//        logger.info("Confirmación recibida: {}", confirmation);
+//        sendConfirmationEvent("Confirmación recibida: " + confirmation.toString());
+//        serverEvents.handleConfirmation(uniqueId, confirmation);
+//    }
+//
+//    public Confirmation handleRequest(Request request) throws UnsupportedFeatureException {
+//        logger.debug("Solicitud recibida: {}", request);
+//        return serverEvents.handleRequest(request);
+//    }
+//
+//    // Métodos de ayuda para enviar eventos a las colas de Amazon MQ
+//    void sendSessionEvent(String message) {
+//        sendMessageToQueue(message, "sessionEventsQueue");
+//    }
+//
+//    void sendErrorEvent(String message) {
+//        sendMessageToQueue(message, "errorEventsQueue");
+//    }
+//
+//    void sendConfirmationEvent(String message) {
+//        sendMessageToQueue(message, "confirmationEventsQueue");
+//    }
 }
