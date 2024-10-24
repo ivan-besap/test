@@ -2,8 +2,13 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Controller;
 
 import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Session;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargingProfileKindType;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargingProfilePurposeType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.HeartbeatRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.RemoteStartTransactionRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.StartTransactionRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingProfile;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingSchedule;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.MeterValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,47 +48,53 @@ public class OcppController {
     public ResponseEntity<String> startTransaction(
             @RequestParam String sessionId,
             @RequestParam String connectorId,
-            @RequestParam String idTag) {
+            @RequestParam String idTag,
+            @RequestParam(required = false) Integer chargingProfileId,
+            @RequestParam(required = false) Integer stackLevel,
+            @RequestParam(required = false) ChargingProfilePurposeType chargingProfilePurpose,
+            @RequestParam(required = false) ChargingProfileKindType chargingProfileKind,
+            @RequestParam(required = false) ZonedDateTime validFrom,
+            @RequestParam(required = false) ZonedDateTime validTo) {
         try {
-            // No convertir a UUID, trabajar con sessionId directamente como String
+            // Validar que el connectorId e idTag no sean nulos
+            if (connectorId == null || idTag == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El ID de conector y el idTag son requeridos.");
+            }
+
+            // Obtener la sesión OCPP
             Session ocppSession = getSessionOrThrow(sessionId);
             WebSocketSession webSocketSession = getWebSocketSessionOrThrow(sessionId);
 
-            // Crear y enviar la solicitud de StartTransaction
-            webSocketHandler.handleRemoteStartTransaction(ocppSession, webSocketSession, connectorId, idTag);
+            // Crear la solicitud RemoteStartTransactionRequest
+            RemoteStartTransactionRequest remoteStartRequest = new RemoteStartTransactionRequest(idTag);
+            remoteStartRequest.setConnectorId(Integer.parseInt(connectorId));
 
-            return ResponseEntity.ok("Transacción iniciada con éxito.");
+            // Crear el ChargingProfile si los datos están presentes
+            if (chargingProfileId != null && stackLevel != null && chargingProfilePurpose != null && chargingProfileKind != null) {
+                ChargingProfile chargingProfile = new ChargingProfile(chargingProfileId, stackLevel, chargingProfilePurpose, chargingProfileKind, new ChargingSchedule());
+                chargingProfile.setValidFrom(validFrom);
+                chargingProfile.setValidTo(validTo);
+                remoteStartRequest.setChargingProfile(chargingProfile);
+            }
+
+            // Generar un ID de mensaje único
+            String messageId = UUID.randomUUID().toString();
+
+            // Enviar la solicitud a través del WebSocketHandler
+            webSocketHandler.handleRemoteStartTransaction(ocppSession, webSocketSession, remoteStartRequest, messageId);
+
+            return ResponseEntity.ok("Transacción remota iniciada con éxito.");
         } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error en la solicitud: " + e.getMessage());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al iniciar la transacción.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al iniciar la transacción remota.");
         }
     }
 
-    // Método que maneja la lógica de inicio de la transacción
-    private void sendStartTransaction(Session ocppSession, WebSocketSession webSocketSession, String connectorId, String idTag) {
-        try {
-            if (ocppSession == null) {
-                throw new IllegalArgumentException("La sesión OCPP no puede ser nula.");
-            }
-            if (webSocketSession == null) {
-                throw new IllegalArgumentException("La sesión WebSocket no puede ser nula.");
-            }
-            if (idTag == null || idTag.isEmpty()) {
-                throw new IllegalArgumentException("El idTag no puede ser nulo o vacío.");
-            }
 
-            // Aquí reutilizas la lógica de enviar la solicitud con el método sendRequest de la sesión
-            logger.debug("Iniciando transacción con connectorId: " + connectorId + " y idTag: " + idTag);
-            StartTransactionRequest request = new StartTransactionRequest(Integer.parseInt(connectorId), idTag, 0, ZonedDateTime.now());
-            ocppSession.sendRequest("RemoteStartTransaction", request, UUID.randomUUID().toString());
 
-        } catch (NumberFormatException e) {
-            throw new IllegalArgumentException("Formato de ID del conector no válido.");
-        } catch (Exception e) {
-            throw new IllegalStateException("Error al enviar la solicitud de transacción remota: " + e.getMessage(), e);
-        }
-    }
+
+
 
 
 

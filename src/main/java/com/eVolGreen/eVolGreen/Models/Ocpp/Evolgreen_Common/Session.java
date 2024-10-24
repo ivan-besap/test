@@ -27,13 +27,14 @@ import static com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.ProtocolVersi
 public class Session implements ISession {
 
     private static final Logger logger = LoggerFactory.getLogger(Session.class);
-    private UUID sessionId;
+    private UUID sessionId = UUID.randomUUID();
     private final Communicator communicator;
     private final Queue queue;
     private final RequestDispatcher dispatcher;
     private final IFeatureRepository featureRepository;
     private SessionEvents events;
     private final Map<String, AbstractMap.SimpleImmutableEntry<String, CompletableFuture<Confirmation>>> pendingPromises = new ConcurrentHashMap<>();
+
     private WebSocketSession webSocketSession;
     private String webSocketSessionId; // Atributo que almacena el ID de WebSocketSession
 
@@ -159,13 +160,18 @@ public class Session implements ISession {
         return webSocketSession;
     }
 
-    public String getWebSocketSessionId() {
-        return webSocketSessionId;
-    }
-
     public void setSessionId(UUID sessionId) {
         this.sessionId = sessionId;
     }
+
+    public void setWebSocketSessionId(String webSocketSessionId) {
+        this.webSocketSessionId = webSocketSessionId;
+    }
+
+    public String getWebSocketSessionId() {
+        return this.webSocketSessionId;
+    }
+
 
     private class CommunicatorEventHandler implements CommunicatorEvents {
         private static final String OCCURRENCE_CONSTRAINT_VIOLATION =

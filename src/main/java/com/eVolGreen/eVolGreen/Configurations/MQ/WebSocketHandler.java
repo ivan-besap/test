@@ -3,7 +3,6 @@ package com.eVolGreen.eVolGreen.Configurations.MQ;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.UnsupportedFeatureException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.ConfirmationCompletedHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.SessionInformation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.DefaultClientCoreEventHandler;
@@ -86,16 +85,15 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * servidor y los eventos para la integración con Amazon MQ.
      * </p>
      *
-     * @param sessionFactory          Fábrica de sesiones para crear instancias de {@link ISession}.
-     * @param communicator            Comunicador para transmisión de mensajes.
-     * @param jsonServer              Servidor JSON que maneja las solicitudes de OCPP.
-     * @param coreProfile             Perfil principal de OCPP para el servidor.
-     * @param amazonMQCommunicator    Comunicador para integración con Amazon MQ.
+     * @param sessionFactory       Fábrica de sesiones para crear instancias de {@link ISession}.
+     * @param communicator         Comunicador para transmisión de mensajes.
+     * @param jsonServer           Servidor JSON que maneja las solicitudes de OCPP.
+     * @param coreProfile          Perfil principal de OCPP para el servidor.
+     * @param amazonMQCommunicator Comunicador para integración con Amazon MQ.
      */
     public WebSocketHandler(ISessionFactory sessionFactory, Communicator communicator,
                             JSONServer jsonServer, ServerCoreProfile coreProfile,
-                            AmazonMQCommunicator amazonMQCommunicator,
-                            Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository) {
+                            AmazonMQCommunicator amazonMQCommunicator) {
 
         this.sessionFactory = sessionFactory;
         this.communicator = communicator;
@@ -112,6 +110,20 @@ public class WebSocketHandler extends TextWebSocketHandler {
         // Configurar eventos de sesión como ServerCoreEventHandler
         ServerCoreEventHandler serverEvents = new AmazonMQServerEvents(amazonMQCommunicator);
         coreProfile.setEventHandler(serverEvents);
+
+        logger.debug("Dependencias inicializadas: sessionFactory={}, communicator={}, amazonMQCommunicator={}, coreProfile={}",
+                sessionFactory, communicator, amazonMQCommunicator, coreProfile);
+
+        if (amazonMQCommunicator == null || !amazonMQCommunicator.isConnected()) {
+            throw new IllegalStateException("El radio no está inicializado correctamente.");
+        }
+        if (sessionFactory == null || communicator == null || coreProfile == null) {
+            throw new IllegalStateException("Dependencias críticas no inicializadas.");
+        }
+
+
+
+
 
         // Añadir el perfil al JSONServer
         jsonServer.addFeatureProfile(coreProfile);
@@ -135,37 +147,31 @@ public class WebSocketHandler extends TextWebSocketHandler {
      */
     @Override
     public void afterConnectionEstablished(WebSocketSession webSocketSession) throws IOException {
-        // Obtener el subprotocolo desde los atributos de la sesión
         String acceptedProtocol = (String) webSocketSession.getAttributes().get("subProtocol");
         logger.debug("Subprotocolo aceptado en la sesión (después de handshake): {}", acceptedProtocol);
 
-        // Verificar si el subprotocolo es el esperado
         if (!"ocpp1.6".equals(acceptedProtocol)) {
             handleUnsupportedProtocol(webSocketSession, acceptedProtocol);
             return;
         }
 
         try {
-            // Utilizar el ID proporcionado por la sesión WebSocket en lugar de generar uno nuevo
+            // Utiliza directamente el ID proporcionado por WebSocketSession
             String sessionId = webSocketSession.getId();
-            UUID sessionUUID = UUID.fromString(sessionId);
+            UUID sessionUUID = UUID.nameUUIDFromBytes(sessionId.getBytes());
 
-            // Crear e inicializar la sesión OCPP con el ID de la sesión WebSocket
+            // Crea e inicializa la sesión OCPP con el mismo ID que WebSocketSession
             Session session = initializeSession(sessionUUID, webSocketSession);
 
-            // Vincular el sessionUUID con la WebSocketSession
+            // Vincula el sessionUUID con la WebSocketSession
             webSocketSession.getAttributes().put("sessionId", sessionUUID);
 
-            // Almacenar la sesión en sessionStore
+            // Almacena la sesión en sessionStore y WebSocketSession en webSocketSessionStorage
             sessionStore.put(sessionUUID, session);
-
-            // Almacenar la sesión WebSocket en webSocketSessionStorage
             webSocketSessionStorage.put(sessionUUID, webSocketSession);
 
-            // Registrar en Amazon MQ
             amazonMQCommunicator.addSession(sessionUUID, webSocketSession);
-
-            logger.info("Sesión WebSocket registrada exitosamente con ID: {} y subprotocolo: {}", sessionUUID, acceptedProtocol);
+            logger.info("Sesión WebSocket registrada exitosamente con ID: {}", sessionUUID);
 
         } catch (Exception e) {
             logger.error("Error al establecer la conexión WebSocket: {}", e.getMessage(), e);
@@ -1203,50 +1209,61 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 throw new IllegalArgumentException("El payload de la solicitud no puede ser nulo.");
             }
 
-            // Deserializa el payload en un objeto RemoteStartTransactionRequest
+            // Deserializar el payload en RemoteStartTransactionRequest
             RemoteStartTransactionRequest remoteStartRequest = objectMapper.convertValue(requestPayload, RemoteStartTransactionRequest.class);
-            logger.debug("Payload deserializado: {}", remoteStartRequest);
+            logger.debug("Payload deserializado: {}", objectMapper.writeValueAsString(remoteStartRequest));
 
-            // Verificar si la sesión es válida
-            if (session == null) {
-                throw new IllegalStateException("Sesión OCPP no encontrada para el ID proporcionado.");
+            // Validar la solicitud antes de proceder
+            if (!remoteStartRequest.validate()) {
+                throw new IllegalArgumentException("La solicitud de RemoteStartTransaction no es válida.");
+            }
+
+            // Validar el perfil de carga si está presente
+            if (remoteStartRequest.getChargingProfile() != null && !remoteStartRequest.getChargingProfile().validate()) {
+                throw new IllegalArgumentException("El perfil de carga no es válido.");
+            }
+
+            // Verificar si la sesión es válida y la conexión WebSocket está abierta
+            if (session == null || !webSocketSession.isOpen()) {
+                throw new IllegalStateException("Sesión OCPP no encontrada o WebSocket cerrado para el ID proporcionado.");
+            }
+
+            // Verificar si AmazonMQCommunicator está conectado, de lo contrario reconectar
+            if (amazonMQCommunicator == null || !amazonMQCommunicator.isConnected()) {
+                logger.warn("Reconectando AmazonMQCommunicator...");
+                if (!amazonMQCommunicator.isConnected()) {
+                    throw new IllegalStateException("El radio no está inicializado correctamente después de intentar reconectar.");
+                }
             }
 
             // Enviar el mensaje de RemoteStartTransaction a Amazon MQ para logging
             jsonServer.sendMessageToMQ("RemoteStartTransaction request received for idTag: " + remoteStartRequest.getIdTag());
             logger.info("Mensaje enviado a Amazon MQ para RemoteStartTransaction con idTag: {}", remoteStartRequest.getIdTag());
 
-            // Enviar la solicitud de inicio de transacción remota
+            // Enviar la solicitud de inicio de transacción remota a la estación de carga
             session.sendRequest("RemoteStartTransaction", remoteStartRequest, messageId);
 
-            // Configurar la respuesta
-            IdTagInfo idTagInfo = new IdTagInfo();
-            idTagInfo.setStatus(AuthorizationStatus.Accepted);
-            idTagInfo.setExpiryDate(ZonedDateTime.now().plusDays(30));
-
-            // Crear y enviar la confirmación de RemoteStartTransaction
+            // Simular una confirmación de transacción
             RemoteStartTransactionConfirmation confirmation = new RemoteStartTransactionConfirmation();
-            confirmation.setStatus(RemoteStartStopStatus.Accepted);  // Establecer el estado como aceptado
+            confirmation.setStatus(RemoteStartStopStatus.Accepted); // Aceptar la transacción
 
+            // Enviar la respuesta de confirmación de la transacción al cliente
             sendResponse(session, webSocketSession, messageId, "RemoteStartTransaction", confirmation);
 
-            logger.info("Respuesta enviada para StartRemotoTransaction con ID de mensaje {}: {}", messageId, confirmation);
-            logger.info("StartRemotoTransaction completado exitosamente para la sesión: {}", session.getSessionId());
-
-
-            // Log de éxito
-            logger.info("RemoteStartTransaction manejado exitosamente para la sesión: {} con estado: {}", session.getSessionId(), confirmation.getStatus());
+            logger.info("RemoteStartTransaction completado exitosamente para la sesión: {}", session.getSessionId());
 
         } catch (IllegalArgumentException e) {
-            // Manejo de errores con argumentos inválidos
             logger.error("Error en los argumentos de RemoteStartTransaction: {}", e.getMessage());
-            sendError(session, webSocketSession, messageId, "Error en RemoteStartTransaction: " + e.getMessage());
+            sendError(session, webSocketSession, messageId, "NotSupported, La solicitud contiene argumentos inválidos: " + e.getMessage());
+        } catch (IllegalStateException e) {
+            logger.error("Error de estado en RemoteStartTransaction: {}", e.getMessage());
+            sendError(session, webSocketSession, messageId, "InternalError, Error de estado: " + e.getMessage());
         } catch (Exception e) {
-            // Manejo de errores generales
             logger.error("Error procesando RemoteStartTransaction para la sesión: {}", session != null ? session.getSessionId() : "Sesión no disponible", e);
-            sendError(session, webSocketSession, messageId, "Error en RemoteStartTransaction: " + e.getMessage());
+            sendError(session, webSocketSession, messageId, "InternalError, Error procesando RemoteStartTransaction: " + e.getMessage());
         }
     }
+
 
 
 

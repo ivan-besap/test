@@ -40,7 +40,7 @@ import java.util.concurrent.Executors;
  * {@link ServerEvents} para eventos de sesión y manejo de errores.
  */
 @Component
-public class AmazonMQCommunicator extends Communicator {
+public class AmazonMQCommunicator  {
 
     private static final Logger logger = LoggerFactory.getLogger(AmazonMQCommunicator.class);
 //    private final ServerEvents serverEvents;
@@ -165,49 +165,49 @@ public class AmazonMQCommunicator extends Communicator {
 //        return this.brokerId;
 //    }
 
-    @Override
-    public void connect(String uri, CommunicatorEvents events) {
-        logger.info("Conectando a URI: {}", uri);
-    }
-
-    @Override
-    public <T> T unpackPayload(Object payload, Class<T> type) throws Exception {
-        if (type.isInstance(payload)) {
-            return type.cast(payload);
-        } else {
-            throw new IllegalArgumentException("Tipo de payload no coincide para: " + type.getName());
-        }
-    }
-
-    @Override
-    public Object packPayload(Object payload) {
-        return payload.toString();
-    }
-
-    @Override
-    protected Object makeCallResult(String uniqueId, String action, Object payload) {
-        return "Resultado:" + uniqueId + ":" + action + ":" + payload;
-    }
-
-    @Override
-    protected Object makeCall(String uniqueId, String action, Object payload) {
-        return action + ":" + payload;
-    }
-
-    @Override
-    protected Object makeCallError(String uniqueId, String action, String errorCode, String errorDescription) {
-        return "Error:" + uniqueId + ":" + errorCode + ":" + errorDescription;
-    }
-
-    @Override
-    public boolean isClosed() {
-        return false;
-    }
-
-    @Override
-    public Message parse(Object json) {
-        return null; // Implementación pendiente
-    }
+//    @Override
+//    public void connect(String uri, CommunicatorEvents events) {
+//        logger.info("Conectando a URI: {}", uri);
+//    }
+//
+//    @Override
+//    public <T> T unpackPayload(Object payload, Class<T> type) throws Exception {
+//        if (type.isInstance(payload)) {
+//            return type.cast(payload);
+//        } else {
+//            throw new IllegalArgumentException("Tipo de payload no coincide para: " + type.getName());
+//        }
+//    }
+//
+//    @Override
+//    public Object packPayload(Object payload) {
+//        return payload.toString();
+//    }
+//
+//    @Override
+//    protected Object makeCallResult(String uniqueId, String action, Object payload) {
+//        return "Resultado:" + uniqueId + ":" + action + ":" + payload;
+//    }
+//
+//    @Override
+//    protected Object makeCall(String uniqueId, String action, Object payload) {
+//        return action + ":" + payload;
+//    }
+//
+//    @Override
+//    protected Object makeCallError(String uniqueId, String action, String errorCode, String errorDescription) {
+//        return "Error:" + uniqueId + ":" + errorCode + ":" + errorDescription;
+//    }
+//
+//    @Override
+//    public boolean isClosed() {
+//        return false;
+//    }
+//
+//    @Override
+//    public Message parse(Object json) {
+//        return null; // Implementación pendiente
+//    }
 
     /**
      * Añade una sesión WebSocket activa al mapa de sesiones.
@@ -243,6 +243,10 @@ public class AmazonMQCommunicator extends Communicator {
                 }
             }
         });
+    }
+
+    public boolean isConnected() {
+        return true;
     }
 
     // Delegación de eventos de sesión a Amazon MQ

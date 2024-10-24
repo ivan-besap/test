@@ -109,6 +109,9 @@ public abstract class Communicator {
      * @param enableTransactionQueue bandera para habilitar/deshabilitar la cola de transacciones y el procesamiento asociado
      */
     public Communicator(Radio transmitter, boolean enableTransactionQueue) {
+        if (transmitter == null) {
+            throw new IllegalArgumentException("Radio no puede ser null");
+        }
         this.radio = transmitter;
         this.transactionQueue = enableTransactionQueue ? new ArrayDeque<>() : null;
         this.retryRunner = enableTransactionQueue ? new RetryRunner() : null;
@@ -146,6 +149,10 @@ public abstract class Communicator {
      */
     public synchronized void sendCall(String uniqueId, String action, Request request) {
         Object call = makeCall(uniqueId, action, packPayload(request));
+
+        if (this.radio == null) {
+            throw new IllegalStateException("El radio no está inicializado");
+        }
 
         if (call != null) {
             if (call instanceof SOAPMessage) {

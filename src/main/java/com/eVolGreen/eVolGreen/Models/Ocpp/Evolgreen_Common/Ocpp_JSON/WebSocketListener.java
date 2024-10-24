@@ -182,6 +182,7 @@ public class WebSocketListener implements Listener {
 
             @Override
             public void onMessage(WebSocket webSocket, String message) {
+                logger.debug("Mensaje recibido de WebSocket: {}", message);
                 sockets.get(webSocket).relay(message);
             }
 
@@ -189,9 +190,9 @@ public class WebSocketListener implements Listener {
             public void onError(WebSocket webSocket, Exception ex) {
                 String resourceDescriptor = (webSocket != null) ? webSocket.getResourceDescriptor() : "no definido (webSocket es nulo)";
                 if (ex instanceof ConnectException) {
-                    logger.error("Error en la conexión (descriptor: " + resourceDescriptor + ")", ex);
+                    logger.error("Error de conexión en WebSocket: {}. Detalles: {}", resourceDescriptor, ex.getMessage());
                 } else {
-                    logger.error("Error detectado (descriptor: " + resourceDescriptor + ")", ex);
+                    logger.error("Error detectado en WebSocket: {}. Detalles: {}", resourceDescriptor, ex.getMessage());
                 }
             }
 
