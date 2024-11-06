@@ -1,12 +1,14 @@
 package com.eVolGreen.eVolGreen.Services.AccountService;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Controller.OcppController;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Session;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.MeterValuesRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.RemoteStartTransactionRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingProfile;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
@@ -69,6 +71,49 @@ public class UtilService {
         } catch (Exception e) {
             log.error("Error enviando solicitud de iniciar carga o autorización RFID al simulador: " + e.getMessage());
         }
+    }
+
+    public void iniciarCargaRemotaEnSimulador(int connectorId, String idTag, ChargingProfile chargingProfile) throws Exception {
+        String url = "http://localhost:8081/api/charge-point/remote-start";
+
+        // Crear el payload con el perfil de carga
+        RemoteStartTransactionRequest requestPayload = new RemoteStartTransactionRequest(idTag);
+        requestPayload.setConnectorId(connectorId);
+        requestPayload.setChargingProfile(chargingProfile);
+
+        // Configurar los encabezados de la solicitud si son necesarios
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+
+        // Crear la solicitud HTTP con el payload y los encabezados
+        HttpEntity<RemoteStartTransactionRequest> requestEntity = new HttpEntity<>(requestPayload, headers);
+
+        // Enviar la solicitud POST al simulador
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+
+        // Verificar si la respuesta es exitosa
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new Exception("Error al iniciar la carga remota en el simulador: " + response.getBody());
+        }
+
+        log.info("Carga remota en simulador iniciada con éxito para connectorId: {} y idTag: {}", connectorId, idTag);
+    }
+
+    public void detenerCargaRemotaEnSimulador(int transactionId) throws Exception {
+        String url = "http://localhost:8081/api/charge-point/remote-stop?transactionId=" + transactionId;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new Exception("Error al detener la carga remota en el simulador: " + response.getBody());
+        }
+
+        log.info("Carga remota detenida con éxito en el simulador para transactionId: {}", transactionId);
     }
 
     public synchronized void updateMeterValuesFront(String meterValuesJson) {

@@ -2,15 +2,13 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Controller;
 
 import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Session;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargingProfileKindType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargingProfilePurposeType;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.HeartbeatRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.MeterValuesRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.RemoteStartTransactionRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.StartTransactionRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingProfile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingSchedule;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.MeterValue;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.IniciarCargaRemotaRequest;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -271,6 +269,36 @@ public ResponseEntity<List<MeterValue>> getMeterValues(
         } catch (Exception e) {
             log.error("Error iniciando la carga: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error iniciando la carga");
+        }
+    }
+
+    @PostMapping("/iniciar-carga-remota")
+    public ResponseEntity<String> iniciarCargaRemota(@RequestBody IniciarCargaRemotaRequest request) {
+        try {
+            log.info("Iniciando carga remota para el conector: {} con idTag: {}", request.getConnectorId(), request.getIdTag());
+
+            // Llamar al servicio para comunicar con el simulador
+            utilService.iniciarCargaRemotaEnSimulador(request.getConnectorId(), request.getIdTag(), request.getChargingProfile());
+
+            return ResponseEntity.ok("Carga remota iniciada con éxito");
+        } catch (Exception e) {
+            log.error("Error iniciando la carga remota: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error iniciando la carga remota");
+        }
+    }
+
+    @PostMapping("/detener-carga-remota")
+    public ResponseEntity<String> detenerCargaRemota(@RequestBody RemoteStopTransactionRequest request) {
+        try {
+            log.info("Deteniendo carga remota para transactionId: {}", request.getTransactionId());
+
+            // Llamar al servicio para comunicar con el simulador
+            utilService.detenerCargaRemotaEnSimulador(request.getTransactionId());
+
+            return ResponseEntity.ok("Carga remota detenida con éxito");
+        } catch (Exception e) {
+            log.error("Error deteniendo la carga remota: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deteniendo la carga remota");
         }
     }
 

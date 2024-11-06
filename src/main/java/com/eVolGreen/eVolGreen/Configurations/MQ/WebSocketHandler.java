@@ -150,13 +150,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
 
         try {
-//            // Obtener el chargePointId desde los atributos de la sesión
-//            String chargePointId = (String) webSocketSession.getAttributes().get("chargePointId");
-//            if (chargePointId == null) {
-//                logger.error("Error: chargePointId no encontrado en los atributos de la sesión.");
-//                webSocketSession.close(CloseStatus.BAD_DATA);
-//                return;
-//            }
+            // Obtener el chargePointId desde los atributos de la sesión
+            String chargePointId = (String) webSocketSession.getAttributes().get("chargePointId");
+            if (chargePointId == null) {
+                logger.error("Error: chargePointId no encontrado en los atributos de la sesión.");
+                webSocketSession.close(CloseStatus.BAD_DATA);
+                return;
+            }
 
             // Utilizar el ID proporcionado por la sesión WebSocket en lugar de generar uno nuevo
             String sessionId = webSocketSession.getId();
@@ -164,7 +164,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             // Crear e inicializar la sesión OCPP con el ID de la sesión WebSocket
             Session session = initializeSession(sessionUUID, webSocketSession);
-//            session.setChargePointId(chargePointId);  // Asignar el chargePointId a la sesión
+            session.setChargePointId(chargePointId);  // Asignar el chargePointId a la sesión
 
             // Vincular el sessionUUID con la WebSocketSession
             webSocketSession.getAttributes().put("sessionId", sessionUUID);
@@ -1295,10 +1295,20 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // Deserializa el payload en un objeto RemoteStopTransactionRequest
             RemoteStopTransactionRequest remoteStopTransactionRequest = objectMapper.convertValue(requestPayload, RemoteStopTransactionRequest.class);
 
-            // Procesa la lógica específica para detener la transacción remota aquí, si es necesario
+            Integer transactionId = remoteStopTransactionRequest.getTransactionId();
+            logger.info("Solicitud de RemoteStopTransaction recibida para transactionId: {}", transactionId);
+
+            // Lógica específica para detener la transacción remota
+            boolean stopSuccessful = true; // Simula el éxito de la parada de la transacción; ajusta según tu lógica
 
             // Crea la confirmación de la respuesta
             RemoteStopTransactionConfirmation confirmation = new RemoteStopTransactionConfirmation();
+
+            if (stopSuccessful) {
+                confirmation.setStatus(RemoteStartStopStatus.Accepted); // Establece el estado como aceptado
+            } else {
+                confirmation.setStatus(RemoteStartStopStatus.Rejected); // O un estado diferente si falla
+            }
 
             // Envía la respuesta de confirmación al cliente
             sendResponse(ocppSession, webSocketSession, messageId, "RemoteStopTransaction", confirmation);
@@ -1307,7 +1317,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
         } catch (Exception e) {
             // Manejo de errores en el proceso y envío de mensaje de error
             logger.error("Error processing RemoteStopTransaction", e);
-            sendError(ocppSession,webSocketSession, messageId, "Error in RemoteStopTransaction: " + e.getMessage());
+            sendError(ocppSession, webSocketSession, messageId, "Error in RemoteStopTransaction: " + e.getMessage());
         }
     }
 //25
