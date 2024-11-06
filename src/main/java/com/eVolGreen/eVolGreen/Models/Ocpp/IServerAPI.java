@@ -75,7 +75,7 @@ public interface IServerAPI {
     /**
      * Envía una solicitud a un cliente específico de forma asíncrona.
      *
-     * @param sessionIndex el índice de la sesión del cliente.
+     * @param sessionIndex el indice de la sesión del cliente.
      * @param request la solicitud {@link Request} que se enviará.
      * @return una instancia de {@link CompletionStage} que contiene la confirmación.
      * @throws OccurenceConstraintException si ocurre una excepción relacionada con las restricciones de la solicitud.
@@ -88,7 +88,7 @@ public interface IServerAPI {
     /**
      * Completa una solicitud de forma asíncrona.
      *
-     * @param sessionIndex el índice de la sesión.
+     * @param sessionIndex el indice de la sesión.
      * @param uniqueId el identificador único de la solicitud.
      * @param confirmation la confirmación {@link Confirmation} que se completará.
      * @return {@code true} si la solicitud se completó con éxito, {@code false} de lo contrario.

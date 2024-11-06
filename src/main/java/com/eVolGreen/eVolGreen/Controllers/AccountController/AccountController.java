@@ -11,16 +11,10 @@ import com.eVolGreen.eVolGreen.Models.Account.Location;
 import com.eVolGreen.eVolGreen.Models.Account.Permission.Permission;
 import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.TypeAccounts;
 import com.eVolGreen.eVolGreen.Models.User.Role;
-import com.eVolGreen.eVolGreen.Repositories.AccountRepository;
+import com.eVolGreen.eVolGreen.Repositories.*;
 
-import com.eVolGreen.eVolGreen.Repositories.AuditLogRepository;
-import com.eVolGreen.eVolGreen.Repositories.LocationRepository;
-import com.eVolGreen.eVolGreen.Repositories.RoleRepository;
-import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
+import com.eVolGreen.eVolGreen.Services.AccountService.*;
 
-import com.eVolGreen.eVolGreen.Services.AccountService.AuditLogService;
-import com.eVolGreen.eVolGreen.Services.AccountService.PermissionService;
-import com.eVolGreen.eVolGreen.Services.AccountService.RoleService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -65,8 +59,12 @@ public class AccountController {
 
     @Autowired
     private PermissionService permissionService;
+
     @Autowired
     private RoleService roleService;
+
+    @Autowired
+    private EmpresaRepository empresaRepository;
 
     @GetMapping("/accounts")
     public List<AccountDTO> getAccounts() {
@@ -187,6 +185,100 @@ public class AccountController {
 
 
 //Crud para Usuario (Trabajador)
+
+
+    @PostMapping("/create-client")
+    public ResponseEntity<?> createClientAccount(@RequestBody AccountClientDTO accountClientDTO) {
+
+        try {
+            // Generar número de cuenta aleatorio con prefijo "cliente-"
+            String numeroDeCuenta = "cliente-" + getStringRandomNumber();
+
+            Role globalAdminRole = roleService.findById(1L)
+                    .orElseThrow(() -> new RuntimeException("Rol 'ADMIN' no encontrado"));
+
+            List<Permission> permisosClonados = globalAdminRole.getPermisos()
+                    .stream()
+                    .collect(Collectors.toList());
+
+            if (!permisosClonados.isEmpty()) {
+                permisosClonados = permisosClonados.subList(0, 1); // Mantener solo el primer permiso
+            }
+
+            Role clienteRole = new Role();
+            clienteRole.setNombre("CLIENTE");
+            clienteRole.setPermisos(permisosClonados);
+
+            Empresa defaultEmpresa = empresaRepository.findByNombre("Empresa Predeterminada")
+                    .orElseThrow(() -> new RuntimeException("Empresa 'Empresa Predeterminada' no encontrada"));
+
+
+            roleService.saveRole(clienteRole);
+
+            // Crear una nueva instancia de Account
+            Account newAccount = new Account(
+                    accountClientDTO.getNombre(),
+                    accountClientDTO.getApellidoPaterno(),
+                    null, // Apellido materno opcional
+                    numeroDeCuenta,
+                    accountClientDTO.getNombre() + " Cuenta", // Nombre de la cuenta
+                    LocalDate.now(),
+                    accountClientDTO.getEmail(),
+                    passwordEncoder.encode(accountClientDTO.getPassword()),
+                    TypeAccounts.CLIENT, // Tipo de cuenta CLIENT
+                    clienteRole,
+                    accountClientDTO.getTelefono(),
+                    null, // Rut opcional
+                    defaultEmpresa, // Empresa opcional
+                    true, // Activo por defecto
+                    false, // AlarmaCorreo por defecto
+                    false  // AlarmaError por defecto
+            );
+
+            // Guardar la cuenta en el servicio
+            accountService.saveAccount(newAccount);
+
+            return new ResponseEntity<>("Client account created successfully", HttpStatus.CREATED);
+
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error creating client account: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PutMapping("/updateClient/{id}")
+    public ResponseEntity<?> updateAccount(@PathVariable Long id, @RequestBody AccountClientDTO accountClientDTO) {
+        try {
+            // Buscar la cuenta existente por ID
+            Account existingAccount = accountService.findById(id);
+
+            // Actualizar las propiedades solo si se han proporcionado
+            if (accountClientDTO.getNombre() != null) {
+                existingAccount.setNombre(accountClientDTO.getNombre());
+            }
+            if (accountClientDTO.getApellidoPaterno() != null) {
+                existingAccount.setApellidoPaterno(accountClientDTO.getApellidoPaterno());
+            }
+            if (accountClientDTO.getEmail() != null) {
+                existingAccount.setEmail(accountClientDTO.getEmail());
+            }
+            if (accountClientDTO.getPassword() != null) {
+                // Codificar la nueva contraseña
+                existingAccount.setPassword(passwordEncoder.encode(accountClientDTO.getPassword()));
+            }
+            if (accountClientDTO.getTelefono() != null) {
+                existingAccount.setTelefono(accountClientDTO.getTelefono());
+            }
+
+            // Guardar los cambios
+            accountService.saveAccount(existingAccount);
+
+            return new ResponseEntity<>("Account updated successfully", HttpStatus.OK);
+
+        } catch (Exception e) {
+            return new ResponseEntity<>("Error updating account: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
 
     @PostMapping("/companies/current/employee")
     public ResponseEntity<Object> registerEmployee(Authentication authentication,
@@ -654,8 +746,12 @@ public class AccountController {
         return ResponseEntity.ok("El usuario ha sido añadido correctamente a las alarmas de errores de conector.");
     }
 
-
-
+    private String getStringRandomNumber() {
+        int min = 10000000;
+        int max = 99999999;
+        int randomNumber = (int) ((Math.random() * (max - min)) + min);
+        return String.valueOf(randomNumber);
+    }
 
     public String getStringRandomEmployee() {
         int min = 0;

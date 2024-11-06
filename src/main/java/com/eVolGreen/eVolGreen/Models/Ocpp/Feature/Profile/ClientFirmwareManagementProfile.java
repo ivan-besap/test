@@ -67,7 +67,7 @@ public class ClientFirmwareManagementProfile implements Profile {
     /**
      * Maneja solicitudes entrantes y las delega al manejador de eventos adecuado.
      *
-     * @param sessionIndex El índice de la sesión.
+     * @param sessionIndex El indice de la sesión.
      * @param request La solicitud entrante.
      * @return La confirmación basada en la solicitud procesada.
      */

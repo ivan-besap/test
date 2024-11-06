@@ -53,7 +53,7 @@ public class Account{
     private TypeAccounts tipoCuenta;
 
     @ManyToOne(fetch = FetchType.EAGER)
-    @JoinColumn(name = "role_id", nullable = false)
+    @JoinColumn(name = "role_id")
     private Role role;
 
     private String telefono;
@@ -61,7 +61,7 @@ public class Account{
     private String rut;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "empresa_id", nullable = false)
+    @JoinColumn(name = "empresa_id")
     @JsonBackReference
     private Empresa empresa;
 

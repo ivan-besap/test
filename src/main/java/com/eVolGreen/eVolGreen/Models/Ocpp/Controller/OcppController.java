@@ -5,11 +5,13 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Session;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargingProfileKindType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargingProfilePurposeType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.HeartbeatRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.MeterValuesRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.RemoteStartTransactionRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.StartTransactionRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingProfile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingSchedule;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.MeterValue;
+import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -21,7 +23,9 @@ import org.springframework.web.socket.WebSocketSession;
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
+import static org.apache.activemq.plugin.ForcePersistencyModeBroker.log;
 
 
 @RestController
@@ -31,7 +35,12 @@ public class OcppController {
     @Autowired
     private WebSocketHandler webSocketHandler;
 
+    @Autowired
+    private UtilService utilService;
+
     private static final Logger logger = LoggerFactory.getLogger(OcppController.class);
+
+    private final Map<Long, MeterValuesRequest> latestMeterValuesByConnector = new ConcurrentHashMap<>();
 
     /**
      * Endpoint para iniciar una transacción de carga remota en un punto de carga específico.
@@ -91,10 +100,30 @@ public class OcppController {
         }
     }
 
+    // Método que maneja la lógica de inicio de la transacción
+    private void sendStartTransaction(Session ocppSession, WebSocketSession webSocketSession, String connectorId, String idTag) {
+        try {
+            if (ocppSession == null) {
+                throw new IllegalArgumentException("La sesión OCPP no puede ser nula.");
+            }
+            if (webSocketSession == null) {
+                throw new IllegalArgumentException("La sesión WebSocket no puede ser nula.");
+            }
+            if (idTag == null || idTag.isEmpty()) {
+                throw new IllegalArgumentException("El idTag no puede ser nulo o vacío.");
+            }
 
+            // Aquí reutilizas la lógica de enviar la solicitud con el método sendRequest de la sesión
+            logger.debug("Iniciando transacción con connectorId: " + connectorId + " y idTag: " + idTag);
+            StartTransactionRequest request = new StartTransactionRequest(Integer.parseInt(connectorId), idTag, 0, ZonedDateTime.now());
+            ocppSession.sendRequest("RemoteStartTransaction", request, UUID.randomUUID().toString());
 
-
-
+        } catch (NumberFormatException e) {
+            throw new IllegalArgumentException("Formato de ID del conector no válido.");
+        } catch (Exception e) {
+            throw new IllegalStateException("Error al enviar la solicitud de transacción remota: " + e.getMessage(), e);
+        }
+    }
 
 
 
@@ -213,5 +242,62 @@ public ResponseEntity<List<MeterValue>> getMeterValues(
         // Agregar más asociaciones según sea necesario
         return idTagToSessionMap;
     }
+
+    @PostMapping("/enviar-heartbeat")
+    public ResponseEntity<String> enviarHeartbeat(@RequestParam String ocppid, @RequestParam String vendorId, @RequestParam boolean enableAutomatic) {
+        try {
+            log.info("Recibido en el backend: Enviar Heartbeat para ocppid -> {}, enableAutomatic -> {}", ocppid, enableAutomatic);
+
+            // Llamar al método que comunica al simulador
+            utilService.enviarHeartbeatASimulador(ocppid, enableAutomatic, vendorId);
+
+            return ResponseEntity.ok("Heartbeat enviado correctamente al simulador");
+        } catch (Exception e) {
+            log.error("Error enviando Heartbeat al simulador: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al enviar Heartbeat al simulador");
+        }
+    }
+
+    @PostMapping("/iniciar-carga")
+    public ResponseEntity<String> iniciarCarga(
+            @RequestParam int connectorId) {
+        try {
+            log.info("Iniciando carga para el conector: {}", connectorId);
+
+            // Llamar al servicio para comunicar al simulador
+            utilService.iniciarCargaEnSimulador(connectorId);
+
+            return ResponseEntity.ok("Carga iniciada con éxito");
+        } catch (Exception e) {
+            log.error("Error iniciando la carga: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error iniciando la carga");
+        }
+    }
+
+    @GetMapping("/obtener-ultimo-meter-value-json")
+    public ResponseEntity<String> getLastMeterValuesJson() {
+        String meterValuesJson = utilService.getMeterValuesFront();
+        if (meterValuesJson != null) {
+            return ResponseEntity.ok(meterValuesJson);
+        } else {
+            return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
+        }
+    }
+
+    @PostMapping("/detener-carga")
+    public ResponseEntity<String> detenerCarga() {
+        try {
+            log.info("Deteniendo carga en el simulador");
+
+            // Llamar al servicio para comunicar al simulador
+            utilService.detenerCargaEnSimulador();
+
+            return ResponseEntity.ok("Carga detenida con éxito");
+        } catch (Exception e) {
+            log.error("Error deteniendo la carga: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deteniendo la carga");
+        }
+    }
+
 
 }

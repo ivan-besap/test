@@ -1,4 +1,5 @@
 package com.eVolGreen.eVolGreen.Models.ChargingStation.Charger;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 
 import jakarta.persistence.*;
 
@@ -7,16 +8,23 @@ public class ChargerManufacturer {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     @Column(name = "nombre")
     private String name;
+
+    // Relación con Empresa
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empresa_id")
+    private Empresa empresa;
 
     // Constructores, getters y setters
 
     public ChargerManufacturer() {
     }
 
-    public ChargerManufacturer(String name) {
+    public ChargerManufacturer(String name, Empresa empresa) {
         this.name = name;
+        this.empresa = empresa;
     }
 
     public Long getId() {
@@ -33,5 +41,13 @@ public class ChargerManufacturer {
 
     public void setName(String name) {
         this.name = name;
+    }
+
+    public Empresa getEmpresa() {
+        return empresa;
+    }
+
+    public void setEmpresa(Empresa empresa) {
+        this.empresa = empresa;
     }
 }

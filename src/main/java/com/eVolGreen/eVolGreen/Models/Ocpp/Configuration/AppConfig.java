@@ -23,12 +23,14 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.JSONServer;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.JSONConfiguration;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Confirmations.TriggerMessageConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Request.TriggerMessageRequest;
+import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 import java.util.UUID;
@@ -56,6 +58,8 @@ public class AppConfig {
     @Value("${spring.activemq.password}")
     private String brokerPassword;
 
+    private Communicator communicator;
+
     /**
      * Almacenamiento compartido de sesiones para manejar las conexiones activas.
      * <p>
@@ -67,6 +71,12 @@ public class AppConfig {
     public Map<UUID, ISession> sessionStore() {
         return new ConcurrentHashMap<>();
     }
+
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
 
     /**
      * Configura y devuelve una instancia de {@link FeatureRepository}.
@@ -114,11 +124,12 @@ public class AppConfig {
      * @return una instancia configurada de {@link WebSocketHandler}.
      */
     @Bean
-    public WebSocketHandler webSocketHandler(ISessionFactory sessionFactory, Communicator communicator,
+    public WebSocketHandler webSocketHandler(UtilService utilService, ISessionFactory sessionFactory, Communicator communicator,
                                              JSONServer jsonServer, ServerCoreProfile coreProfile,
-                                             AmazonMQCommunicator amazonMQCommunicator) {
+                                             AmazonMQCommunicator amazonMQCommunicator, Queue queue,
+                                             PromiseFulfiller fulfiller, FeatureRepository featureRepository) {
 
-        return new WebSocketHandler(sessionFactory, communicator, jsonServer, coreProfile, amazonMQCommunicator);
+        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, amazonMQCommunicator,queue,fulfiller,featureRepository);
     }
 
     /**
@@ -312,30 +323,44 @@ public class AppConfig {
 
             @Override
             public Message parse(Object message) {
-                JsonArray array = JsonParser.parseString(message.toString()).getAsJsonArray();
-                String messageId = array.get(0).getAsString();
-                int messageType = array.get(1).getAsInt();
-                Message parsedMessage = null;
+                Message parsedMessage;
+                JsonArray array;
+                String messageId = "-1";
 
-                switch (messageType) {
-                    case TYPENUMBER_CALL:
-                        parsedMessage = new CallMessage();
-                        parsedMessage.setAction(array.get(2).getAsString());
-                        parsedMessage.setPayload(array.get(3).toString());
-                        break;
-                    case TYPENUMBER_CALLRESULT:
-                        parsedMessage = new CallResultMessage();
-                        parsedMessage.setPayload(array.get(2).toString());
-                        break;
-                    case TYPENUMBER_CALLERROR:
-                        parsedMessage = new CallErrorMessage();
-                        ((CallErrorMessage) parsedMessage).setErrorCode(array.get(2).getAsString());
-                        ((CallErrorMessage) parsedMessage).setErrorDescription(array.get(3).getAsString());
-                        ((CallErrorMessage) parsedMessage).setRawPayload(array.get(4).toString());
-                        break;
-                    default:
-                        logger.error("Tipo de mensaje desconocido: {}. Mensaje: {}", messageType, message);
-                        sendCallError(messageId, null, "MessageTypeNotSupported", "Tipo de mensaje no soportado: " + messageType);
+                try {
+                    array = JsonParser.parseString(message.toString()).getAsJsonArray();
+                    messageId = array.get(INDEX_UNIQUEID).getAsString();
+
+                    int messageType = array.get(INDEX_MESSAGEID).getAsInt();
+                    switch (messageType) {
+                        case TYPENUMBER_CALL:
+                            parsedMessage = new CallMessage();
+                            parsedMessage.setAction(array.get(INDEX_CALL_ACTION).getAsString());
+                            parsedMessage.setPayload(array.get(INDEX_CALL_PAYLOAD).toString());
+                            break;
+                        case TYPENUMBER_CALLRESULT:
+                            parsedMessage = new CallResultMessage();
+                            parsedMessage.setPayload(array.get(INDEX_CALLRESULT_PAYLOAD).toString());
+                            break;
+                        case TYPENUMBER_CALLERROR:
+                            parsedMessage = new CallErrorMessage();
+                            ((CallErrorMessage) parsedMessage).setErrorCode(array.get(INDEX_CALLERROR_ERRORCODE).getAsString());
+                            ((CallErrorMessage) parsedMessage).setErrorDescription(array.get(INDEX_CALLERROR_DESCRIPTION).getAsString());
+                            ((CallErrorMessage) parsedMessage).setRawPayload(array.get(INDEX_CALLERROR_PAYLOAD).toString());
+                            break;
+                        default:
+                            logger.error("Tipo de mensaje desconocido: {}. Contenido del mensaje: {}", messageType, message);
+                            sendCallError(messageId, null, "MessageTypeNotSupported", "Tipo de mensaje no soportado: " + messageType);
+                            return null;
+                    }
+                } catch (JsonSyntaxException e) {
+                    logger.error("Error de sintaxis JSON al analizar el mensaje: {}. Error: {}", message, e.getMessage());
+                    sendCallError(messageId, null, "RpcFrameworkError", "Error de sintaxis JSON: " + e.getMessage());
+                    return null;
+                } catch (Exception e) {
+                    logger.error("Error inesperado al analizar el mensaje: {}. Error: {}", message, e.getMessage());
+                    sendCallError(messageId, null, "RpcFrameworkError", "Error inesperado: " + e.getMessage());
+                    return null;
                 }
 
                 parsedMessage.setId(messageId);
@@ -399,9 +424,10 @@ public class AppConfig {
         };
     }
 
-
-
-
+    @Bean
+    public Radio radio(WebSocketReceiverEvents receiverEvents) {
+        return new WebSocketReceiver(receiverEvents);
+    }
 
 
 

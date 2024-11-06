@@ -4,5 +4,6 @@ public enum ConnectorStatus {
 
     CONNECTED,
     DISCONNECTED,
-    repairing
+    REPAIRING,
+    OCCUPIED
 }

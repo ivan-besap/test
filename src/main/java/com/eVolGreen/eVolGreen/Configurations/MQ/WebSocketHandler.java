@@ -3,8 +3,10 @@ package com.eVolGreen.eVolGreen.Configurations.MQ;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.UnsupportedFeatureException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.ConfirmationCompletedHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.SessionInformation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Queue;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.DefaultClientCoreEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ServerCoreEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.ClientRemoteTriggerProfile;
@@ -20,6 +22,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Utils.IdTag
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargePointStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Request.TriggerMessageRequest;
+import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
@@ -29,6 +32,8 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Bean;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -39,10 +44,7 @@ import java.io.EOFException;
 import java.io.IOException;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.*;
 
 /**
@@ -51,6 +53,8 @@ import java.util.concurrent.*;
  */
 @AllArgsConstructor
 public class WebSocketHandler extends TextWebSocketHandler {
+
+    private final UtilService utilService;
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketHandler.class);
 
@@ -85,17 +89,19 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * servidor y los eventos para la integración con Amazon MQ.
      * </p>
      *
-     * @param sessionFactory       Fábrica de sesiones para crear instancias de {@link ISession}.
-     * @param communicator         Comunicador para transmisión de mensajes.
-     * @param jsonServer           Servidor JSON que maneja las solicitudes de OCPP.
-     * @param coreProfile          Perfil principal de OCPP para el servidor.
-     * @param amazonMQCommunicator Comunicador para integración con Amazon MQ.
+     * @param sessionFactory          Fábrica de sesiones para crear instancias de {@link ISession}.
+     * @param communicator            Comunicador para transmisión de mensajes.
+     * @param jsonServer              Servidor JSON que maneja las solicitudes de OCPP.
+     * @param coreProfile             Perfil principal de OCPP para el servidor.
+     * @param amazonMQCommunicator    Comunicador para integración con Amazon MQ.
      */
-    public WebSocketHandler(ISessionFactory sessionFactory, Communicator communicator,
+    public WebSocketHandler(UtilService utilService, ISessionFactory sessionFactory, Communicator communicator,
                             JSONServer jsonServer, ServerCoreProfile coreProfile,
-                            AmazonMQCommunicator amazonMQCommunicator) {
+                            AmazonMQCommunicator amazonMQCommunicator,
+                            Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository) {
 
         this.sessionFactory = sessionFactory;
+        this.utilService = utilService;
         this.communicator = communicator;
         this.jsonServer = jsonServer;
         this.amazonMQCommunicator = amazonMQCommunicator;
@@ -110,20 +116,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
         // Configurar eventos de sesión como ServerCoreEventHandler
         ServerCoreEventHandler serverEvents = new AmazonMQServerEvents(amazonMQCommunicator);
         coreProfile.setEventHandler(serverEvents);
-
-        logger.debug("Dependencias inicializadas: sessionFactory={}, communicator={}, amazonMQCommunicator={}, coreProfile={}",
-                sessionFactory, communicator, amazonMQCommunicator, coreProfile);
-
-        if (amazonMQCommunicator == null || !amazonMQCommunicator.isConnected()) {
-            throw new IllegalStateException("El radio no está inicializado correctamente.");
-        }
-        if (sessionFactory == null || communicator == null || coreProfile == null) {
-            throw new IllegalStateException("Dependencias críticas no inicializadas.");
-        }
-
-
-
-
 
         // Añadir el perfil al JSONServer
         jsonServer.addFeatureProfile(coreProfile);
@@ -147,38 +139,52 @@ public class WebSocketHandler extends TextWebSocketHandler {
      */
     @Override
     public void afterConnectionEstablished(WebSocketSession webSocketSession) throws IOException {
+        // Obtener el subprotocolo desde los atributos de la sesión
         String acceptedProtocol = (String) webSocketSession.getAttributes().get("subProtocol");
         logger.debug("Subprotocolo aceptado en la sesión (después de handshake): {}", acceptedProtocol);
 
+        // Verificar si el subprotocolo es el esperado
         if (!"ocpp1.6".equals(acceptedProtocol)) {
             handleUnsupportedProtocol(webSocketSession, acceptedProtocol);
             return;
         }
 
         try {
-            // Utiliza directamente el ID proporcionado por WebSocketSession
+//            // Obtener el chargePointId desde los atributos de la sesión
+//            String chargePointId = (String) webSocketSession.getAttributes().get("chargePointId");
+//            if (chargePointId == null) {
+//                logger.error("Error: chargePointId no encontrado en los atributos de la sesión.");
+//                webSocketSession.close(CloseStatus.BAD_DATA);
+//                return;
+//            }
+
+            // Utilizar el ID proporcionado por la sesión WebSocket en lugar de generar uno nuevo
             String sessionId = webSocketSession.getId();
-            UUID sessionUUID = UUID.nameUUIDFromBytes(sessionId.getBytes());
+            UUID sessionUUID = UUID.fromString(sessionId);
 
-            // Crea e inicializa la sesión OCPP con el mismo ID que WebSocketSession
+            // Crear e inicializar la sesión OCPP con el ID de la sesión WebSocket
             Session session = initializeSession(sessionUUID, webSocketSession);
+//            session.setChargePointId(chargePointId);  // Asignar el chargePointId a la sesión
 
-            // Vincula el sessionUUID con la WebSocketSession
+            // Vincular el sessionUUID con la WebSocketSession
             webSocketSession.getAttributes().put("sessionId", sessionUUID);
 
-            // Almacena la sesión en sessionStore y WebSocketSession en webSocketSessionStorage
+            // Almacenar la sesión en sessionStore
             sessionStore.put(sessionUUID, session);
+
+            // Almacenar la sesión WebSocket en webSocketSessionStorage
             webSocketSessionStorage.put(sessionUUID, webSocketSession);
 
+            // Registrar en Amazon MQ
             amazonMQCommunicator.addSession(sessionUUID, webSocketSession);
-            logger.info("Sesión WebSocket registrada exitosamente con ID: {}", sessionUUID);
+
+//            logger.info("Sesión WebSocket registrada exitosamente con ID: {} y chargePointId: {}", sessionUUID, chargePointId);
 
         } catch (Exception e) {
             logger.error("Error al establecer la conexión WebSocket: {}", e.getMessage(), e);
             webSocketSession.close(CloseStatus.SERVER_ERROR);
         }
     }
-
 
 
 
@@ -774,6 +780,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
             HeartbeatConfirmation confirmation = new HeartbeatConfirmation();
             confirmation.setCurrentTime(ZonedDateTime.now(ZoneOffset.UTC));
 
+            String chargePointId = session.getChargePointId();  // Obtener el chargePointId de la sesión
+            jsonServer.sendMessageToMQ("Heartbeat received for Charger: " + chargePointId);  // Usa el ID dinámico
+            logger.info("Cargador {} conectado con éxito para la sesión: {}", chargePointId, session.getSessionId());
+
             // Enviar respuesta al cliente
             sendResponse(session, webSocketSession, messageId, "Heartbeat", confirmation);
             logger.info("Heartbeat completado exitosamente para la sesión: {}", session.getSessionId());
@@ -819,6 +829,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
             MeterValuesConfirmation confirmation = new MeterValuesConfirmation();
             sendResponse(session, webSocketSession, messageId, "MeterValues", confirmation);
             logger.info("MeterValues completado exitosamente para la sesión: {}", session.getSessionId());
+
+            utilService.updateMeterValuesFront(meterValuesJson);
 
         } catch (IllegalArgumentException e) {
             logger.error("Error: ID de sesión no es válido o payload inválido. ID: {}, Error: {}", session.getSessionId(), e.getMessage());
@@ -1158,6 +1170,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             // Llama al manejador de eventos del cliente para procesar la solicitud
             Confirmation confirmation = clientCoreEventHandler.handleGetConfigurationRequest(getConfigurationRequest);
+            GetConfigurationConfirmation confirmation1 = new GetConfigurationConfirmation();
 
             // Envía la respuesta al cliente
             sendResponse(ocppSession, webSocketSession, messageId, "GetConfiguration", confirmation);
@@ -1209,61 +1222,50 @@ public class WebSocketHandler extends TextWebSocketHandler {
                 throw new IllegalArgumentException("El payload de la solicitud no puede ser nulo.");
             }
 
-            // Deserializar el payload en RemoteStartTransactionRequest
+            // Deserializa el payload en un objeto RemoteStartTransactionRequest
             RemoteStartTransactionRequest remoteStartRequest = objectMapper.convertValue(requestPayload, RemoteStartTransactionRequest.class);
-            logger.debug("Payload deserializado: {}", objectMapper.writeValueAsString(remoteStartRequest));
+            logger.debug("Payload deserializado: {}", remoteStartRequest);
 
-            // Validar la solicitud antes de proceder
-            if (!remoteStartRequest.validate()) {
-                throw new IllegalArgumentException("La solicitud de RemoteStartTransaction no es válida.");
-            }
-
-            // Validar el perfil de carga si está presente
-            if (remoteStartRequest.getChargingProfile() != null && !remoteStartRequest.getChargingProfile().validate()) {
-                throw new IllegalArgumentException("El perfil de carga no es válido.");
-            }
-
-            // Verificar si la sesión es válida y la conexión WebSocket está abierta
-            if (session == null || !webSocketSession.isOpen()) {
-                throw new IllegalStateException("Sesión OCPP no encontrada o WebSocket cerrado para el ID proporcionado.");
-            }
-
-            // Verificar si AmazonMQCommunicator está conectado, de lo contrario reconectar
-            if (amazonMQCommunicator == null || !amazonMQCommunicator.isConnected()) {
-                logger.warn("Reconectando AmazonMQCommunicator...");
-                if (!amazonMQCommunicator.isConnected()) {
-                    throw new IllegalStateException("El radio no está inicializado correctamente después de intentar reconectar.");
-                }
+            // Verificar si la sesión es válida
+            if (session == null) {
+                throw new IllegalStateException("Sesión OCPP no encontrada para el ID proporcionado.");
             }
 
             // Enviar el mensaje de RemoteStartTransaction a Amazon MQ para logging
             jsonServer.sendMessageToMQ("RemoteStartTransaction request received for idTag: " + remoteStartRequest.getIdTag());
             logger.info("Mensaje enviado a Amazon MQ para RemoteStartTransaction con idTag: {}", remoteStartRequest.getIdTag());
 
-            // Enviar la solicitud de inicio de transacción remota a la estación de carga
+            // Enviar la solicitud de inicio de transacción remota
             session.sendRequest("RemoteStartTransaction", remoteStartRequest, messageId);
 
-            // Simular una confirmación de transacción
-            RemoteStartTransactionConfirmation confirmation = new RemoteStartTransactionConfirmation();
-            confirmation.setStatus(RemoteStartStopStatus.Accepted); // Aceptar la transacción
+            // Configurar la respuesta
+            IdTagInfo idTagInfo = new IdTagInfo();
+            idTagInfo.setStatus(AuthorizationStatus.Accepted);
+            idTagInfo.setExpiryDate(ZonedDateTime.now().plusDays(30));
 
-            // Enviar la respuesta de confirmación de la transacción al cliente
+            // Crear y enviar la confirmación de RemoteStartTransaction
+            RemoteStartTransactionConfirmation confirmation = new RemoteStartTransactionConfirmation();
+            confirmation.setStatus(RemoteStartStopStatus.Accepted);  // Establecer el estado como aceptado
+
             sendResponse(session, webSocketSession, messageId, "RemoteStartTransaction", confirmation);
 
-            logger.info("RemoteStartTransaction completado exitosamente para la sesión: {}", session.getSessionId());
+            logger.info("Respuesta enviada para StartRemotoTransaction con ID de mensaje {}: {}", messageId, confirmation);
+            logger.info("StartRemotoTransaction completado exitosamente para la sesión: {}", session.getSessionId());
+
+
+            // Log de éxito
+            logger.info("RemoteStartTransaction manejado exitosamente para la sesión: {} con estado: {}", session.getSessionId(), confirmation.getStatus());
 
         } catch (IllegalArgumentException e) {
+            // Manejo de errores con argumentos inválidos
             logger.error("Error en los argumentos de RemoteStartTransaction: {}", e.getMessage());
-            sendError(session, webSocketSession, messageId, "NotSupported, La solicitud contiene argumentos inválidos: " + e.getMessage());
-        } catch (IllegalStateException e) {
-            logger.error("Error de estado en RemoteStartTransaction: {}", e.getMessage());
-            sendError(session, webSocketSession, messageId, "InternalError, Error de estado: " + e.getMessage());
+            sendError(session, webSocketSession, messageId, "Error en RemoteStartTransaction: " + e.getMessage());
         } catch (Exception e) {
+            // Manejo de errores generales
             logger.error("Error procesando RemoteStartTransaction para la sesión: {}", session != null ? session.getSessionId() : "Sesión no disponible", e);
-            sendError(session, webSocketSession, messageId, "InternalError, Error procesando RemoteStartTransaction: " + e.getMessage());
+            sendError(session, webSocketSession, messageId, "Error en RemoteStartTransaction: " + e.getMessage());
         }
     }
-
 
 
 
@@ -1408,5 +1410,15 @@ public class WebSocketHandler extends TextWebSocketHandler {
             return null;
         }
     }
+
+
+//    private void sendMeterValuesToClient(WebSocketSession webSocketSession, String meterValuesJson) throws IOException {
+//        if (webSocketSession.isOpen()) {
+//            webSocketSession.sendMessage(new TextMessage(meterValuesJson));
+//            logger.debug("MeterValues enviados al cliente: {}", meterValuesJson);
+//        } else {
+//            logger.warn("La sesión WebSocket está cerrada, no se pueden enviar MeterValues.");
+//        }
+//    }
 
 }

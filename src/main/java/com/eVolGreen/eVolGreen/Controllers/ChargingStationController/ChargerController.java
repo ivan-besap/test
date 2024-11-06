@@ -7,6 +7,7 @@ import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargerManufacture
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargerModel;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
+import com.eVolGreen.eVolGreen.Repositories.AccountRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.AuditLogService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerManufacturerService;
@@ -46,6 +47,9 @@ public class ChargerController {
 
     @Autowired
     private ChargerModelService chargerModelService;
+
+    @Autowired
+    private AccountRepository accountRepository;
 
     @GetMapping("/chargers")
     public List<ChargerDTO> getChargers(Authentication authentication) {
@@ -263,18 +267,36 @@ public class ChargerController {
     }
 
     @PostMapping("/charger-manufacturers")
-    public ResponseEntity<String> createChargerManufacturer(@RequestBody @Valid NewChargerManufacturerDTO newChargerManufacturerDTO) {
+    public ResponseEntity<String> createChargerManufacturer(Authentication authentication, @RequestBody @Valid NewChargerManufacturerDTO newChargerManufacturerDTO) {
+
+        Optional<Account> cuentaOpt = accountRepository.findByEmail(authentication.getName());
+        if (cuentaOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresa no encontrada");
+        }
+
+        Account cuentaUsuario = cuentaOpt.get();
+
         ChargerManufacturer chargerManufacturer = new ChargerManufacturer();
         chargerManufacturer.setName(newChargerManufacturerDTO.getName());
+        chargerManufacturer.setEmpresa(cuentaUsuario.getEmpresa());
 
         chargerManufacturerService.saveChargerManufacturer(chargerManufacturer);
         return new ResponseEntity<>("Fabricante de cargador creado con éxito", HttpStatus.CREATED);
     }
 
     @PostMapping("/charger-models")
-    public ResponseEntity<String> createChargerModel(@RequestBody @Valid NewChargerModelDTO newChargerModelDTO) {
+    public ResponseEntity<String> createChargerModel(Authentication authentication, @RequestBody @Valid NewChargerModelDTO newChargerModelDTO) {
+
+        Optional<Account> cuentaOpt = accountRepository.findByEmail(authentication.getName());
+        if (cuentaOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresa no encontrada");
+        }
+
+        Account cuentaUsuario = cuentaOpt.get();
+
         ChargerModel chargerModel = new ChargerModel();
         chargerModel.setName(newChargerModelDTO.getName());
+        chargerModel.setEmpresa(cuentaUsuario.getEmpresa());
 
         chargerModelService.saveChargerModel(chargerModel);
         return new ResponseEntity<>("Modelo de cargador creado con éxito", HttpStatus.CREATED);

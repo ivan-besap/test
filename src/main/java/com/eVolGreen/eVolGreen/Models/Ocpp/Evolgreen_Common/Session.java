@@ -38,6 +38,8 @@ public class Session implements ISession {
     private WebSocketSession webSocketSession;
     private String webSocketSessionId; // Atributo que almacena el ID de WebSocketSession
 
+    private String chargePointId;
+
     /**
      * Constructor que maneja la inyección de dependencias necesarias.
      *
@@ -81,7 +83,22 @@ public class Session implements ISession {
      * @param uuid    el identificador único de la solicitud.
      */
     public void sendRequest(String action, Request payload, String uuid) {
+        ensureRadioConnected();  // Verifica y conecta el radio si está desconectado
         communicator.sendCall(uuid, action, payload);
+    }
+
+    private void ensureRadioConnected() {
+        // Verifica si communicator.radio es null y, si es así, inicialízalo
+        if (communicator.radio == null) {
+            communicator.radio = new DefaultRadioImplementation();
+            logger.info("Radio inicializado con DefaultRadioImplementation.");
+        }
+
+        // Conecta el radio si está cerrado
+        if (communicator.radio.isClosed() && communicator.radio instanceof DefaultRadioImplementation) {
+            ((DefaultRadioImplementation) communicator.radio).connect();
+            logger.info("Radio reconectado automáticamente.");
+        }
     }
 
     /**
@@ -311,6 +328,15 @@ public class Session implements ISession {
     @Override
     public int hashCode() {
         return MoreObjects.hash(sessionId);
+    }
+
+    public void setChargePointId(String chargePointId) {
+        this.chargePointId = chargePointId;
+    }
+
+    // Método getter para chargePointId
+    public String getChargePointId() {
+        return chargePointId;
     }
 
     @Override

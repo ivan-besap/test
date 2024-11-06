@@ -12,6 +12,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 import java.util.Objects;
 import java.util.UUID;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 /**
  * Representa la solicitud para iniciar una transacción remota en OCPP 1.6.
@@ -42,6 +45,7 @@ import java.util.UUID;
 @XmlRootElement
 @XmlType(propOrder = {"connectorId", "idTag", "chargingProfile"})
 public class RemoteStartTransactionRequest extends RequestWithId {
+    private static final Logger log = LoggerFactory.getLogger(RemoteStartTransactionRequest.class);
 
     @Min(value = 1, message = "connectorId debe ser mayor que 0")
     @JsonProperty("connectorId")
@@ -69,6 +73,7 @@ public class RemoteStartTransactionRequest extends RequestWithId {
      */
     public RemoteStartTransactionRequest(String idTag) {
         setIdTag(idTag);
+        log.info("Constructor - RemoteStartTransactionRequest creado con idTag: {}", idTag);
     }
 
     /**
@@ -91,6 +96,7 @@ public class RemoteStartTransactionRequest extends RequestWithId {
         if (connectorId != null && connectorId <= 0) {
             throw new IllegalArgumentException("connectorId debe ser mayor que 0");
         }
+        log.info("Set - Configurando connectorId: {}", connectorId);
         this.connectorId = connectorId;
     }
 
@@ -114,6 +120,7 @@ public class RemoteStartTransactionRequest extends RequestWithId {
         if (idTag != null && idTag.length() > 20) {
             throw new IllegalArgumentException("idTag no puede superar los 20 caracteres");
         }
+        log.info("Set - Configurando idTag: {}", idTag);
         this.idTag = idTag;
     }
 
@@ -134,6 +141,7 @@ public class RemoteStartTransactionRequest extends RequestWithId {
     @XmlElement
     public void setChargingProfile(ChargingProfile chargingProfile) {
         this.chargingProfile = chargingProfile;
+        log.info("Set - Configurando chargingProfile: {}", chargingProfile);
     }
 
     /**

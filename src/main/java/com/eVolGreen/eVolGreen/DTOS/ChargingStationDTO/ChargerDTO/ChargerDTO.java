@@ -40,6 +40,8 @@ public class ChargerDTO {
 
     private String terminalName;
 
+    private String ubicacionTerminal;
+
     private Set<ChargingUnit> UnidadCarga = new HashSet<>();
 
     private List<ConnectorDTO> Conectores;
@@ -53,6 +55,8 @@ public class ChargerDTO {
     private String modelName;
 
     private ChargerStatus estadoCargador;
+
+    private Set<MantenimientoDTO> mantenimientos;
 
     public ChargerDTO(Charger Cargador) {
 
@@ -73,7 +77,11 @@ public class ChargerDTO {
                 .collect(Collectors.toList());
         Reservacion = Cargador.getReservacion();
         terminalName = Cargador.getTerminal().getNombreTerminal();
+        ubicacionTerminal = Cargador.getTerminal().getUbicacionTerminal().getDireccion();
         this.estadoCargador = Cargador.getEstadoCargador();
+        this.mantenimientos = Cargador.getMantenimientos().stream()
+                .map(MantenimientoDTO::new)  // Ahora usa el constructor que acepta un objeto Mantenimiento
+                .collect(Collectors.toSet());
     }
 
     public Long getId() {
@@ -108,7 +116,9 @@ public class ChargerDTO {
     public String getTerminalName() {  // Nuevo getter para el nombre del terminal
         return terminalName;
     }
-
+    public String getUbicacionTerminal() {
+        return ubicacionTerminal;
+    }
     public Set<ChargingUnit> getUnidadCarga() {
         return UnidadCarga;
     }
@@ -161,6 +171,10 @@ public class ChargerDTO {
         this.estadoCargador = estadoCargador;
     }
 
+    public Set<MantenimientoDTO> getMantenimientos() {
+        return mantenimientos;
+    }
+
     @Override
     public String toString() {
         return "ChargerDTO{" +
@@ -174,10 +188,12 @@ public class ChargerDTO {
                 ", FechaCreacion=" + FechaCreacion +
                 ", TerminalId=" + terminalId +
                 ", TerminalName=" + terminalName +
+                ", UbicacionTerminal=" + ubicacionTerminal +
                 ", UnidadCarga=" + UnidadCarga +
                 ", Conectores=" + Conectores +
                 ", Reservacion=" + Reservacion +
                 ", EstadoCargador=" + estadoCargador +
+                ", Mantenimiento=" + mantenimientos +
                 '}';
     }
 }

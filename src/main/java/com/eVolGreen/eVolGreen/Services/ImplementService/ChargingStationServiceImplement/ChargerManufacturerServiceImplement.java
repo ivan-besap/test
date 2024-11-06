@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.Services.ImplementService.ChargingStationServiceImplement;
 
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerManufacturerDTO;
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerModelDTO;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargerManufacturer;
 import com.eVolGreen.eVolGreen.Repositories.ChargerManufacturerRepository;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerManufacturerService;
@@ -36,5 +37,17 @@ public class ChargerManufacturerServiceImplement implements ChargerManufacturerS
     @Override
     public ChargerManufacturer findById(Long id) {
         return chargerManufacturerRepository.findById(id).orElse(null);
+    }
+
+    @Override
+    public List<ChargerManufacturerDTO> getChargerManufacturerByEmpresa(Long empresaId) {
+        return chargerManufacturerRepository.findByEmpresaId(empresaId).stream()
+                .map(manufacturer -> new ChargerManufacturerDTO(manufacturer.getId(), manufacturer.getName()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        chargerManufacturerRepository.deleteById(id);
     }
 }

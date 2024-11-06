@@ -12,4 +12,8 @@ public interface ChargerModelService {
     List<ChargerModelDTO> getAllChargerModels();  // Nuevo método
 
     ChargerModel findById(Long id);
+
+    List<ChargerModelDTO> getChargerModelsByEmpresa(Long empresaId);
+
+    void deleteById(Long id);
 }

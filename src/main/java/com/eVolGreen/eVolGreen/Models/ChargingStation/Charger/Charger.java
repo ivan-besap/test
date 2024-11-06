@@ -71,6 +71,10 @@ public class Charger {
     @JoinColumn(name = "modelo_id")
     private ChargerModel modelo;
 
+    @OneToMany(mappedBy = "cargador", cascade = CascadeType.ALL, orphanRemoval = true)
+    @JsonManagedReference("Charger-Mantenimiento")
+    private Set<Mantenimiento> mantenimientos = new HashSet<>();
+
     public Charger() { }
 
     public Charger(String oCPPid, String nombre, String alias, ChargerModel model, Boolean activo, LocalDate fechaCreacion, ChargingStation Terminal, ChargerManufacturer manufacturer) {
@@ -197,5 +201,13 @@ public class Charger {
 
     public void setEstadoCargador(ChargerStatus estadoCargador) {
         this.estadoCargador = estadoCargador;
+    }
+
+    public Set<Mantenimiento> getMantenimientos() {
+        return mantenimientos;
+    }
+
+    public void setMantenimientos(Set<Mantenimiento> mantenimientos) {
+        this.mantenimientos = mantenimientos;
     }
 }

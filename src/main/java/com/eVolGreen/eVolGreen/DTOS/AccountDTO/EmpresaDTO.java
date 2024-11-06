@@ -10,8 +10,13 @@ public class EmpresaDTO {
     public EmpresaDTO() {}
 
     public EmpresaDTO(Empresa empresa) {
-        this.id = empresa.getId();
-        this.nombre = empresa.getNombre();
+        if (empresa != null) {
+            this.id = empresa.getId();
+            this.nombre = empresa.getNombre();
+        } else {
+            this.id = null; // o algún valor por defecto
+            this.nombre = null; // o algún valor por defecto
+        }
     }
 
     public Long getId() {

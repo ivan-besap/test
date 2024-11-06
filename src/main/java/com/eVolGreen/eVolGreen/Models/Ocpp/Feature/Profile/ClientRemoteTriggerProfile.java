@@ -47,7 +47,7 @@ public class ClientRemoteTriggerProfile implements Profile {
     /**
      * Maneja las solicitudes recibidas de disparadores remotos.
      *
-     * @param sessionIndex El índice de la sesión de la solicitud.
+     * @param sessionIndex El indice de la sesión de la solicitud.
      * @param request La solicitud que debe ser procesada.
      * @return La confirmación resultante de manejar la solicitud.
      */

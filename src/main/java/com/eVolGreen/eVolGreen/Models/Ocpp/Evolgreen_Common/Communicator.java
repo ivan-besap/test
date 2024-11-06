@@ -112,11 +112,12 @@ public abstract class Communicator {
         if (transmitter == null) {
             throw new IllegalArgumentException("Radio no puede ser null");
         }
-        this.radio = transmitter;
+        this.radio = (transmitter != null) ? transmitter : new DefaultRadioImplementation(); // Crea una instancia por defecto si es null
         this.transactionQueue = enableTransactionQueue ? new ArrayDeque<>() : null;
         this.retryRunner = enableTransactionQueue ? new RetryRunner() : null;
         this.failedFlag = false;
     }
+
 
     /**
      * Utiliza el {@link Transmitter} inyectado para conectarse al servidor.

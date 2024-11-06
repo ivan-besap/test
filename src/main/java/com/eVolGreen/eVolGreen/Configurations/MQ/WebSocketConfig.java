@@ -3,9 +3,11 @@ package com.eVolGreen.eVolGreen.Configurations.MQ;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.ServerCoreProfile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.JSONServer;
+import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;
@@ -32,6 +34,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     private final IFeatureRepository featureRepository;
     private final Queue queue;
     private final PromiseFulfiller fulfiller;
+    private final UtilService utilService;
 
     @Autowired
     public WebSocketConfig(AmazonMQCommunicator amazonMQCommunicator,
@@ -41,7 +44,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
                            ServerCoreProfile coreProfile,
                            IFeatureRepository featureRepository,
                            Queue queue,
-                           PromiseFulfiller fulfiller) {
+                           PromiseFulfiller fulfiller, UtilService utilService) {
         this.amazonMQCommunicator = amazonMQCommunicator;
         this.sessionFactory = sessionFactory;
         this.communicator = communicator;
@@ -50,6 +53,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
         this.featureRepository = featureRepository;
         this.queue = queue;
         this.fulfiller = fulfiller;
+        this.utilService = utilService;
     }
 
     @Override
@@ -61,7 +65,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     }
 
     private WebSocketHandler createWebSocketHandler() {
-        return new WebSocketHandler(sessionFactory, communicator, jsonServer, coreProfile, amazonMQCommunicator);
+        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, amazonMQCommunicator,queue,fulfiller,featureRepository);
     }
 
     private DefaultHandshakeHandler createHandshakeHandler() {
@@ -82,15 +86,30 @@ public class WebSocketConfig implements WebSocketConfigurer {
                 String expectedProtocolName = expectedProtocol != null ? expectedProtocol.getSubProtocolName() : null;
 
                 logger.info("Subprotocolo esperado: '{}', Subprotocolo recibido: '{}'", expectedProtocolName, protocol);
+
+                // Verificar y validar el subprotocolo
                 if (protocol != null && protocol.equals(expectedProtocolName)) {
                     response.getHeaders().add("Sec-WebSocket-Protocol", protocol);
                     attributes.put("subProtocol", protocol);
                     logger.info("Subprotocolo validado exitosamente.");
-                    return true;
                 } else {
                     logger.warn("Subprotocolo no soportado o no definido: {}", protocol);
                     return false;
                 }
+
+                // Extraer el `chargePointId` desde la URL
+                String path = request.getURI().getPath();
+                String[] pathSegments = path.split("/");
+                if (pathSegments.length > 2) {
+                    String chargePointId = pathSegments[2];  // Suponiendo que el path sea /ocpp/{cid}
+                    attributes.put("chargePointId", chargePointId);  // Guardar el chargePointId en los atributos
+                    logger.info("Cargador conectado con chargePointId: {}", chargePointId);
+                } else {
+                    logger.warn("No se encontró un chargePointId en la URL del WebSocket.");
+                    return false;  // Si no hay `cid`, no continuar
+                }
+
+                return true;
             }
 
             @Override
