@@ -1168,9 +1168,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // Convierte el payload a una instancia de GetConfigurationRequest
             GetConfigurationRequest getConfigurationRequest = objectMapper.convertValue(requestPayload, GetConfigurationRequest.class);
 
+            logger.info("Solicitud de GetConfiguration recibida para la clave: {}", Arrays.toString(getConfigurationRequest.getKey()));
+
             // Llama al manejador de eventos del cliente para procesar la solicitud
             Confirmation confirmation = clientCoreEventHandler.handleGetConfigurationRequest(getConfigurationRequest);
-            GetConfigurationConfirmation confirmation1 = new GetConfigurationConfirmation();
 
             // Envía la respuesta al cliente
             sendResponse(ocppSession, webSocketSession, messageId, "GetConfiguration", confirmation);
