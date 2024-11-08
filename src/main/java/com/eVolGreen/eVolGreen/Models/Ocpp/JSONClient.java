@@ -72,7 +72,12 @@ public class JSONClient implements IClientAPI {
         this.transmitter = new WebSocketTransmitter(configuration, this.draftOcppOnly);
 
         // Create the JSON communicator using the WebSocket transmitter
-        JSONCommunicator communicator = new JSONCommunicator(this.transmitter);
+        JSONCommunicator communicator = new JSONCommunicator(this.transmitter) {
+            @Override
+            public void receivedMessage(UUID sessionId, Object message) {
+
+            }
+        };
 
         // Initialize the feature repository and session
         this.featureRepository = new FeatureRepository();

@@ -22,6 +22,15 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Utils.IdTag
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargePointStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Request.TriggerMessageRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Confirmations.ClearChargingProfileConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Confirmations.Enums.ChargingProfileStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Confirmations.Enums.ClearChargingProfileStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Confirmations.Enums.GetCompositeScheduleStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Confirmations.GetCompositeScheduleConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Confirmations.SetChargingProfileConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Request.ClearChargingProfileRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Request.GetCompositeScheduleRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.SmartCharging.Request.SetChargingProfileRequest;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -79,6 +88,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private Queue queue;
     private PromiseFulfiller fulfiller;
     private IFeatureRepository featureRepository;
+    private ConfirmationCompletedHandler completedHandler
+            ;
 
 
     /**
@@ -347,6 +358,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
             case "RemoteStopTransaction" -> handleRemoteStopTransaction(session, webSocketSession, requestPayload, messageId);
             case "ClearCache" -> handleClearCache(session, webSocketSession, requestPayload, messageId);
             case "ChangeConfiguration" -> handleChangeConfiguration(session, webSocketSession, requestPayload, messageId);
+            case "ClearChargingProfile" -> handleClearChargingProfile(session, webSocketSession, requestPayload, messageId);
+            case "GetCompositeSchedule" -> handleGetCompositeSchedule(session, webSocketSession, requestPayload, messageId);
+            case "SetChargingProfile" -> handleSetChargingProfile(session, webSocketSession, requestPayload, messageId);
+
             default -> sendError(session, webSocketSession, messageId, "Acción no soportada: " + action);
         }
     }
@@ -1386,9 +1401,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // Conversión del payload a ChangeConfigurationRequest
             ChangeConfigurationRequest changeConfigurationRequest = objectMapper.convertValue(requestPayload, ChangeConfigurationRequest.class);
 
-            // Lógica de procesamiento específica para ChangeConfiguration
-            // (Aquí se realizarían las validaciones o acciones necesarias con changeConfigurationRequest)
-
+            // Log de la solicitud para referencia
             ChangeConfigurationConfirmation confirmation = new ChangeConfigurationConfirmation();
 
             // Envía la respuesta de confirmación al cliente
@@ -1401,6 +1414,153 @@ public class WebSocketHandler extends TextWebSocketHandler {
             sendError(ocppSession,webSocketSession, messageId, "Error in ChangeConfiguration: " + e.getMessage());
         }
     }
+
+//27
+    /**
+     * Maneja la solicitud ClearChargingProfile, permitiendo limpiar perfiles de carga configurados previamente.
+     *
+     * @param session           La instancia de Session que gestiona la lógica de OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param requestPayload    El contenido de la solicitud en formato JSON.
+     * @param messageId         El identificador único del mensaje para rastrear la solicitud.
+     * @throws IOException Si ocurre un error al procesar o enviar la respuesta.
+     */
+    void handleClearChargingProfile(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            logger.debug("Procesando ClearChargingProfileRequest con messageId: {}", messageId);
+
+            // Validar que el payload no sea nulo
+            if (requestPayload == null) {
+                throw new IllegalArgumentException("El payload de la solicitud no puede ser nulo.");
+            }
+
+            // Deserializar el payload a ClearChargingProfileRequest
+            ClearChargingProfileRequest clearRequest = objectMapper.convertValue(requestPayload, ClearChargingProfileRequest.class);
+            logger.info("ClearChargingProfileRequest recibido: {}", clearRequest);
+
+            // Verificar si la sesión es válida
+            if (session == null) {
+                throw new IllegalStateException("Sesión OCPP no encontrada para el ID proporcionado.");
+            }
+
+            // Enviar la solicitud ClearChargingProfile
+            session.sendRequest("ClearChargingProfile", clearRequest, messageId);
+
+            // Configurar la respuesta de confirmación
+            ClearChargingProfileConfirmation confirmation = new ClearChargingProfileConfirmation();
+            confirmation.setStatus(ClearChargingProfileStatus.Accepted);
+            confirmation.setCompletedHandler(completedHandler);
+
+            // Log para verificar los perfiles de carga después de limpiar
+            logger.info("Perfiles de carga después de seteado: {}", confirmation.getCompletedHandler());
+
+            // Enviar la respuesta al cliente
+            sendResponse(session, webSocketSession, messageId, "ClearChargingProfile", confirmation);
+            logger.info("ClearChargingProfile manejado exitosamente para la sesión: {}", session.getSessionId());
+
+        } catch (Exception e) {
+            // Manejo de errores en el procesamiento
+            logger.error("Error en ClearChargingProfile para la sesión {}: {}", session.getSessionId(), e.getMessage(), e);
+            sendError(session, webSocketSession, messageId, "Error en ClearChargingProfile: " + e.getMessage());
+        }
+    }
+
+//28
+    /**
+     * Maneja la solicitud GetCompositeSchedule, utilizada para obtener el horario compuesto
+     * de carga para un conector específico, en función de la configuración de perfiles de carga.
+     *
+     * @param session           La instancia de Session que gestiona la lógica de OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param requestPayload    El contenido de la solicitud en formato JSON.
+     * @param messageId         El identificador único del mensaje para rastrear la solicitud.
+     * @throws IOException Si ocurre un error al procesar o enviar la respuesta.
+     */
+    void handleGetCompositeSchedule(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            logger.debug("Procesando GetCompositeScheduleRequest con messageId: {}", messageId);
+
+            // Validar que el payload no sea nulo
+            if (requestPayload == null) {
+                throw new IllegalArgumentException("El payload de la solicitud no puede ser nulo.");
+            }
+
+            // Deserializar el payload a GetCompositeScheduleRequest
+            GetCompositeScheduleRequest getScheduleRequest = objectMapper.convertValue(requestPayload, GetCompositeScheduleRequest.class);
+            logger.info("GetCompositeScheduleRequest recibido: {}", getScheduleRequest);
+
+            // Verificar si la sesión es válida
+            if (session == null) {
+                throw new IllegalStateException("Sesión OCPP no encontrada para el ID proporcionado.");
+            }
+
+            // Enviar la solicitud GetCompositeScheduleRequest
+            session.sendRequest("GetCompositeSchedule", getScheduleRequest, messageId);
+
+            // Configurar la respuesta de confirmación
+            GetCompositeScheduleConfirmation confirmation = new GetCompositeScheduleConfirmation();
+            confirmation.setStatus(GetCompositeScheduleStatus.Accepted);
+            confirmation.setCompletedHandler(completedHandler);
+
+            // Enviar la respuesta al cliente
+            sendResponse(session, webSocketSession, messageId, "GetCompositeSchedule", confirmation);
+            logger.info("GetCompositeSchedule manejado exitosamente para la sesión: {}", session.getSessionId());
+
+        } catch (Exception e) {
+            logger.error("Error en GetCompositeSchedule", e);
+            sendError(session, webSocketSession, messageId, "Error en GetCompositeSchedule: " + e.getMessage());
+        }
+    }
+
+//29
+    /**
+     * Maneja la solicitud SetChargingProfile, utilizada para establecer un perfil de carga
+     * en un conector específico en función de la configuración del perfil.
+     *
+     * @param session           La instancia de Session que gestiona la lógica de OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param requestPayload    El contenido de la solicitud en formato JSON.
+     * @param messageId         El identificador único del mensaje para rastrear la solicitud.
+     * @throws IOException Si ocurre un error al procesar o enviar la respuesta.
+     */
+    void handleSetChargingProfile(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            logger.debug("Procesando SetChargingProfileRequest con messageId: {}", messageId);
+
+            // Validar que el payload no sea nulo
+            if (requestPayload == null) {
+                throw new IllegalArgumentException("El payload de la solicitud no puede ser nulo.");
+            }
+
+            // Deserializar el payload a SetChargingProfileRequest
+            SetChargingProfileRequest setProfileRequest = objectMapper.convertValue(requestPayload, SetChargingProfileRequest.class);
+            logger.info("SetChargingProfileRequest recibido: {}", setProfileRequest);
+
+            // Verificar si la sesión es válida
+            if (session == null) {
+                throw new IllegalStateException("Sesión OCPP no encontrada para el ID proporcionado.");
+            }
+
+            // Enviar la solicitud SetChargingProfile al punto de carga
+            session.sendRequest("SetChargingProfile", setProfileRequest, messageId);
+
+            // Configurar la respuesta de confirmación
+            SetChargingProfileConfirmation confirmation = new SetChargingProfileConfirmation();
+            confirmation.setStatus(ChargingProfileStatus.Accepted);
+
+            // Enviar la respuesta al cliente
+            sendResponse(session, webSocketSession, messageId, "SetChargingProfile", confirmation);
+            logger.info("SetChargingProfile manejado exitosamente para la sesión: {}", session.getSessionId());
+
+        } catch (IllegalArgumentException e) {
+            logger.error("Error de argumento en SetChargingProfile: {}", e.getMessage());
+            sendError(session, webSocketSession, messageId, "Error en SetChargingProfile: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error en SetChargingProfile", e);
+            sendError(session, webSocketSession, messageId, "Error en SetChargingProfile: " + e.getMessage());
+        }
+    }
+
 
     public Session getSessionById(String sessionId) {
         try {

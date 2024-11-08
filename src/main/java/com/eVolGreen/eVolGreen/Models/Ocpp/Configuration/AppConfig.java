@@ -173,14 +173,12 @@ public class AppConfig {
     /**
      * Configura y devuelve una instancia de {@link AmazonMQCommunicator} para la comunicación con Amazon MQ.
      *
-     * @param awsConfig Configuración de credenciales de AWS.
-     * @param serverEvents Manejador de eventos de servidor.
      * @return una instancia configurada de {@link AmazonMQCommunicator}.
      */
-//    @Bean
-//    public AmazonMQCommunicator amazonMQCommunicator(AwsConfig awsConfig, ServerEvents serverEvents) {
-//        return new AmazonMQCommunicator(awsConfig, brokerUrl, brokerUser, brokerPassword, serverEvents);
-//    }
+    @Bean
+    public AmazonMQCommunicator amazonMQCommunicator(Radio radio) {
+        return new AmazonMQCommunicator(radio);
+    }
 
     /**
      * Configura y devuelve una instancia de {@link AmazonMQ}, que es el cliente de Amazon MQ.
