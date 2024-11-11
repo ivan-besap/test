@@ -5,6 +5,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Session;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargingProfileKindType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargingProfilePurposeType;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ResetType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingProfile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingSchedule;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.MeterValue;
@@ -324,6 +325,36 @@ public ResponseEntity<List<MeterValue>> getMeterValues(
         } catch (Exception e) {
             log.error("Error deteniendo la carga: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deteniendo la carga");
+        }
+    }
+
+    @PostMapping("/desbloquear-conector")
+    public ResponseEntity<String> desbloquearConector(@RequestParam int connectorId) {
+        try {
+            log.info("Desbloqueando Conector en el simulador");
+
+            // Llamar al servicio para comunicar al simulador
+            utilService.desbloquearConectorSimulador(connectorId);
+
+            return ResponseEntity.ok("Conector Desbloqueado con éxito");
+        } catch (Exception e) {
+            log.error("Error Desbloqueando el conector: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error Desbloqueando el conector");
+        }
+    }
+
+    @PostMapping("/reset-cargador")
+    public ResponseEntity<String> resetCargador(@RequestParam ResetType resetType, @RequestParam String ocppid) {
+        try {
+            log.info("Reseteando Cargador: {} en el simulador. Tipo de reset: {}",ocppid,resetType);
+
+            // Llamar al servicio para comunicar al simulador
+            utilService.resetCargadorSimulador(resetType, ocppid);
+
+            return ResponseEntity.ok("Cargador Reseteado con éxito");
+        } catch (Exception e) {
+            log.error("Error Reseteando el Cargador: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error Reseteando el cargador");
         }
     }
 

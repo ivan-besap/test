@@ -1,6 +1,8 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.*;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Enums.ResetStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Enums.UnlockStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Confirmations.Utils.KeyValueType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.*;
 import org.springframework.context.annotation.Primary;
@@ -86,11 +88,15 @@ public class DefaultClientCoreEventHandler implements ClientCoreEventHandler {
 
     @Override
     public ResetConfirmation handleResetRequest(ResetRequest request) {
-        return new ResetConfirmation();
+        ResetStatus resetStatus;
+        resetStatus = ResetStatus.Accepted;
+        return new ResetConfirmation(resetStatus);
     }
 
     @Override
     public UnlockConnectorConfirmation handleUnlockConnectorRequest(UnlockConnectorRequest request) {
-        return new UnlockConnectorConfirmation();
+        UnlockStatus status;
+        status = UnlockStatus.Unlocked;
+        return new UnlockConnectorConfirmation(status);
     }
 }

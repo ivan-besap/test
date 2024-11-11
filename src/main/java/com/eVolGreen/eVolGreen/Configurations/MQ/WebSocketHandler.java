@@ -361,6 +361,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
             case "ClearChargingProfile" -> handleClearChargingProfile(session, webSocketSession, requestPayload, messageId);
             case "GetCompositeSchedule" -> handleGetCompositeSchedule(session, webSocketSession, requestPayload, messageId);
             case "SetChargingProfile" -> handleSetChargingProfile(session, webSocketSession, requestPayload, messageId);
+            case "UnlockConnector" -> handleUnlockConnector(session, webSocketSession, requestPayload, messageId);
+            case "Reset" -> handleReset(session, webSocketSession, requestPayload, messageId);
 
             default -> sendError(session, webSocketSession, messageId, "Acción no soportada: " + action);
         }
@@ -1195,6 +1197,49 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // Maneja cualquier excepción ocurrida durante el procesamiento
             logger.error("Error processing GetConfiguration", e);
             sendError(ocppSession,webSocketSession, messageId, "Error in GetConfiguration: " + e.getMessage());
+        }
+    }
+
+    void handleUnlockConnector(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // Convierte el payload a una instancia de UnlockConnectorRequest
+            UnlockConnectorRequest unlockConnectorRequest = objectMapper.convertValue(requestPayload, UnlockConnectorRequest.class);
+
+            logger.info("Solicitud de UnlockConnector recibida para el conector: {}", unlockConnectorRequest.getConnectorId());
+
+            // Llama al manejador de eventos del cliente para procesar la solicitud
+            UnlockConnectorConfirmation confirmation = clientCoreEventHandler.handleUnlockConnectorRequest(unlockConnectorRequest);
+
+            // Envía la respuesta al cliente
+            sendResponse(ocppSession, webSocketSession, messageId, "UnlockConnector", confirmation);
+            logger.info("UnlockConnector manejado exitosamente para el conectorId: {}", unlockConnectorRequest.getConnectorId());
+            logger.info("UnlockConnector manejado exitosamente para la sesión: {}", ocppSession.getSessionId());
+            logger.info("Estado de conector: {} ", confirmation.getStatus());
+        } catch (Exception e) {
+            // Maneja cualquier excepción ocurrida durante el procesamiento
+            logger.error("Error processing UnlockConnector", e);
+            sendError(ocppSession, webSocketSession, messageId, "Error en UnlockConnector: " + e.getMessage());
+        }
+    }
+
+    void handleReset(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // Convertir el payload en una instancia de ResetRequest
+            ResetRequest resetRequest = objectMapper.convertValue(requestPayload, ResetRequest.class);
+
+            logger.info("Solicitud de Reset recibida con tipo: {}", resetRequest.getType());
+
+            // Llamar al manejador de eventos del cliente para procesar la solicitud
+            ResetConfirmation confirmation = clientCoreEventHandler.handleResetRequest(resetRequest);
+
+            // Enviar la respuesta al cliente
+            sendResponse(ocppSession, webSocketSession, messageId, "Reset", confirmation);
+            logger.info("Reset manejado exitosamente para la sesión: {}", ocppSession.getSessionId());
+
+        } catch (Exception e) {
+            // Manejar cualquier excepción ocurrida durante el procesamiento
+            logger.error("Error al procesar la solicitud de Reset", e);
+            sendError(ocppSession, webSocketSession, messageId, "Error en Reset: " + e.getMessage());
         }
     }
 

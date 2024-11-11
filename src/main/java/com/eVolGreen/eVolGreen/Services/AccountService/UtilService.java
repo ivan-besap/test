@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.Services.AccountService;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Controller.OcppController;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Session;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ResetType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.MeterValuesRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.RemoteStartTransactionRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingProfile;
@@ -134,6 +135,40 @@ public class UtilService {
         } catch (Exception e) {
             log.error("Error enviando solicitud de detener carga al simulador: " + e.getMessage());
         }
+    }
+
+    public void desbloquearConectorSimulador(int connectorId) throws Exception {
+        String url = "http://localhost:8081/api/charge-point/unlock-connector?connectorId=" + connectorId;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new Exception("Error al desbloquear el conector en el simulador: " + response.getBody());
+        }
+
+        log.info("Éxito al desbloquear el conectorId: {}", connectorId);
+    }
+
+    public void resetCargadorSimulador(ResetType resetType, String ocppid) throws Exception {
+        String url = "http://localhost:8081/api/charge-point/reset-cargador?resetType=" + resetType;
+
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+
+        HttpEntity<Void> requestEntity = new HttpEntity<>(headers);
+
+        ResponseEntity<String> response = restTemplate.exchange(url, HttpMethod.POST, requestEntity, String.class);
+
+        if (!response.getStatusCode().is2xxSuccessful()) {
+            throw new Exception("Error al resetear el cargador en el simulador: " + response.getBody());
+        }
+
+        log.info("Éxito al resetear el cargador: {}", ocppid);
     }
 
 }
