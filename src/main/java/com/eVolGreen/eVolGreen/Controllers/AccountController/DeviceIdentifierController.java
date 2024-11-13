@@ -6,6 +6,7 @@ import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Car.Car;
 import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
 import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.AuditLogService;
@@ -103,6 +104,7 @@ public class DeviceIdentifierController {
                 deviceIdentifierDTO.getRfid(),
                 deviceIdentifierDTO.getFechaExpiracion(),
                 null,
+                true,
                 true
         );
         newDeviceIdentifier.setEmpresa(empresa);
@@ -113,6 +115,16 @@ public class DeviceIdentifierController {
         auditLogService.recordAction(descripcion, account);
 
         return new ResponseEntity<>("Identificador de dispositivo creado exitosamente", HttpStatus.CREATED);
+    }
+
+    @PatchMapping("/rfidStatus/change-active-status")
+    public ResponseEntity<String> changeRfidStatus(@RequestParam Long id, @RequestParam Boolean usable) {
+        boolean result = deviceIdentifierService.updateRfidStatus(id, usable);
+        if (result) {
+            return ResponseEntity.ok("Estado de la RFID actualizado correctamente.");
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("RFID no econtrada.");
+        }
     }
 
     @PutMapping("/accounts/current/device-identifiers/{id}")

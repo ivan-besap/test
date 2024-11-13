@@ -116,7 +116,9 @@ public class FeeController {
                 feeDTO.getPrecioTarifa(),
                 true,
                 empresa,
-                feeDTO.getConsumoDeEnergiaAlarma()
+                feeDTO.getConsumoDeEnergiaAlarma(),
+                null,
+                null
         );
 
         feeService.saveFee(nuevaTarifa);

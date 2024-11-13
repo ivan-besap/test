@@ -34,6 +34,9 @@ public class FeeDTO {
     @NotNull(message = "El precio de la tarifa es obligatorio")
     private BigDecimal precioTarifa;
 
+    private String nombreConector;
+    private String nombreCargador;
+
 
 
     private long empresaId;
@@ -53,6 +56,8 @@ public class FeeDTO {
         precioTarifa = tarifa.getPrecioTarifa();
         empresaId = tarifa.getEmpresa().getId();
         activo = tarifa.getActivo();
+        nombreConector = tarifa.getNombreConector();
+        nombreCargador = tarifa.getNombreCargador();
     }
 
     public long getId() {
@@ -96,6 +101,13 @@ public class FeeDTO {
         return empresaId;
     }
 
+    public String getNombreConector() {
+        return nombreConector;
+    }
+    public String getNombreCargador() {
+        return nombreCargador;
+    }
+
     @Override
     public String toString() {
         return "FeeDTO{" +
@@ -109,6 +121,8 @@ public class FeeDTO {
                 ", precioTarifa=" + precioTarifa +
                 ", empresaId=" + empresaId +
                 ", activo=" + activo +
+                ", nombreConector=" + nombreConector +
+                ", nombreCargador=" + nombreCargador +
                 '}';
     }
 }

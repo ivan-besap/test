@@ -41,6 +41,8 @@ public class CarDTO {
 
     private String alias;
 
+    private String flotaNombre;
+
     public CarDTO() {}
 
     public CarDTO(Car car) {
@@ -58,6 +60,7 @@ public class CarDTO {
         this.empresaId = car.getEmpresa().getId();
         this.activo = car.getActivo();
         this.alias = car.getAlias();
+        this.flotaNombre = (car.getFlota() != null) ? car.getFlota().getNombreFlota() : null;  // Asigna el nombre de la flota si existe
     }
 
     public long getId() {
@@ -112,6 +115,10 @@ public class CarDTO {
         this.alias = alias;
     }
 
+    public String getFlotaNombre() {
+        return flotaNombre;
+    }
+
     @Override
     public String toString() {
         return "CarDTO{" +
@@ -127,6 +134,7 @@ public class CarDTO {
                 ", empresaId=" + empresaId +
                 ", activo=" + activo +
                 ", alias=" + alias +
+                ", flotaNombre='" + flotaNombre + '\'' +
                 '}';
     }
 }

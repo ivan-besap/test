@@ -56,9 +56,12 @@ public class Fee {
 
     private String consumoDeEnergiaAlarma;
 
+    private String nombreConector;
+    private String nombreCargador;
+
     public Fee() {}
 
-    public Fee(String nombreTarifa, LocalDate fechaInicio, LocalDate fechaFin, LocalTime horaInicio, LocalTime horaFin, Set<String> diasDeLaSemana, BigDecimal precioTarifa, Boolean activo, Empresa empresa, String consumoDeEnergiaAlarma) {
+    public Fee(String nombreTarifa, LocalDate fechaInicio, LocalDate fechaFin, LocalTime horaInicio, LocalTime horaFin, Set<String> diasDeLaSemana, BigDecimal precioTarifa, Boolean activo, Empresa empresa, String consumoDeEnergiaAlarma, String nombreConector, String nombreCargador) {
         this.nombreTarifa = nombreTarifa;
         this.fechaInicio = fechaInicio;
         this.fechaFin = fechaFin;
@@ -69,6 +72,8 @@ public class Fee {
         this.activo = activo;
         this.empresa = empresa;
         this.consumoDeEnergiaAlarma = consumoDeEnergiaAlarma;
+        this.nombreConector = nombreConector;
+        this.nombreCargador = nombreCargador;
     }
 
     public long getId() {
@@ -160,6 +165,20 @@ public class Fee {
         this.consumoDeEnergiaAlarma = consumoDeEnergiaAlarma;
     }
 
+    public String getNombreConector() {
+        return nombreConector;
+    }
+    public void setNombreConector(String nombreConector) {
+        this.nombreConector = nombreConector;
+    }
+
+    public String getNombreCargador() {
+        return nombreCargador;
+    }
+    public void setNombreCargador(String nombreCargador) {
+        this.nombreCargador = nombreCargador;
+    }
+
     @Override
     public String toString() {
         return "Fee{" +
@@ -174,6 +193,8 @@ public class Fee {
                 ", activo=" + activo +
                 ", empresa=" + empresa +
                 ", consumoDeEnergiaAlarma='" + consumoDeEnergiaAlarma + '\'' +
+                ", nombreConector='" + nombreConector + '\'' +
+                ", nombreCargador='" + nombreCargador + '\'' +
                 '}';
     }
 }

@@ -4,12 +4,15 @@ package com.eVolGreen.eVolGreen.Services.ImplementService.AccountServiceImplemen
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.DeviceIdentifierDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
 import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.DeviceIdentifierService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -45,6 +48,18 @@ public class DeviceIdentifierServiceImplement implements DeviceIdentifierService
                 .stream()
                 .map(DeviceIdentifierDTO::new)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public boolean updateRfidStatus(Long id, Boolean usable) {
+        Optional<DeviceIdentifier> deviceIdentifier = deviceIdentifierRepository.findById(id);
+        if (deviceIdentifier.isPresent()) {
+            DeviceIdentifier identifier = deviceIdentifier.get();
+            identifier.setUsable(usable);
+            deviceIdentifierRepository.save(identifier);
+            return true;
+        }
+        return false;
     }
 
 }

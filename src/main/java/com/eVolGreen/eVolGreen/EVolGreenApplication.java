@@ -289,6 +289,22 @@ public class EVolGreenApplication {
 				Permission cargaInteligente = new Permission("carga_inteligente", "Permitir modificar Carga Inteligente");
 				permissionRepository.save(cargaInteligente);
 
+				Permission verFlota = new Permission("flotas_view", "Permitir ver Flotas");
+				permissionRepository.save(verFlota);
+
+				Permission crearFlota = new Permission("flotas_create", "Permitir crear Flotas");
+				permissionRepository.save(crearFlota);
+
+				Permission editarFlota = new Permission("flotas_edit", "Permitir Editar Flotas");
+				permissionRepository.save(editarFlota);
+
+				Permission eliminarFlota = new Permission("flotas_delete", "Permitir Eliminar Flotas");
+				permissionRepository.save(eliminarFlota);
+
+				Permission asignarVehiculo = new Permission("vehiculo_asignar", "Permitir Asignar Vehiculo");
+				permissionRepository.save(asignarVehiculo);
+
+
 
 				System.out.println("OK");
 

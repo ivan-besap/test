@@ -295,9 +295,9 @@ public class ConnectorController {
     public ResponseEntity<String> changeChargingStationStatus(@RequestParam Long id, @RequestParam ConnectorStatus activeStatus) {
         boolean result = connectorService.updateConnectorStatus(id, activeStatus);
         if (result) {
-            return ResponseEntity.ok("Estado de la estación actualizado correctamente.");
+            return ResponseEntity.ok("Estado del conector actualizado correctamente.");
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Estación no encontrada.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Conector no encontrado.");
         }
     }
     @PatchMapping("/connectors/{id}/assign-fee")
@@ -325,6 +325,10 @@ public class ConnectorController {
 
         connector.setTarifa(tarifa);
         connectorService.saveConnector(connector);
+
+        tarifa.setNombreConector(connector.getAlias());
+        tarifa.setNombreCargador(connector.getCargador().getoCPPid());
+        feeService.saveFee(tarifa);
 
         String descripcion = "Usuario " + cuentaUsuario.getEmail() + " asignó el la tarifa : " + tarifa.getNombreTarifa() + " al conector: " + connector.getAlias();
         auditLogService.recordAction(descripcion, cuentaUsuario);

@@ -260,9 +260,9 @@ public class ChargerController {
     public ResponseEntity<String> changeChargerStatus(@RequestParam Long id, @RequestParam ChargerStatus activeStatus) {
         boolean result = chargerService.updateChargerStatus(id, activeStatus);
         if (result) {
-            return ResponseEntity.ok("Estado de la estación actualizado correctamente.");
+            return ResponseEntity.ok("Estado del cargador actualizado correctamente.");
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Estación no encontrada.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Cargador no encontrado.");
         }
     }
 
