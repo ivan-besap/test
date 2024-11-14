@@ -1018,9 +1018,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             jsonServer.sendMessageToMQ("Data Transfer request received: " + dataTransferRequest.toString());
 
             // Determinar el estado de la respuesta en función de la lógica de negocio
-            DataTransferStatus dataTransferStatus = "Vendor123".equals(dataTransferRequest.getVendorId())
-                    ? DataTransferStatus.Accepted
-                    : DataTransferStatus.Rejected;
+            DataTransferStatus dataTransferStatus = DataTransferStatus.Accepted;
 
             // Crear el objeto de confirmación con los campos configurados
             DataTransferConfirmation confirmation = new DataTransferConfirmation();
