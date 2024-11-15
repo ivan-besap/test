@@ -1,164 +1,274 @@
 package com.eVolGreen.eVolGreen.Configurations.MQ;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.AuthenticationException;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.SessionInformation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.JSONCommunicator;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Radio;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.ServerEvents;
-import jakarta.jms.*;
-import org.apache.activemq.ActiveMQConnectionFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.simp.stomp.StompHeaders;
+import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.StompSessionHandler;
+import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
+import org.springframework.stereotype.Component;
+import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.client.WebSocketClient;
+import org.springframework.web.socket.client.standard.StandardWebSocketClient;
+import org.springframework.web.socket.messaging.WebSocketStompClient;
 
 import java.util.UUID;
 
+import static com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler.sessionStore;
+
 /**
- * `AmazonMQCommunicator` es una entidad que gestiona la comunicación segura con Amazon MQ para enviar y recibir mensajes OCPP.
- * Extiende `JSONCommunicator` y utiliza Amazon MQ como intermediario, asegurando que los mensajes se entreguen correctamente
- * entre el sistema central y las estaciones de carga.
- *
- * Este comunicador maneja la configuración de Amazon MQ, la conexión, envío y recepción de mensajes,
- * y está diseñado para integrarse con WebSocket para reenviar los mensajes recibidos a través del sistema.
+ * `AmazonMQCommunicator` gestiona la comunicación con Amazon MQ usando STOMP sobre WSS.
+ * Extiende `JSONCommunicator` y asegura la entrega de mensajes entre el sistema central y las estaciones de carga.
+ * Proporciona métodos para inicializar sesiones de carga, enviar y recibir mensajes,
+ * y gestionar la reconexión en caso de errores de conexión.
  */
+@Component
 public class AmazonMQCommunicator extends JSONCommunicator implements ServerEvents {
 
     private static final Logger logger = LoggerFactory.getLogger(AmazonMQCommunicator.class);
-    private static final String WIRE_LEVEL_ENDPOINT = "ssl://b-e5acc38c-2617-4ce2-9ac0-009e5e858a2c-1.mq.us-west-2.amazonaws.com:61617";
-    private static final String QUEUE_NAME = "ocppQueue";
+
+//    @Value("${amazon.mq.wss.endpoint}")
+    private String wssEndpoint;
+
+//    @Value("${amazon.mq.queue.name}")
+    private String queueName;
+
     private final String username = "eVolGreen";
     private final String password = "eVolGreen123";
-    private Connection connection;
-    private Session jmsSession;
-    private MessageProducer producer;
-    private MessageConsumer consumer;
+
+    private final SessionManager sessionManager;
+    private final WebSocketStompClient stompClient;
+
+    private final Queue queue;
+    private final PromiseFulfiller fulfiller;
+    private final IFeatureRepository featureRepository;
 
     /**
-     * Constructor para inicializar AmazonMQCommunicator con una instancia de `Radio` para transmisión de mensajes.
-     * Configura e inicia la conexión a Amazon MQ y prepara los componentes de mensajería.
+     * Inicializa AmazonMQCommunicator con una instancia de `Radio` y configura el cliente STOMP.
      *
      * @param radio instancia de `Radio` para transmisión de mensajes.
+     * @param sessionManager El manejador de sesiones de cliente.
      */
-    public AmazonMQCommunicator(Radio radio) {
+    @Autowired
+    public AmazonMQCommunicator(Radio radio, SessionManager sessionManager, Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository) {
         super(radio);
-        initializeConnection();
+        this.queue = queue;
+        this.fulfiller = fulfiller;
+        this.featureRepository = featureRepository;
+        logger.info("Initializing AmazonMQCommunicator");
+        this.sessionManager = sessionManager;
+        try {
+            logger.info("Creating STOMP client");
+            this.stompClient = initializeStompClient();
+            logger.info("STOMP client created successfully");
+        } catch (Exception e) {
+            logger.error("Error creating STOMP client", e);
+            throw new RuntimeException("Failed to initialize AmazonMQCommunicator", e);
+        }
+    }
+
+    /**
+     * Configura el cliente WebSocket STOMP para WSS con heartbeat.
+     *
+     * @return instancia configurada de `WebSocketStompClient`.
+     */
+    private WebSocketStompClient initializeStompClient() {
+        WebSocketClient webSocketClient = new StandardWebSocketClient();
+        WebSocketStompClient stompClient = new WebSocketStompClient(webSocketClient);
+        stompClient.setMessageConverter(new MappingJackson2MessageConverter());
+        stompClient.setDefaultHeartbeat(new long[]{10000, 10000});
+        stompClient.setTaskScheduler(new ConcurrentTaskScheduler());
+        return stompClient;
+    }
+
+    /**
+     * Conecta un cliente específico a Amazon MQ con un `CustomStompSessionHandler`.
+     *
+     * @param clientId el identificador del cliente.
+     */
+    public void connectToMQ(String clientId) {
+        if (!sessionManager.hasSession(clientId)) {
+            try {
+                StompHeaders connectHeaders = new StompHeaders();
+                connectHeaders.setAcceptVersion("1.1");
+                connectHeaders.setHeartbeat(new long[]{10000, 10000});
+                connectHeaders.setHost("b-53524436-...amazonaws.com");
+                connectHeaders.setLogin(username);
+                connectHeaders.setPasscode(password);
+
+                logger.info("Conectando al cliente {} a Amazon MQ a través de WSS", clientId);
+
+                StompSessionHandler sessionHandler = new CustomStompSessionHandler(clientId, sessionManager, wssEndpoint, 5000);
+                WebSocketHttpHeaders handshakeHeaders = new WebSocketHttpHeaders();
+
+                stompClient.connect(wssEndpoint, handshakeHeaders, connectHeaders, sessionHandler);
+
+                logger.info("Intentando conectar cliente {} a Amazon MQ a través de WSS", clientId);
+            } catch (Exception e) {
+                logger.error("Error al conectar con Amazon MQ para el cliente {}: {}", clientId, e.getMessage(), e);
+            }
+        } else {
+            logger.warn("El cliente {} ya tiene una sesión activa.", clientId);
+        }
+    }
+
+    /**
+     * Inicializa una nueva sesión STOMP asociada a un chargePointId con Amazon MQ.
+     *
+     * @param clientId      El identificador del cliente.
+     * @param chargePointId El identificador de la estación de carga.
+     */
+    public void initializeMQSession(String clientId, String chargePointId) {
+        try {
+            if (!sessionManager.hasSession(clientId)) {
+                UUID sessionUUID = UUID.randomUUID();
+
+                // Crear una sesión OCPP
+                Session session = new Session(sessionUUID, this, queue, fulfiller, featureRepository);
+                session.setChargePointId(chargePointId);
+
+                // Registrar la sesión en el sessionStore
+                sessionStore.put(sessionUUID, session);
+
+                // Conectar a Amazon MQ para el cliente y asignar sesión
+                connectToMQ(clientId);
+
+                logger.info("Sesión STOMP para chargePoint {} registrada y conectada a Amazon MQ.", chargePointId);
+            } else {
+                logger.warn("El cliente {} ya tiene una sesión STOMP activa.", clientId);
+            }
+        } catch (Exception e) {
+            logger.error("Error al establecer la conexión STOMP con Amazon MQ para el cliente {}: {}", clientId, e.getMessage(), e);
+        }
+    }
+
+
+    /**
+     * Inicializa una nueva sesión OCPP asociada a un chargePointId.
+     *
+     * @param sessionUUID   El identificador único de la sesión.
+     * @param chargePointId El identificador de la estación de carga.
+     * @return La instancia de {@link Session} que representa la sesión OCPP inicializada.
+     */
+    /**
+     * Inicializa una nueva sesión OCPP asociada a un chargePointId.
+     *
+     * @param sessionUUID   El identificador único de la sesión.
+     * @param chargePointId El identificador de la estación de carga.
+     * @return La instancia de {@link Session} que representa la sesión OCPP inicializada.
+     */
+    private Session initializeSession(UUID sessionUUID, String chargePointId) {
+        // Crear la sesión utilizando el AmazonMQCommunicator, Queue, PromiseFulfiller y el repositorio de características
+        Session session = new Session(sessionUUID, this, queue, fulfiller, featureRepository);
+
+        // Configurar el chargePointId en la sesión
+        session.setChargePointId(chargePointId);
+
+        // Agregar cualquier configuración adicional de la sesión si es necesario
+        logger.info("Sesión OCPP inicializada con ID: {} y chargePointId: {}", sessionUUID, chargePointId);
+
+        return session;
+    }
+
+
+
+
+    /**
+     * Envía un mensaje a Amazon MQ para un cliente específico.
+     *
+     * @param clientId el ID del cliente.
+     * @param message  El contenido del mensaje a enviar.
+     */
+    public void sendMessage(String clientId, String message) {
+        StompSession session = sessionManager.getSession(clientId);
+        if (session != null && session.isConnected()) {
+            session.send(queueName, message);
+            logger.info("Mensaje enviado a Amazon MQ por el cliente {}: {}", clientId, message);
+        } else {
+            logger.error("No se puede enviar el mensaje. Sesión STOMP no conectada para el cliente {}", clientId);
+        }
+    }
+
+    /**
+     * Cierra la sesión de STOMP para un cliente y elimina la sesión de `sessionManager`.
+     *
+     * @param clientId el identificador del cliente.
+     */
+    public void disconnectClient(String clientId) {
+        StompSession session = sessionManager.getSession(clientId);
+        if (session != null) {
+            session.disconnect();
+            sessionManager.removeSession(clientId);
+            logger.info("Sesión STOMP desconectada para el cliente {}", clientId);
+        } else {
+            logger.warn("No se encontró sesión activa para el cliente {}", clientId);
+        }
     }
 
     @Override
     public void receivedMessage(UUID sessionId, Object message) {
-
-    }
-
-    /**
-     * Inicializa la conexión a Amazon MQ y configura el productor y consumidor de mensajes.
-     * Intenta establecer una conexión segura con el endpoint y crea una sesión para el envío y recepción de mensajes.
-     */
-    private void initializeConnection() {
-        try {
-            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(WIRE_LEVEL_ENDPOINT);
-            connectionFactory.setUserName(username);
-            connectionFactory.setPassword(password);
-            connection = connectionFactory.createConnection();
-            connection.start();
-            jmsSession = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-
-            // Crear productor y consumidor para la cola de Amazon MQ
-            Destination destination = jmsSession.createQueue(QUEUE_NAME);
-            producer = jmsSession.createProducer(destination);
-            consumer = jmsSession.createConsumer(destination);
-            consumer.setMessageListener(this::processMessage);
-            logger.info("Conexión con Amazon MQ establecida y listener configurado.");
-        } catch (JMSException e) {
-            logger.error("Error al inicializar la conexión con Amazon MQ", e);
-        }
-    }
-
-    /**
-     * Método de callback para procesar mensajes entrantes desde Amazon MQ.
-     * Este método se invoca automáticamente cada vez que se recibe un mensaje en la cola configurada.
-     *
-     * @param message El mensaje recibido desde Amazon MQ, que debe ser de tipo `TextMessage`.
-     */
-    private void processMessage(Message message) {
-        try {
-            if (message instanceof TextMessage) {
-                String text = ((TextMessage) message).getText();
-                logger.info("Mensaje recibido de Amazon MQ: {}", text);
-                // Enviar el mensaje a través de WebSocketHandler o manejarlo según lógica del sistema
-            }
-        } catch (JMSException e) {
-            logger.error("Error al procesar el mensaje de Amazon MQ", e);
-        }
-    }
-
-    /**
-     * Envía un mensaje a la cola de Amazon MQ. El mensaje se envía como `TextMessage`.
-     *
-     * @param message El contenido del mensaje a enviar.
-     */
-    public void sendMessage(String message) {
-        try {
-            TextMessage textMessage = jmsSession.createTextMessage(message);
-            producer.send(textMessage);
-            logger.info("Mensaje enviado a Amazon MQ: {}", message);
-        } catch (JMSException e) {
-            logger.error("Error al enviar mensaje a Amazon MQ", e);
-        }
-    }
-
-    /**
-     * Cierra la conexión y libera los recursos asociados a Amazon MQ.
-     * Este método debe llamarse al finalizar el uso de `AmazonMQCommunicator` para evitar fugas de recursos.
-     */
-    public void closeConnection() {
-        try {
-            if (producer != null) producer.close();
-            if (consumer != null) consumer.close();
-            if (jmsSession != null) jmsSession.close();
-            if (connection != null) connection.close();
-            logger.info("Conexión con Amazon MQ cerrada.");
-        } catch (JMSException e) {
-            logger.error("Error al cerrar la conexión con Amazon MQ", e);
-        }
-    }
-
-    public void addSession(UUID newSessionId, WebSocketSession webSocketSession) {
-
-    }
-
-    public void removeSession(UUID sessionId) {
-
+        // Implementación para manejar mensajes recibidos de Amazon MQ
     }
 
     @Override
-    public void authenticateSession(SessionInformation information, String username, String password) throws AuthenticationException {
-
+    public void authenticateSession(SessionInformation information, String username, String password) {
+        // Lógica de autenticación de sesión
     }
 
     @Override
     public void newSession(UUID sessionIndex, SessionInformation information) {
-
+        // Crear una nueva sesión para un cliente
     }
 
     @Override
     public void lostSession(UUID sessionIndex) {
-
+        // Lógica para manejar pérdida de sesión
     }
 
     @Override
     public void handleError(String uniqueId, String errorCode, String errorDescription, Object payload) {
-
+        // Manejar errores de comunicación
     }
 
     @Override
     public void handleConfirmation(String uniqueId, Confirmation confirmation) {
-
+        // Confirmación de mensaje
     }
 
     @Override
     public Confirmation handleRequest(Request request) {
         return null;
+    }
+
+    /**
+     * Agrega una sesión STOMP a la lista de sesiones activas.
+     *
+     * @param sessionUUID      Identificador de la sesión.
+     * @param webSocketSession La sesión de WebSocket.
+     */
+    public void addSession(UUID sessionUUID, WebSocketSession webSocketSession) {
+        // Lógica para agregar una sesión
+    }
+
+    /**
+     * Elimina una sesión STOMP de la lista de sesiones activas.
+     *
+     * @param sessionId El identificador de la sesión a eliminar.
+     */
+    public void removeSession(UUID sessionId) {
+        // Lógica para remover una sesión
+    }
+
+    public boolean isConnected(String someClientId) {
+        return sessionManager.hasSession(someClientId);
     }
 }

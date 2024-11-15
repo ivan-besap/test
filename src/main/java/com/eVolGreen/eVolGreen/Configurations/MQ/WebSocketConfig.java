@@ -26,7 +26,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketConfig.class);
 
-    private final AmazonMQCommunicator amazonMQCommunicator;
     private final ISessionFactory sessionFactory;
     private final Communicator communicator;
     private final JSONServer jsonServer;
@@ -37,7 +36,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     private final UtilService utilService;
 
     @Autowired
-    public WebSocketConfig(AmazonMQCommunicator amazonMQCommunicator,
+    public WebSocketConfig(
                            ISessionFactory sessionFactory,
                            Communicator communicator,
                            JSONServer jsonServer,
@@ -45,7 +44,6 @@ public class WebSocketConfig implements WebSocketConfigurer {
                            IFeatureRepository featureRepository,
                            Queue queue,
                            PromiseFulfiller fulfiller, UtilService utilService) {
-        this.amazonMQCommunicator = amazonMQCommunicator;
         this.sessionFactory = sessionFactory;
         this.communicator = communicator;
         this.jsonServer = jsonServer;
@@ -65,7 +63,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     }
 
     private WebSocketHandler createWebSocketHandler() {
-        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, amazonMQCommunicator,queue,fulfiller,featureRepository);
+        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository);
     }
 
     private DefaultHandshakeHandler createHandshakeHandler() {

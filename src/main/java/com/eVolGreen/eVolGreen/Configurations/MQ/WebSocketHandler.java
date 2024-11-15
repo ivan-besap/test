@@ -67,7 +67,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketHandler.class);
 
-    private static final Map<UUID, Session> sessionStore = new ConcurrentHashMap<>();
+    static final Map<UUID, Session> sessionStore = new ConcurrentHashMap<>();
     private static final Map<UUID, WebSocketSession> webSocketSessionStorage = new ConcurrentHashMap<>();
 
     private final List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
@@ -104,18 +104,16 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * @param communicator            Comunicador para transmisión de mensajes.
      * @param jsonServer              Servidor JSON que maneja las solicitudes de OCPP.
      * @param coreProfile             Perfil principal de OCPP para el servidor.
-     * @param amazonMQCommunicator    Comunicador para integración con Amazon MQ.
+//     * @param amazonMQCommunicator    Comunicador para integración con Amazon MQ.
      */
     public WebSocketHandler(UtilService utilService, ISessionFactory sessionFactory, Communicator communicator,
                             JSONServer jsonServer, ServerCoreProfile coreProfile,
-                            AmazonMQCommunicator amazonMQCommunicator,
                             Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository) {
 
         this.sessionFactory = sessionFactory;
         this.utilService = utilService;
         this.communicator = communicator;
         this.jsonServer = jsonServer;
-        this.amazonMQCommunicator = amazonMQCommunicator;
         this.queue = queue;
         this.fulfiller = fulfiller;
         this.featureRepository = featureRepository;
@@ -186,8 +184,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // Almacenar la sesión WebSocket en webSocketSessionStorage
             webSocketSessionStorage.put(sessionUUID, webSocketSession);
 
-            // Registrar en Amazon MQ
-            amazonMQCommunicator.addSession(sessionUUID, webSocketSession);
+//            // Registrar en Amazon MQ
+//            amazonMQCommunicator.addSession(sessionUUID, webSocketSession);
 
 //            logger.info("Sesión WebSocket registrada exitosamente con ID: {} y chargePointId: {}", sessionUUID, chargePointId);
 

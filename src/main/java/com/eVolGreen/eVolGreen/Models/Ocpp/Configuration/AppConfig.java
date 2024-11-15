@@ -4,7 +4,7 @@ import com.amazonaws.regions.Regions;
 import com.amazonaws.services.mq.AmazonMQ;
 import com.amazonaws.services.mq.AmazonMQClientBuilder;
 import com.eVolGreen.eVolGreen.Configurations.MQ.AmazonMQCommunicator;
-import com.eVolGreen.eVolGreen.Configurations.MQ.AwsConfig;
+import com.eVolGreen.eVolGreen.Configurations.MQ.SessionManager;
 import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.AuthenticationException;
@@ -32,6 +32,12 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.security.KeyStore;
+import java.security.SecureRandom;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -48,15 +54,6 @@ import static com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.JSO
  */
 @Configuration
 public class AppConfig {
-
-    @Value("${spring.activemq.broker-url}")
-    private String brokerUrl;
-
-    @Value("${spring.activemq.user}")
-    private String brokerUser;
-
-    @Value("${spring.activemq.password}")
-    private String brokerPassword;
 
     private Communicator communicator;
 
@@ -99,8 +96,49 @@ public class AppConfig {
     public JSONClient jsonClient(ClientCoreProfile coreProfile, AmazonMQCommunicator mqCommunicator) {
         String identity = UUID.randomUUID().toString();
         JSONConfiguration configuration = JSONConfiguration.get();
+
+//        // Crear la instancia de JSONClient
+//        JSONClient client = new JSONClient(coreProfile, identity, configuration, mqCommunicator);
+//
+//        try {
+//            // Crear y configurar el SSLContext para WSS
+//            SSLContext sslContext = createSSLContext(); // Extrae la creación del SSLContext a un método separado
+//            client.enableWSS(sslContext);
+//        } catch (Exception e) {
+//            throw new IOException("Error al configurar WSS en JSONClient: " + e.getMessage(), e);
+//        }
+//
+//        return client;
+
         return new JSONClient(coreProfile, identity, configuration, mqCommunicator);
     }
+
+
+//    /**
+//     * Crea y configura el SSLContext para habilitar WSS en JSONClient.
+//     * Configura el keystore y otros parámetros de seguridad necesarios.
+//     *
+//     * @return Un SSLContext configurado para WSS
+//     * @throws Exception si ocurre un error durante la configuración
+//     */
+//    private SSLContext createSSLContext() throws Exception {
+//        String keyStorePath = "src/main/resources/keystore.jks";
+//        String keyStorePassword = "evolgreenpassword";
+//
+//        KeyStore keyStore = KeyStore.getInstance("JKS");
+//        try (FileInputStream keyStoreInput = new FileInputStream(keyStorePath)) {
+//            keyStore.load(keyStoreInput, keyStorePassword.toCharArray());
+//        }
+//
+//        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
+//        keyManagerFactory.init(keyStore, keyStorePassword.toCharArray());
+//
+//        SSLContext sslContext = SSLContext.getInstance("TLS");
+//        sslContext.init(keyManagerFactory.getKeyManagers(), null, new SecureRandom());
+//
+//        return sslContext;
+//    }
+
 
     /**
      * Configura y devuelve una instancia de {@link ISessionFactory} para la creación de sesiones.
@@ -120,16 +158,15 @@ public class AppConfig {
      * @param communicator El comunicador OCPP.
      * @param jsonServer El servidor JSON.
      * @param coreProfile El perfil de núcleo del servidor.
-     * @param amazonMQCommunicator El comunicador de Amazon MQ.
+//     * @param amazonMQCommunicator El comunicador de Amazon MQ.
      * @return una instancia configurada de {@link WebSocketHandler}.
      */
     @Bean
     public WebSocketHandler webSocketHandler(UtilService utilService, ISessionFactory sessionFactory, Communicator communicator,
-                                             JSONServer jsonServer, ServerCoreProfile coreProfile,
-                                             AmazonMQCommunicator amazonMQCommunicator, Queue queue,
+                                             JSONServer jsonServer, ServerCoreProfile coreProfile, Queue queue,
                                              PromiseFulfiller fulfiller, FeatureRepository featureRepository) {
 
-        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, amazonMQCommunicator,queue,fulfiller,featureRepository);
+        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository);
     }
 
     /**
@@ -175,22 +212,20 @@ public class AppConfig {
      *
      * @return una instancia configurada de {@link AmazonMQCommunicator}.
      */
-    @Bean
-    public AmazonMQCommunicator amazonMQCommunicator(Radio radio) {
-        return new AmazonMQCommunicator(radio);
-    }
 
-    /**
-     * Configura y devuelve una instancia de {@link AmazonMQ}, que es el cliente de Amazon MQ.
-     *
-     * @return una instancia configurada de {@link AmazonMQ}.
-     */
 //    @Bean
-//    public AmazonMQ amazonMQClient() {
-//        return AmazonMQClientBuilder.standard()
-//                .withRegion(Regions.US_EAST_2)
-//                .build();
+//    public AmazonMQCommunicator amazonMQCommunicator(Radio radio, SessionManager sessionManager, Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository) {
+//        try {
+//            return new AmazonMQCommunicator(radio, sessionManager, queue, fulfiller, featureRepository);
+//        } catch (Exception e) {
+//            throw new RuntimeException("Error al instanciar AmazonMQCommunicator", e);
+//        }
 //    }
+
+    @Bean
+    public SessionManager sessionManager() {
+        return new SessionManager();
+    }
 
      /**
      * Configura y devuelve una instancia de {@link JSONConfiguration} para la configuración de JSON en OCPP.
