@@ -52,7 +52,7 @@ public class Account{
     @NotNull(message = "El tipo de cuenta no puede ser nulo.")
     private TypeAccounts tipoCuenta;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "role_id")
     private Role role;
 

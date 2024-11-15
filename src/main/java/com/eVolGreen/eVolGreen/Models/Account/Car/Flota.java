@@ -2,6 +2,8 @@ package com.eVolGreen.eVolGreen.Models.Account.Car;
 
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import jakarta.persistence.*;
+
+import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -13,6 +15,8 @@ public class Flota {
     private Long id;
 
     private String nombreFlota;
+
+    private BigDecimal precioFlota;
 
     private Boolean activo = true;
 
@@ -26,10 +30,11 @@ public class Flota {
 
     public Flota() {}
 
-    public Flota(String nombreFlota, Empresa empresa, Boolean activo) {
+    public Flota(String nombreFlota, Empresa empresa, Boolean activo, BigDecimal precioFlota) {
         this.nombreFlota = nombreFlota;
         this.empresa = empresa;
         this.activo = activo;
+        this.precioFlota = precioFlota;
     }
 
     public Long getId() {
@@ -70,5 +75,13 @@ public class Flota {
 
     public void setAutos(Set<Car> autos) {
         this.autos = autos;
+    }
+
+    public BigDecimal getPrecioFlota() {
+        return precioFlota;
+    }
+
+    public void setPrecioFlota(BigDecimal precioFlota) {
+        this.precioFlota = precioFlota;
     }
 }

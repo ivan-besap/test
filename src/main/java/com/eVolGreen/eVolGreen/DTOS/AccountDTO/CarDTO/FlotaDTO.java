@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO;
 
 import com.eVolGreen.eVolGreen.Models.Account.Car.Flota;
 
+import java.math.BigDecimal;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -12,6 +13,8 @@ public class FlotaDTO {
     private Boolean activo;
     private Long empresaId;
     private Set<AutoDTO> autos;
+
+    private BigDecimal precioFlota;
 
     // Constructor vacío
     public FlotaDTO() {}
@@ -25,6 +28,7 @@ public class FlotaDTO {
         this.autos = flota.getAutos().stream()
                 .map(auto -> new AutoDTO(auto.getId(), auto.getPatente()))
                 .collect(Collectors.toSet());
+        this.precioFlota = flota.getPrecioFlota();
     }
 
     // Getters y Setters
@@ -68,6 +72,14 @@ public class FlotaDTO {
         this.autos = autos;
     }
 
+    public BigDecimal getPrecioFlota() {
+        return precioFlota;
+    }
+
+    public void setPrecioFlota(BigDecimal precioFlota) {
+        this.precioFlota = precioFlota;
+    }
+
     // Clase interna AutoDTO para representar los autos asociados a la flota
     public static class AutoDTO {
         private Long id;
@@ -93,5 +105,6 @@ public class FlotaDTO {
         public void setPatente(String patente) {
             this.patente = patente;
         }
+
     }
 }

@@ -379,6 +379,7 @@ public class CarController {
         return flotaRepository.findById(id)
                 .map(flota -> {
                     flota.setNombreFlota(flotaDetails.getNombreFlota());
+                    flota.setPrecioFlota(flotaDetails.getPrecioFlota());
                     flotaRepository.save(flota);
                     return new ResponseEntity<>("Flota actualizada exitosamente", HttpStatus.OK);
                 })
@@ -403,6 +404,7 @@ public class CarController {
         // Crear una nueva flota y asignarle la empresa del usuario
         Flota nuevaFlota = new Flota();
         nuevaFlota.setNombreFlota(flotaDTO.getNombreFlota());
+        nuevaFlota.setPrecioFlota(flotaDTO.getPrecioFlota());
         nuevaFlota.setEmpresa(empresa);
         nuevaFlota.setActivo(true); // Asigna el valor activo como true por defecto
 
