@@ -5,7 +5,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.Occurence
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.PropertyConstraintException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.UnsupportedFeatureException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Feature;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.MoreObjects;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

@@ -1,12 +1,8 @@
 package com.eVolGreen.eVolGreen.Services.AccountService;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Controller.OcppController;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Session;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ResetType;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.MeterValuesRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.RemoteStartTransactionRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingProfile;
-import lombok.AllArgsConstructor;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.ResetType;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.RemoteStartTransactionRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.ChargingProfile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
@@ -15,7 +11,6 @@ import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static org.apache.activemq.plugin.ForcePersistencyModeBroker.log;
 

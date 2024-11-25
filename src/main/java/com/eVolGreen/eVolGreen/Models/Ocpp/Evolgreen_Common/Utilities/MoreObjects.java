@@ -95,6 +95,26 @@ public final class MoreObjects {
         return new ToStringHelper(self);
     }
 
+    public static ToStringHelper toStringHelper(Object self, boolean outputFullDetails) {
+        return new ToStringHelper(self, outputFullDetails);
+    }
+
+    public static ToStringHelper toStringHelper(Class<?> clazz) {
+        return new ToStringHelper(clazz);
+    }
+
+    public static ToStringHelper toStringHelper(Class<?> clazz, boolean outputFullDetails) {
+        return new ToStringHelper(clazz, outputFullDetails);
+    }
+
+    public static ToStringHelper toStringHelper(String className) {
+        return new ToStringHelper(className);
+    }
+
+    public static ToStringHelper toStringHelper(String className, boolean outputFullDetails) {
+        return new ToStringHelper(className, outputFullDetails);
+    }
+
     /**
      * Clase interna para ayudar en la generación de representaciones de cadena de texto (toString) para objetos.
      * Ofrece la posibilidad de incluir o excluir valores nulos y manejar colecciones o arrays de manera detallada o resumida.
@@ -133,32 +153,322 @@ public final class MoreObjects {
             this(toStringHelper(self), outputFullDetails);
         }
 
+        private ToStringHelper(Class<?> clazz, boolean outputFullDetails) {
+            this(toStringHelper(clazz), outputFullDetails);
+        }
+
+        private ToStringHelper(String className, boolean outputFullDetails) {
+            this(toStringHelper(className), outputFullDetails);
+        }
+
+        public ToStringHelper omitNullValues() {
+            helperImplementation.omitNullValues();
+            return this;
+        }
+
         // Métodos para añadir valores de campos al helper, con diferentes tipos
 
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
         public ToStringHelper add(String name, Object value) {
             helperImplementation.add(name, value);
             return this;
         }
 
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, ZonedDateTime value) {
+            helperImplementation.add(name, value);
+            return this;
+        }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
         public ToStringHelper add(String name, boolean value) {
             helperImplementation.add(name, String.valueOf(value));
             return this;
         }
 
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
         public ToStringHelper add(String name, char value) {
             helperImplementation.add(name, String.valueOf(value));
             return this;
         }
 
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
         public ToStringHelper add(String name, double value) {
             helperImplementation.add(name, String.valueOf(value));
             return this;
         }
 
-        public ToStringHelper add(String name, ZonedDateTime value) {
-            helperImplementation.add(name, value);
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, float value) {
+            helperImplementation.add(name, String.valueOf(value));
             return this;
         }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, int value) {
+            helperImplementation.add(name, String.valueOf(value));
+            return this;
+        }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, long value) {
+            helperImplementation.add(name, String.valueOf(value));
+            return this;
+        }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, List<?> value) {
+            return addCollection(name, value);
+        }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, Set<?> value) {
+            return addCollection(name, value);
+        }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, Map<?, ?> value) {
+            return addMap(name, value);
+        }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, Queue<?> value) {
+            return addCollection(name, value);
+        }
+
+        private ToStringHelper addCollection(String name, Collection<?> value) {
+            if (value != null && !outputFullDetails) {
+                helperImplementation.add(name + FIELD_NAME_SIZE_POSTFIX, value.size());
+            } else {
+                helperImplementation.add(name, value);
+            }
+            return this;
+        }
+
+        private ToStringHelper addMap(String name, Map<?, ?> value) {
+            if (value != null && !outputFullDetails) {
+                helperImplementation.add(name + FIELD_NAME_SIZE_POSTFIX, value.size());
+            } else {
+                helperImplementation.add(name, value);
+            }
+            return this;
+        }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @param <T> type of passed array elements
+         * @return ToStringHelper instance
+         */
+        public <T> ToStringHelper add(String name, T[] value) {
+            if (value != null && !outputFullDetails) {
+                helperImplementation.add(name + FIELD_NAME_LENGTH_POSTFIX, value.length);
+            } else {
+                helperImplementation.add(name, Arrays.toString(value));
+            }
+            return this;
+        }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, byte[] value) {
+            if (value != null
+                    && value.length > MAXIMUM_ARRAY_SIZE_TO_OUTPUT_DETAILS
+                    && !outputFullDetails) {
+                helperImplementation.add(name + FIELD_NAME_LENGTH_POSTFIX, value.length);
+            } else {
+                helperImplementation.add(name, Arrays.toString(value));
+            }
+            return this;
+        }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, boolean[] value) {
+            if (value != null
+                    && value.length > MAXIMUM_ARRAY_SIZE_TO_OUTPUT_DETAILS
+                    && !outputFullDetails) {
+                helperImplementation.add(name + FIELD_NAME_LENGTH_POSTFIX, value.length);
+            } else {
+                helperImplementation.add(name, Arrays.toString(value));
+            }
+            return this;
+        }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, char[] value) {
+            if (value != null
+                    && value.length > MAXIMUM_ARRAY_SIZE_TO_OUTPUT_DETAILS
+                    && !outputFullDetails) {
+                helperImplementation.add(name + FIELD_NAME_LENGTH_POSTFIX, value.length);
+            } else {
+                helperImplementation.add(name, Arrays.toString(value));
+            }
+            return this;
+        }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, double[] value) {
+            if (value != null
+                    && value.length > MAXIMUM_ARRAY_SIZE_TO_OUTPUT_DETAILS
+                    && !outputFullDetails) {
+                helperImplementation.add(name + FIELD_NAME_LENGTH_POSTFIX, value.length);
+            } else {
+                helperImplementation.add(name, Arrays.toString(value));
+            }
+            return this;
+        }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, float[] value) {
+            if (value != null
+                    && value.length > MAXIMUM_ARRAY_SIZE_TO_OUTPUT_DETAILS
+                    && !outputFullDetails) {
+                helperImplementation.add(name + FIELD_NAME_LENGTH_POSTFIX, value.length);
+            } else {
+                helperImplementation.add(name, Arrays.toString(value));
+            }
+            return this;
+        }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, int[] value) {
+            if (value != null
+                    && value.length > MAXIMUM_ARRAY_SIZE_TO_OUTPUT_DETAILS
+                    && !outputFullDetails) {
+                helperImplementation.add(name + FIELD_NAME_LENGTH_POSTFIX, value.length);
+            } else {
+                helperImplementation.add(name, Arrays.toString(value));
+            }
+            return this;
+        }
+
+        /**
+         * Add field name and value to output. It's safe to pass null as value.
+         *
+         * @param name field name
+         * @param value field value
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper add(String name, long[] value) {
+            if (value != null
+                    && value.length > MAXIMUM_ARRAY_SIZE_TO_OUTPUT_DETAILS
+                    && !outputFullDetails) {
+                helperImplementation.add(name + FIELD_NAME_LENGTH_POSTFIX, value.length);
+            } else {
+                helperImplementation.add(name, Arrays.toString(value));
+            }
+            return this;
+        }
+
 
         // Otros métodos para colecciones, arrays y manejo de valores seguros
 
@@ -170,6 +480,72 @@ public final class MoreObjects {
 
         public ToStringHelper addValue(Object value) {
             helperImplementation.addValue(value);
+            return this;
+        }
+
+        /**
+         * Add value to output.
+         *
+         * @param value to add to output
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper addValue(boolean value) {
+            helperImplementation.addValue(String.valueOf(value));
+            return this;
+        }
+
+        /**
+         * Add value to output.
+         *
+         * @param value to add to output
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper addValue(char value) {
+            helperImplementation.addValue(String.valueOf(value));
+            return this;
+        }
+
+        /**
+         * Add value to output.
+         *
+         * @param value to add to output
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper addValue(double value) {
+            helperImplementation.addValue(String.valueOf(value));
+            return this;
+        }
+
+        /**
+         * Add value to output.
+         *
+         * @param value to add to output
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper addValue(float value) {
+            helperImplementation.addValue(String.valueOf(value));
+            return this;
+        }
+
+        /**
+         * Add value to output.
+         *
+         * @param value to add to output
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper addValue(int value) {
+            helperImplementation.addValue(String.valueOf(value));
+            return this;
+        }
+
+        /**
+         * Add value to output.
+         *
+         * @param value to add to output
+         * @return ToStringHelper instance
+         */
+        public ToStringHelper addValue(long value) {
+            helperImplementation.addValue(String.valueOf(value));
             return this;
         }
 
@@ -233,20 +609,39 @@ public final class MoreObjects {
             return addHolder(name, value);
         }
 
+        /** Adds a name/value pair to the formatted output in {@code name=value} format. */
+        public ToStringHelperImpl add(String name, ZonedDateTime value) {
+            return addHolder(name, value);
+        }
+
+        /** Adds a name/value pair to the formatted output in {@code name=value} format. */
         public ToStringHelperImpl add(String name, boolean value) {
             return addHolder(name, String.valueOf(value));
         }
 
+        /** Adds a name/value pair to the formatted output in {@code name=value} format. */
         public ToStringHelperImpl add(String name, char value) {
             return addHolder(name, String.valueOf(value));
         }
 
+        /** Adds a name/value pair to the formatted output in {@code name=value} format. */
         public ToStringHelperImpl add(String name, double value) {
             return addHolder(name, String.valueOf(value));
         }
 
-        public ToStringHelperImpl add(String name, ZonedDateTime value) {
-            return addHolder(name, value);
+        /** Adds a name/value pair to the formatted output in {@code name=value} format. */
+        public ToStringHelperImpl add(String name, float value) {
+            return addHolder(name, String.valueOf(value));
+        }
+
+        /** Adds a name/value pair to the formatted output in {@code name=value} format. */
+        public ToStringHelperImpl add(String name, int value) {
+            return addHolder(name, String.valueOf(value));
+        }
+
+        /** Adds a name/value pair to the formatted output in {@code name=value} format. */
+        public ToStringHelperImpl add(String name, long value) {
+            return addHolder(name, String.valueOf(value));
         }
 
         /**
@@ -259,12 +654,74 @@ public final class MoreObjects {
             return addHolder(value);
         }
 
+        /**
+         * Adds an unnamed value to the formatted output.
+         *
+         * <p>It is strongly encouraged to use {@link #add(String, boolean)} instead and give value a
+         * readable name.
+         */
+        public ToStringHelperImpl addValue(boolean value) {
+            return addHolder(String.valueOf(value));
+        }
+
+        /**
+         * Adds an unnamed value to the formatted output.
+         *
+         * <p>It is strongly encouraged to use {@link #add(String, char)} instead and give value a
+         * readable name.
+         */
+        public ToStringHelperImpl addValue(char value) {
+            return addHolder(String.valueOf(value));
+        }
+
+        /**
+         * Adds an unnamed value to the formatted output.
+         *
+         * <p>It is strongly encouraged to use {@link #add(String, double)} instead and give value a
+         * readable name.
+         */
+        public ToStringHelperImpl addValue(double value) {
+            return addHolder(String.valueOf(value));
+        }
+
+        /**
+         * Adds an unnamed value to the formatted output.
+         *
+         * <p>It is strongly encouraged to use {@link #add(String, float)} instead and give value a
+         * readable name.
+         */
+        public ToStringHelperImpl addValue(float value) {
+            return addHolder(String.valueOf(value));
+        }
+
+        /**
+         * Adds an unnamed value to the formatted output.
+         *
+         * <p>It is strongly encouraged to use {@link #add(String, int)} instead and give value a
+         * readable name.
+         */
+        public ToStringHelperImpl addValue(int value) {
+            return addHolder(String.valueOf(value));
+        }
+
+        /**
+         * Adds an unnamed value to the formatted output.
+         *
+         * <p>It is strongly encouraged to use {@link #add(String, long)} instead and give value a
+         * readable name.
+         */
+        public ToStringHelperImpl addValue(long value) {
+            return addHolder(String.valueOf(value));
+        }
+
         @Override
         public String toString() {
             boolean omitNullValuesSnapshot = omitNullValues;
             String nextSeparator = "";
             StringBuilder builder = new StringBuilder(32).append(className).append('{');
-            for (ValueHolder valueHolder = holderHead.next; valueHolder != null; valueHolder = valueHolder.next) {
+            for (ValueHolder valueHolder = holderHead.next;
+                 valueHolder != null;
+                 valueHolder = valueHolder.next) {
                 Object value = valueHolder.value;
                 if (!omitNullValuesSnapshot || value != null) {
                     builder.append(nextSeparator);

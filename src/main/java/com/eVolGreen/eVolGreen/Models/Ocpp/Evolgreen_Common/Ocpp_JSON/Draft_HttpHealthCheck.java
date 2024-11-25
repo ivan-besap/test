@@ -26,7 +26,7 @@ import java.util.List;
  */
 public class Draft_HttpHealthCheck extends Draft {
 
-    static final int HTTP_HEALTH_CHECK_CLOSE_CODE = 10200;
+    public static final int HTTP_HEALTH_CHECK_CLOSE_CODE = 10200;
 
     /**
      * Verifica si la solicitud es una petición HTTP.
@@ -34,9 +34,9 @@ public class Draft_HttpHealthCheck extends Draft {
      * @param handshakedata los datos del handshake del cliente.
      * @return true si es una solicitud HTTP, de lo contrario false.
      */
-    static Boolean isHttp(ClientHandshake handshakedata) {
+    public static Boolean isHttp(ClientHandshake handshakedata) {
         String upgradeField = handshakedata.getFieldValue("Upgrade");
-        return upgradeField == null || upgradeField.isEmpty();
+        return upgradeField == null || upgradeField == "";
     }
 
     /**
@@ -76,7 +76,7 @@ public class Draft_HttpHealthCheck extends Draft {
     public HandshakeState acceptHandshakeAsClient(
             ClientHandshake request, ServerHandshake response
     ) throws InvalidHandshakeException {
-        throw new InvalidHandshakeException("Este draft no puede ser usado en un cliente");
+        throw new InvalidHandshakeException("This draft can't be used on a client");
     }
 
     /**

@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Feature;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Feature;
 
 import java.util.Optional;
 

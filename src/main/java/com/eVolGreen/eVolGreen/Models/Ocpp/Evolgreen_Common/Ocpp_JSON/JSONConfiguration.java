@@ -68,6 +68,16 @@ public class JSONConfiguration {
      */
     public static final String EVOLGREEN_CP_MAX_PASSWORD_LENGTH = "EVOLGREEN_CP_MAX_PASSWORD_LENGTH";
 
+    /**
+     * Parámetro para configurar la longitud mínima de nombre de usuario para eVolGreen CP.
+     */
+    public static final String EVOLGREEN2_CP_MIN_USERNAME_LENGTH = "EVOLGREEN2_CP_MIN_USERNAME_LENGTH";
+
+    /**
+     * Parámetro para configurar la longitud máxima de nombre de usuario para eVolGreen CP.
+     */
+    public static final String EVOLGREEN2_CP_MAX_USERNAME_LENGTH = "EVOLGREEN2_CP_MAX_USERNAME_LENGTH";
+
     private final HashMap<String, Object> parameters = new HashMap<>();
 
     private JSONConfiguration() {}

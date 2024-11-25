@@ -41,7 +41,7 @@ public class WebSocketReceiver implements Receiver {
      *
      * @param message El mensaje recibido en formato de String.
      */
-    void relay(String message) {
+    public void relay(String message) {
         handler.receivedMessage(message);
     }
 

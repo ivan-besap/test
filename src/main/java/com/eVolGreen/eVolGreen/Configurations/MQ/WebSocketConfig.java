@@ -1,13 +1,12 @@
 package com.eVolGreen.eVolGreen.Configurations.MQ;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.ServerCoreProfile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.JSONServer;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Profile.ServerCoreProfile;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.JSONServer;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.server.ServerHttpRequest;
 import org.springframework.http.server.ServerHttpResponse;

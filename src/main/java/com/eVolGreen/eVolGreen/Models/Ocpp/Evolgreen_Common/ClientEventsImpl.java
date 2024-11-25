@@ -1,7 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common;
 
-import com.eVolGreen.eVolGreen.Models.Ocpp.JSONClient;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.BootNotificationRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.JSONClient;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.BootNotificationRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;

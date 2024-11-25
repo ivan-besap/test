@@ -4,7 +4,7 @@ import java.util.ArrayDeque;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.NotConnectedException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.*;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Feature;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.SugarUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
