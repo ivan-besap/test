@@ -391,13 +391,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
         // Eliminar la sesión de los almacenes de datos
         Session ocppSession = sessionStore.remove(sessionId);
 
-        // Asegura que se remueva también de AmazonMQ
-        if (ocppSession != null) {
-            amazonMQCommunicator.removeSession(sessionId);
-            logger.info("Sesión con ID {} removida de AmazonMQ y de sessionStore.", sessionId);
-        } else {
-            logger.warn("No se encontró la sesión para remover: {}", sessionId);
-        }
     }
 
 //4
