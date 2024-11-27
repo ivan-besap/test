@@ -6,6 +6,8 @@ import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.AuthenticationException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.*;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WSS.BaseWssSocketBuilder;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WSS.WssSocketBuilder;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WebSocketReceiver;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WebSocketReceiverEvents;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Handler.ClientCoreEventHandler;
@@ -28,6 +30,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 
+import javax.net.ssl.SSLContext;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -75,59 +78,40 @@ public class AppConfig {
         return new FeatureRepository();
     }
 
+
     /**
-     * Configura y devuelve una instancia de {@link JSONClient} para gestionar la comunicación OCPP utilizando el perfil de cliente.
+     * Configura y proporciona una instancia de {@link JSONClient} con soporte para WebSocket seguro (WSS).
      *
-     * @param coreProfile El perfil de núcleo del cliente.
-     * @param mqCommunicator El comunicador de Amazon MQ.
-     * @return una instancia configurada de {@link JSONClient}.
+     * <p>Este bean inicializa un {@link JSONClient} utilizando el {@link ClientCoreProfile} proporcionado
+     * y habilita la comunicación segura mediante WebSocket (WSS) configurando un {@link WssSocketBuilder} predeterminado.</p>
+     *
+     * @param coreProfile el perfil principal del cliente que define las funcionalidades y comportamientos
+     *                    esenciales del cliente OCPP.
+     * @return una instancia configurada de {@link JSONClient} lista para establecer conexiones seguras
+     *         mediante WSS.
      */
     @Bean
-    public JSONClient jsonClient(ClientCoreProfile coreProfile, AmazonMQCommunicator mqCommunicator) {
-        String identity = UUID.randomUUID().toString();
-        JSONConfiguration configuration = JSONConfiguration.get();
+    public JSONClient jsonClient(ClientCoreProfile coreProfile) {
+        JSONClient jsonClient = new JSONClient(coreProfile);
+        try {
+            // Crear e inicializar el SSLContext
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            sslContext.init(null, null, new java.security.SecureRandom());
 
-//        // Crear la instancia de JSONClient
-//        JSONClient client = new JSONClient(coreProfile, identity, configuration, mqCommunicator);
-//
-//        try {
-//            // Crear y configurar el SSLContext para WSS
-//            SSLContext sslContext = createSSLContext(); // Extrae la creación del SSLContext a un método separado
-//            client.enableWSS(sslContext);
-//        } catch (Exception e) {
-//            throw new IOException("Error al configurar WSS en JSONClient: " + e.getMessage(), e);
-//        }
-//
-//        return client;
+            // Configurar el WssSocketBuilder con el SSLContext
+            WssSocketBuilder wssSocketBuilder = BaseWssSocketBuilder.builder()
+                    .sslSocketFactory(sslContext.getSocketFactory());
 
-        return new JSONClient(coreProfile, identity, configuration, mqCommunicator);
+            // Habilitar WSS en el JSONClient
+            jsonClient.enableWSS(wssSocketBuilder);
+        } catch (Exception e) {
+            // Manejar excepciones relacionadas con la configuración de SSL
+            e.printStackTrace();
+        }
+        return jsonClient;
     }
 
 
-//    /**
-//     * Crea y configura el SSLContext para habilitar WSS en JSONClient.
-//     * Configura el keystore y otros parámetros de seguridad necesarios.
-//     *
-//     * @return Un SSLContext configurado para WSS
-//     * @throws Exception si ocurre un error durante la configuración
-//     */
-//    private SSLContext createSSLContext() throws Exception {
-//        String keyStorePath = "src/main/resources/keystore.jks";
-//        String keyStorePassword = "evolgreenpassword";
-//
-//        KeyStore keyStore = KeyStore.getInstance("JKS");
-//        try (FileInputStream keyStoreInput = new FileInputStream(keyStorePath)) {
-//            keyStore.load(keyStoreInput, keyStorePassword.toCharArray());
-//        }
-//
-//        KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
-//        keyManagerFactory.init(keyStore, keyStorePassword.toCharArray());
-//
-//        SSLContext sslContext = SSLContext.getInstance("TLS");
-//        sslContext.init(keyManagerFactory.getKeyManagers(), null, new SecureRandom());
-//
-//        return sslContext;
-//    }
 
 
     /**
