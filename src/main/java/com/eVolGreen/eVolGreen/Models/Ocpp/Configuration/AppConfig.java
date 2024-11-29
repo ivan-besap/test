@@ -3,6 +3,7 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Configuration;
 import com.eVolGreen.eVolGreen.Configurations.MQ.AmazonMQCommunicator;
 import com.eVolGreen.eVolGreen.Configurations.MQ.SessionManager;
 import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
+import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketMetricsConfig;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.AuthenticationException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.*;
@@ -50,6 +51,8 @@ public class AppConfig {
 
     private Communicator communicator;
 
+    private WebSocketMetricsConfig webSocketMetricsConfig;
+
     /**
      * Almacenamiento compartido de sesiones para manejar las conexiones activas.
      * <p>
@@ -93,21 +96,7 @@ public class AppConfig {
     @Bean
     public JSONClient jsonClient(ClientCoreProfile coreProfile) {
         JSONClient jsonClient = new JSONClient(coreProfile);
-        try {
-            // Crear e inicializar el SSLContext
-            SSLContext sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(null, null, new java.security.SecureRandom());
 
-            // Configurar el WssSocketBuilder con el SSLContext
-            WssSocketBuilder wssSocketBuilder = BaseWssSocketBuilder.builder()
-                    .sslSocketFactory(sslContext.getSocketFactory());
-
-            // Habilitar WSS en el JSONClient
-            jsonClient.enableWSS(wssSocketBuilder);
-        } catch (Exception e) {
-            // Manejar excepciones relacionadas con la configuración de SSL
-            e.printStackTrace();
-        }
         return jsonClient;
     }
 
@@ -138,9 +127,9 @@ public class AppConfig {
     @Bean
     public WebSocketHandler webSocketHandler(UtilService utilService, ISessionFactory sessionFactory, Communicator communicator,
                                              JSONServer jsonServer, ServerCoreProfile coreProfile, Queue queue,
-                                             PromiseFulfiller fulfiller, FeatureRepository featureRepository) {
+                                             PromiseFulfiller fulfiller, FeatureRepository featureRepository,WebSocketMetricsConfig webSocketMetricsConfig) {
 
-        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository);
+        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository,webSocketMetricsConfig);
     }
 
     /**

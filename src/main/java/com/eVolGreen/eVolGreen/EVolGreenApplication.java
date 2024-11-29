@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen;
 
+import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketMetricsConfig;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.NewTypeConnectorDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
@@ -48,7 +49,8 @@ public class EVolGreenApplication {
 									  ChargingUnitRepository chargingUnitRepository,
 									  ReservationRepository reservationRepository,
 									  PermissionRepository permissionRepository,
-									  LocationRepository locationRepository, ChargerManufacturerService chargerManufacturerService, ChargerModelService chargerModelService) {
+									  LocationRepository locationRepository, ChargerManufacturerService chargerManufacturerService, ChargerModelService chargerModelService,
+									  WebSocketMetricsConfig webSocketMetricsConfig) {
 		return args -> {
 
 

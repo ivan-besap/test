@@ -38,9 +38,12 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import io.micrometer.core.instrument.MeterRegistry;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -86,8 +89,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private Queue queue;
     private PromiseFulfiller fulfiller;
     private IFeatureRepository featureRepository;
-    private ConfirmationCompletedHandler completedHandler
-            ;
+    private ConfirmationCompletedHandler completedHandler;
+
+
+    private final WebSocketMetricsConfig webSocketMetricsConfig;
 
 
     /**
@@ -104,9 +109,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * @param coreProfile             Perfil principal de OCPP para el servidor.
 //     * @param amazonMQCommunicator    Comunicador para integración con Amazon MQ.
      */
+    @Autowired
     public WebSocketHandler(UtilService utilService, ISessionFactory sessionFactory, Communicator communicator,
                             JSONServer jsonServer, ServerCoreProfile coreProfile,
-                            Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository) {
+                            Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository,
+                            WebSocketMetricsConfig webSocketMetricsConfig) {
 
         this.sessionFactory = sessionFactory;
         this.utilService = utilService;
@@ -133,6 +140,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
         // Registro del evento de perfil de cliente en el manejador de eventos principal
         this.clientCoreEventHandler = new DefaultClientCoreEventHandler();
+
+        this.webSocketMetricsConfig = webSocketMetricsConfig;
     }
 
 //1
@@ -181,6 +190,17 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             // Almacenar la sesión WebSocket en webSocketSessionStorage
             webSocketSessionStorage.put(sessionUUID, webSocketSession);
+
+            // Incrementar la métrica de conexiones activas
+            webSocketMetricsConfig.incrementActiveConnections();
+
+            // Configurar el intervalo de Heartbeat (por ejemplo, 30 segundos)
+            ChangeConfigurationRequest changeConfigRequest = new ChangeConfigurationRequest();
+            changeConfigRequest.setKey("HeartbeatInterval");
+            changeConfigRequest.setValue("10"); // Cambiar a 30 segundos
+            session.sendRequest("ChangeConfiguration", changeConfigRequest, UUID.randomUUID().toString());
+
+            logger.info("Configurado HeartbeatInterval a 30 segundos para la sesión: {}", sessionUUID);
 
 //            // Registrar en Amazon MQ
 //            amazonMQCommunicator.addSession(sessionUUID, webSocketSession);
@@ -744,7 +764,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
             BootNotificationConfirmation confirmation = new BootNotificationConfirmation();
             confirmation.setStatus(RegistrationStatus.Accepted);
             confirmation.setCurrentTime(ZonedDateTime.now(ZoneOffset.UTC));
-            confirmation.setInterval(300);
+            confirmation.setInterval(30);
 
             // Enviar la respuesta al cliente
             sendResponse(session, webSocketSession, messageId, "BootNotification", confirmation);

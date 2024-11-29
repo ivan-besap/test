@@ -34,6 +34,8 @@ public class WebSocketConfig implements WebSocketConfigurer {
     private final PromiseFulfiller fulfiller;
     private final UtilService utilService;
 
+    private WebSocketMetricsConfig webSocketMetricsConfig;
+
     @Autowired
     public WebSocketConfig(
                            ISessionFactory sessionFactory,
@@ -42,7 +44,8 @@ public class WebSocketConfig implements WebSocketConfigurer {
                            ServerCoreProfile coreProfile,
                            IFeatureRepository featureRepository,
                            Queue queue,
-                           PromiseFulfiller fulfiller, UtilService utilService) {
+                           PromiseFulfiller fulfiller, UtilService utilService,
+                           WebSocketMetricsConfig webSocketMetricsConfig) {
         this.sessionFactory = sessionFactory;
         this.communicator = communicator;
         this.jsonServer = jsonServer;
@@ -51,6 +54,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
         this.queue = queue;
         this.fulfiller = fulfiller;
         this.utilService = utilService;
+        this.webSocketMetricsConfig = webSocketMetricsConfig;
     }
 
     @Override
@@ -62,7 +66,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     }
 
     private WebSocketHandler createWebSocketHandler() {
-        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository);
+        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository, webSocketMetricsConfig);
     }
 
     private DefaultHandshakeHandler createHandshakeHandler() {
