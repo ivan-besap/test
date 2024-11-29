@@ -14,8 +14,7 @@ import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -274,33 +273,94 @@ public ResponseEntity<List<MeterValue>> getMeterValues(
     }
 
     @PostMapping("/iniciar-carga-remota")
-    public ResponseEntity<String> iniciarCargaRemota(@RequestBody IniciarCargaRemotaRequest request) {
-        try {
-            log.info("Iniciando carga remota para el conector: {} con idTag: {}", request.getConnectorId(), request.getIdTag());
+    public void iniciarCargaRemotaEnSimulador(@RequestParam String session,
+                                              @RequestBody RemoteStartTransactionRequest request) throws Exception {
+//        String url = "http://localhost:8081/api/charge-point/remote-start";
 
-            // Llamar al servicio para comunicar con el simulador
-            utilService.iniciarCargaRemotaEnSimulador(request.getConnectorId(), request.getIdTag(), request.getChargingProfile());
+//        UUID sessionId = session.getSessionId();
+        Session ocppSession = getSessionOrThrow(session);
+        WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
 
-            return ResponseEntity.ok("Carga remota iniciada con éxito");
-        } catch (Exception e) {
-            log.error("Error iniciando la carga remota: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error iniciando la carga remota");
-        }
+
+        // Configurar los encabezados de la solicitud si son necesarios
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+
+        // Crear la solicitud HTTP con el payload y los encabezados
+        HttpEntity<RemoteStartTransactionRequest> requestEntity = new HttpEntity<>(request, headers);
+
+        String messageId = UUID.randomUUID().toString();
+
+        // Enviar la solicitud POST al simulador
+        webSocketHandler.handleRemoteStartTransaction(ocppSession, webSocketSession, request, messageId);
+
+        // Verificar si la respuesta es exitosa
+//        if (!response.getStatusCode().is2xxSuccessful()) {
+//            throw new Exception("Error al iniciar la carga remota en el simulador: " + response.getBody());
+//        }
+
+        log.info("Carga remota en simulador iniciada con éxito para connectorId: {} y idTag: {}", request.getConnectorId(), request.getIdTag());
     }
 
+//    @PostMapping("/iniciar-carga-remota")
+//    public ResponseEntity<String> iniciarCargaRemota(@RequestBody IniciarCargaRemotaRequest request) {
+//        try {
+//            log.info("Iniciando carga remota para el conector: {} con idTag: {}", request.getConnectorId(), request.getIdTag());
+//
+//            // Llamar al servicio para comunicar con el simulador
+//            utilService.iniciarCargaRemotaEnSimulador(request.getConnectorId(), request.getIdTag(), request.getChargingProfile());
+//
+//            return ResponseEntity.ok("Carga remota iniciada con éxito");
+//        } catch (Exception e) {
+//            log.error("Error iniciando la carga remota: {}", e.getMessage());
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error iniciando la carga remota");
+//        }
+//    }
+
+
+//    @PostMapping("/detener-carga-remota")
+//    public ResponseEntity<String> detenerCargaRemota(@RequestBody RemoteStopTransactionRequest request) {
+//        try {
+//            log.info("Deteniendo carga remota para transactionId: {}", request.getTransactionId());
+//
+//            // Llamar al servicio para comunicar con el simulador
+//            utilService.detenerCargaRemotaEnSimulador(request.getTransactionId());
+//
+//            return ResponseEntity.ok("Carga remota detenida con éxito");
+//        } catch (Exception e) {
+//            log.error("Error deteniendo la carga remota: {}", e.getMessage());
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deteniendo la carga remota");
+//        }
+//    }
+
     @PostMapping("/detener-carga-remota")
-    public ResponseEntity<String> detenerCargaRemota(@RequestBody RemoteStopTransactionRequest request) {
-        try {
-            log.info("Deteniendo carga remota para transactionId: {}", request.getTransactionId());
+    public void detenerCargaRemotaEnSimulador(@RequestParam String session,
+                                              @RequestBody RemoteStopTransactionRequest request) throws Exception {
+//        String url = "http://localhost:8081/api/charge-point/remote-start";
 
-            // Llamar al servicio para comunicar con el simulador
-            utilService.detenerCargaRemotaEnSimulador(request.getTransactionId());
+//        UUID sessionId = session.getSessionId();
+        Session ocppSession = getSessionOrThrow(session);
+        WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
 
-            return ResponseEntity.ok("Carga remota detenida con éxito");
-        } catch (Exception e) {
-            log.error("Error deteniendo la carga remota: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deteniendo la carga remota");
-        }
+
+        // Configurar los encabezados de la solicitud si son necesarios
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+
+        // Crear la solicitud HTTP con el payload y los encabezados
+        HttpEntity<RemoteStopTransactionRequest> requestEntity = new HttpEntity<>(request, headers);
+
+        String messageId = UUID.randomUUID().toString();
+
+        // Enviar la solicitud POST al simulador
+        webSocketHandler.handleRemoteStopTransaction(ocppSession, webSocketSession, request, messageId);
+
+        // Verificar si la respuesta es exitosa
+//        if (!response.getStatusCode().is2xxSuccessful()) {
+//            throw new Exception("Error al iniciar la carga remota en el simulador: " + response.getBody());
+//        }
+
+//        log.info("Carga remota en simulador iniciada con éxito para connectorId: {} y idTag: {}", request.getConnectorId(), request.getIdTag());
     }
 
     @GetMapping("/obtener-ultimo-meter-value-json")

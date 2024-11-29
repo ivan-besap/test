@@ -1358,7 +1358,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * @param messageId        El ID del mensaje que se está procesando.
      * @throws IOException en caso de error al enviar la respuesta.
      */
-    void handleRemoteStopTransaction(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+    public void handleRemoteStopTransaction(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
         try {
             // Deserializa el payload en un objeto RemoteStopTransactionRequest
             RemoteStopTransactionRequest remoteStopTransactionRequest = objectMapper.convertValue(requestPayload, RemoteStopTransactionRequest.class);
