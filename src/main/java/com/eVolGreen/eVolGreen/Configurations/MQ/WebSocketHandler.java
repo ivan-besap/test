@@ -38,12 +38,10 @@ import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
-import io.micrometer.core.instrument.MeterRegistry;
 import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
@@ -1323,6 +1321,51 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             // Log de éxito
             logger.info("RemoteStartTransaction manejado exitosamente para la sesión: {} con estado: {}", session.getSessionId(), confirmation.getStatus());
+
+        } catch (IllegalArgumentException e) {
+            // Manejo de errores con argumentos inválidos
+            logger.error("Error en los argumentos de RemoteStartTransaction: {}", e.getMessage());
+            sendError(session, webSocketSession, messageId, "Error en RemoteStartTransaction: " + e.getMessage());
+        } catch (Exception e) {
+            // Manejo de errores generales
+            logger.error("Error procesando RemoteStartTransaction para la sesión: {}", session != null ? session.getSessionId() : "Sesión no disponible", e);
+            sendError(session, webSocketSession, messageId, "Error en RemoteStartTransaction: " + e.getMessage());
+        }
+    }
+
+    public void handleRemoteStartTransaction2(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            logger.debug("Procesando RemoteStartTransaction con messageId: {}", messageId);
+
+            // Validar que el payload no sea nulo
+            if (requestPayload == null) {
+                throw new IllegalArgumentException("El payload de la solicitud no puede ser nulo.");
+            }
+
+            // Deserializar el payload en un objeto RemoteStartTransactionRequest
+            RemoteStartTransactionRequest remoteStartRequest = objectMapper.convertValue(requestPayload, RemoteStartTransactionRequest.class);
+            logger.debug("Payload deserializado: {}", remoteStartRequest);
+
+            // Verificar si la sesión es válida
+            if (session == null) {
+                throw new IllegalStateException("Sesión OCPP no encontrada para el ID proporcionado.");
+            }
+
+            // Confirmar que la sesión WebSocket está abierta
+            if (!webSocketSession.isOpen()) {
+                throw new IllegalStateException("La sesión WebSocket no está abierta.");
+            }
+
+            // Log de envío
+            logger.info("Enviando RemoteStartTransactionRequest al simulador...");
+            logger.info("Contenido del mensaje enviado: {}", objectMapper.writeValueAsString(remoteStartRequest));
+
+            // Enviar el mensaje al simulador
+            session.sendRequest("RemoteStartTransaction", remoteStartRequest, messageId);
+
+            // Log de éxito
+            logger.info("RemoteStartTransactionRequest enviado con éxito para idTag: {}, connectorId: {}", remoteStartRequest.getIdTag(), remoteStartRequest.getConnectorId());
+            logger.info("Esperando confirmación del simulador...");
 
         } catch (IllegalArgumentException e) {
             // Manejo de errores con argumentos inválidos
