@@ -87,6 +87,40 @@ public class Session implements ISession {
         communicator.sendCall(uuid, action, payload);
     }
 
+    /**
+     * Envía una solicitud al servidor y devuelve un CompletableFuture para manejar la confirmación.
+     *
+     * @param action  el nombre de la acción a realizar.
+     * @param payload el objeto de solicitud a enviar.
+     * @param uuid    el identificador único de la solicitud.
+     * @return un CompletableFuture para manejar la confirmación de la solicitud.
+     */
+    public CompletableFuture<Confirmation> sendRemoteStartTransaction(String action, Request payload, String uuid) {
+        ensureRadioConnected(); // Verifica y conecta el radio si está desconectado
+
+        // Crear el CompletableFuture para manejar la respuesta
+        CompletableFuture<Confirmation> promise = new CompletableFuture<>();
+
+        try {
+            // Registrar la promesa pendiente en el mapa
+            addPendingPromise(uuid, action, promise);
+
+            // Enviar la solicitud al Charge Point
+            sendRequest(action, payload, uuid);
+            communicator.sendCall(uuid, action, payload);
+
+            logger.debug("Mensaje enviado al Charge Point: messageId={}, action={}, payload={}", uuid, action, payload);
+        } catch (Exception e) {
+            logger.error("Error al enviar el mensaje: messageId={}, action={}, error={}", uuid, action, e.getMessage(), e);
+
+            // Completar excepcionalmente la promesa en caso de error
+            promise.completeExceptionally(e);
+        }
+
+        // Retornar la promesa para manejar la confirmación asincrónicamente
+        return promise;
+    }
+
     private void ensureRadioConnected() {
         // Verifica si communicator.radio es null y, si es así, inicialízalo
         if (communicator.radio == null) {

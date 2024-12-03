@@ -32,6 +32,8 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.web.client.RestTemplate;
 
 import javax.net.ssl.SSLContext;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -290,7 +292,7 @@ public class AppConfig {
             @Override
             public Object packPayload(Object payload) {
                 // Serialización del payload usando la lógica de OCPP y Gson
-                return gson.toJson(payload);
+                return payload;
             }
 
             @Override
@@ -301,9 +303,14 @@ public class AppConfig {
 
             @Override
             protected Object makeCall(String uniqueId, String action, Object payload) {
-                // Genera el Call OCPP con el formato adecuado
-                return String.format(CALL_FORMAT, uniqueId, action, packPayload(payload));
+                List<Object> call = new ArrayList<>();
+                call.add(2); // Tipo de mensaje: Call
+                call.add(uniqueId);
+                call.add(action);
+                call.add(payload); // Agregar el payload como objeto
+                return call;
             }
+
 
             @Override
             protected Object makeCallError(String uniqueId, String action, String errorCode, String errorDescription) {

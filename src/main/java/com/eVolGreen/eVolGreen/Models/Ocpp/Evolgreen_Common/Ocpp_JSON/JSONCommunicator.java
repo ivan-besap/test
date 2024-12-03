@@ -198,7 +198,7 @@ public abstract class JSONCommunicator extends Communicator {
      */
     @Override
     public Object packPayload(Object payload) {
-        return gson.toJson(payload);
+        return payload;
     }
 
     /**

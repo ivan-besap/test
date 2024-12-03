@@ -7,6 +7,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.ConfirmationC
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.SessionInformation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Queue;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.TimeoutHandler;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.TimeoutTimer;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Handler.DefaultClientCoreEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Handler.ServerCoreEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Profile.ClientRemoteTriggerProfile;
@@ -21,6 +23,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enu
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Utils.IdTagInfo;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.ChargePointStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Confirmations.TriggerMessageConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.Enums.TriggerMessageRequestType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.TriggerMessageRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirmations.ClearChargingProfileConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirmations.Enums.ChargingProfileStatus;
@@ -31,6 +35,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirma
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.ClearChargingProfileRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.GetCompositeScheduleRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.SetChargingProfileRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.TimeoutSessionDecorator;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -66,8 +71,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketHandler.class);
 
-    static final Map<UUID, Session> sessionStore = new ConcurrentHashMap<>();
-    private static final Map<UUID, WebSocketSession> webSocketSessionStorage = new ConcurrentHashMap<>();
+    public static final Map<UUID, Session> sessionStore = new ConcurrentHashMap<>();
+    public static final Map<UUID, WebSocketSession> webSocketSessionStorage = new ConcurrentHashMap<>();
 
     private final List<WebSocketSession> sessions = new CopyOnWriteArrayList<>();
 
@@ -91,6 +96,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
 
     private final WebSocketMetricsConfig webSocketMetricsConfig;
+    private static final Map<String, UUID> chargePointIdToSessionIdMap = new ConcurrentHashMap<>();
 
 
     /**
@@ -188,6 +194,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             // Almacenar la sesión WebSocket en webSocketSessionStorage
             webSocketSessionStorage.put(sessionUUID, webSocketSession);
+
+            webSocketSession.getAttributes().put("chargePointId", chargePointId);
+
+            // Vincular el sessionUUID con el chargePointId
+            chargePointIdToSessionIdMap.put(chargePointId, sessionUUID);
 
             // Incrementar la métrica de conexiones activas
             webSocketMetricsConfig.incrementActiveConnections();
@@ -394,6 +405,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
         try {
             UUID sessionId = UUID.fromString(webSocketSession.getId());
             removeSession(sessionId);
+            webSocketSessionStorage.remove(sessionId);
+
+            // Eliminar el mapeo chargePointId -> sessionId
+            String chargePointId = (String) webSocketSession.getAttributes().get("chargePointId");
+            if (chargePointId != null) {
+                chargePointIdToSessionIdMap.remove(chargePointId);
+            }
+
             logger.info("Sesión cerrada y eliminada: {}", sessionId);
         } catch (IllegalArgumentException e) {
             logger.error("Error: ID de sesión no es un UUID válido: {}", webSocketSession.getId(), e);
@@ -408,6 +427,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     private void removeSession(UUID sessionId) {
         // Eliminar la sesión de los almacenes de datos
         Session ocppSession = sessionStore.remove(sessionId);
+        webSocketSessionStorage.remove(sessionId);
 
     }
 
@@ -550,7 +570,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * @param confirmation La confirmación a enviar al cliente.
      * @throws IOException Si ocurre un error al enviar el mensaje.
      */
-    private void sendResponse(Session session, WebSocketSession webSocketSession, String messageId, String action, Object confirmation) throws IOException {
+    public void sendResponse(Session session, WebSocketSession webSocketSession, String messageId, String action, Object confirmation) throws IOException {
         String response = objectMapper.writeValueAsString(new Object[]{3, messageId, confirmation});
 
         // Envía la respuesta a través de la sesión establecida
@@ -686,7 +706,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * @param errorMessage     El mensaje de error a enviar.
      * @throws IOException Si ocurre un error al enviar el mensaje de error.
      */
-    void sendError(Session session,WebSocketSession webSocketSession, String messageId, String errorMessage) throws IOException {
+    public void sendError(Session session, WebSocketSession webSocketSession, String messageId, String errorMessage) throws IOException {
         logger.error("Error: {}", errorMessage);
 
         // Formato del mensaje de error
@@ -820,6 +840,27 @@ public class WebSocketHandler extends TextWebSocketHandler {
             sendError(session,webSocketSession, messageId, "Internal server error");
         }
     }
+
+//11.1
+
+    public void handleHeartbeatTrigger(Session session, WebSocketSession webSocketSession, String messageId, TriggerMessageRequest request) throws IOException {
+        try {
+            logger.info("Enviando solicitud de TriggerMessage al cargador para la sesión: {}", session.getSessionId());
+
+            TriggerMessageRequest triggerMessageRequest = objectMapper.convertValue(request, TriggerMessageRequest.class);
+            logger.debug("Payload TriggerMessageRequest: {}", triggerMessageRequest);
+
+            // Enviar la solicitud a la estación de carga
+            session.sendRequest("TriggerMessage", triggerMessageRequest, messageId);
+
+            logger.info("Solicitud de TriggerMessage enviada exitosamente para la sesión: {}", session.getSessionId());
+        } catch (Exception e) {
+            // Manejar errores de envío o procesamiento
+            logger.error("Error al enviar la solicitud de TriggerMessage", e);
+            sendError(session, webSocketSession, messageId, "Error en TriggerMessageRequest: " + e.getMessage());
+        }
+    }
+
 
 //12
     /**
@@ -984,6 +1025,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
             // Crear la confirmación de StatusNotification
             StatusNotificationConfirmation confirmation = new StatusNotificationConfirmation();
 
+
+
             // Enviar la respuesta de confirmación al cliente
             sendResponse(session, webSocketSession, messageId, "StatusNotification", confirmation);
             logger.info("StatusNotification completado exitosamente para la sesión: {}", session.getSessionId());
@@ -998,6 +1041,37 @@ public class WebSocketHandler extends TextWebSocketHandler {
             sendError(session, webSocketSession, messageId, "Internal server error");
         }
     }
+
+//15.1 Pedir StatusNotification a Estacion de carga
+    /**
+     * Envía una solicitud a la estación de carga para obtener su estado actual.
+     *
+     * @param session La instancia de la sesión OCPP.
+     * @param webSocketSession La sesión WebSocket asociada.
+     * @param messageId El identificador único del mensaje.
+     * @throws IOException Si ocurre un error al enviar la solicitud o procesar la respuesta.
+     */
+    public void handleStatusNotificationTrigger(Session session, WebSocketSession webSocketSession, String messageId, Request request) throws IOException {
+        try {
+            logger.info("Enviando solicitud de TriggerMessage al cargador para la sesión: {}", session.getSessionId());
+
+            TriggerMessageRequest triggerMessageRequest1 = objectMapper.convertValue(request, TriggerMessageRequest.class);
+            logger.debug("Serialized TriggerMessageRequest payload: {}", triggerMessageRequest1);
+
+            // Enviar la solicitud a la estación de carga
+            session.sendRequest("TriggerMessage", triggerMessageRequest1, messageId);
+
+            logger.info("Solicitud de TriggerMessage enviada exitosamente para la sesión: {}", session.getSessionId());
+
+        } catch (Exception e) {
+            // Manejar errores de envío o procesamiento
+            logger.error("Error al enviar la solicitud de TriggerMessage", e);
+            sendError(session, webSocketSession, messageId, "Error en TriggerMessageRequest: " + e.getMessage());
+        }
+    }
+
+
+
 
 //16
     /**
@@ -1298,29 +1372,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
             }
 
             // Enviar el mensaje de RemoteStartTransaction a Amazon MQ para logging
-            jsonServer.sendMessageToMQ("RemoteStartTransaction request received for idTag: " + remoteStartRequest.getIdTag());
-            logger.info("Mensaje enviado a Amazon MQ para RemoteStartTransaction con idTag: {}", remoteStartRequest.getIdTag());
+            logger.info("Mensaje enviado a Estacion de Carga para RemoteStartTransaction con idTag: {}", remoteStartRequest.getIdTag());
 
             // Enviar la solicitud de inicio de transacción remota
             session.sendRequest("RemoteStartTransaction", remoteStartRequest, messageId);
 
-            // Configurar la respuesta
-            IdTagInfo idTagInfo = new IdTagInfo();
-            idTagInfo.setStatus(AuthorizationStatus.Accepted);
-            idTagInfo.setExpiryDate(ZonedDateTime.now().plusDays(30));
-
-            // Crear y enviar la confirmación de RemoteStartTransaction
-            RemoteStartTransactionConfirmation confirmation = new RemoteStartTransactionConfirmation();
-            confirmation.setStatus(RemoteStartStopStatus.Accepted);  // Establecer el estado como aceptado
-
-            sendResponse(session, webSocketSession, messageId, "RemoteStartTransaction", confirmation);
-
-            logger.info("Respuesta enviada para StartRemotoTransaction con ID de mensaje {}: {}", messageId, confirmation);
-            logger.info("StartRemotoTransaction completado exitosamente para la sesión: {}", session.getSessionId());
-
-
             // Log de éxito
-            logger.info("RemoteStartTransaction manejado exitosamente para la sesión: {} con estado: {}", session.getSessionId(), confirmation.getStatus());
+            logger.info("RemoteStartTransactionRequest enviado exitosamente para la sesión: {} ", session.getSessionId());
 
         } catch (IllegalArgumentException e) {
             // Manejo de errores con argumentos inválidos
@@ -1677,6 +1735,81 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
     }
 
+    public UUID getSessionIdByChargePointId(String chargePointId) {
+        return chargePointIdToSessionIdMap.get(chargePointId);
+    }
+
+    public void handleBootNotificationTrigger(Session session, WebSocketSession webSocketSession, String messageId, TriggerMessageRequest request) throws IOException {
+        try {
+            logger.info("Enviando solicitud de TriggerMessage al cargador para la sesión: {}", session.getSessionId());
+
+            TriggerMessageRequest triggerMessageRequest = objectMapper.convertValue(request, TriggerMessageRequest.class);
+            logger.debug("Payload TriggerMessageRequest: {}", triggerMessageRequest);
+
+            // Enviar la solicitud a la estación de carga
+            session.sendRequest("TriggerMessage", triggerMessageRequest, messageId);
+
+            logger.info("Solicitud de TriggerMessage enviada exitosamente para la sesión: {}", session.getSessionId());
+        } catch (Exception e) {
+            // Manejar errores de envío o procesamiento
+            logger.error("Error al enviar la solicitud de TriggerMessage", e);
+            sendError(session, webSocketSession, messageId, "Error en TriggerMessageRequest: " + e.getMessage());
+        }
+    }
+
+    public void handleDiagnosticsStatusNotificationTrigger(Session session, WebSocketSession webSocketSession, String messageId, TriggerMessageRequest request) throws IOException {
+        try {
+            logger.info("Enviando solicitud de TriggerMessage al cargador para la sesión: {}", session.getSessionId());
+
+            TriggerMessageRequest triggerMessageRequest = objectMapper.convertValue(request, TriggerMessageRequest.class);
+            logger.debug("Payload TriggerMessageRequest: {}", triggerMessageRequest);
+
+            // Enviar la solicitud a la estación de carga
+            session.sendRequest("TriggerMessage", triggerMessageRequest, messageId);
+
+            logger.info("Solicitud de TriggerMessage enviada exitosamente para la sesión: {}", session.getSessionId());
+        } catch (Exception e) {
+            // Manejar errores de envío o procesamiento
+            logger.error("Error al enviar la solicitud de TriggerMessage", e);
+            sendError(session, webSocketSession, messageId, "Error en TriggerMessageRequest: " + e.getMessage());
+        }
+    }
+
+    public void handleFirmwareStatusNotificationTrigger(Session session, WebSocketSession webSocketSession, String messageId, TriggerMessageRequest request) throws IOException {
+        try {
+            logger.info("Enviando solicitud de TriggerMessage al cargador para la sesión: {}", session.getSessionId());
+
+            TriggerMessageRequest triggerMessageRequest = objectMapper.convertValue(request, TriggerMessageRequest.class);
+            logger.debug("Payload TriggerMessageRequest: {}", triggerMessageRequest);
+
+            // Enviar la solicitud a la estación de carga
+            session.sendRequest("TriggerMessage", triggerMessageRequest, messageId);
+
+            logger.info("Solicitud de TriggerMessage enviada exitosamente para la sesión: {}", session.getSessionId());
+        } catch (Exception e) {
+            // Manejar errores de envío o procesamiento
+            logger.error("Error al enviar la solicitud de TriggerMessage", e);
+            sendError(session, webSocketSession, messageId, "Error en TriggerMessageRequest: " + e.getMessage());
+        }
+    }
+
+    public void handleMeterValuesTrigger(Session session, WebSocketSession webSocketSession, String messageId, TriggerMessageRequest request) throws IOException {
+        try {
+            logger.info("Enviando solicitud de TriggerMessage al cargador para la sesión: {}", session.getSessionId());
+
+            TriggerMessageRequest triggerMessageRequest = objectMapper.convertValue(request, TriggerMessageRequest.class);
+            logger.debug("Payload TriggerMessageRequest: {}", triggerMessageRequest);
+
+            // Enviar la solicitud a la estación de carga
+            session.sendRequest("TriggerMessage", triggerMessageRequest, messageId);
+
+            logger.info("Solicitud de TriggerMessage enviada exitosamente para la sesión: {}", session.getSessionId());
+        } catch (Exception e) {
+            // Manejar errores de envío o procesamiento
+            logger.error("Error al enviar la solicitud de TriggerMessage", e);
+            sendError(session, webSocketSession, messageId, "Error en TriggerMessageRequest: " + e.getMessage());
+        }
+    }
 
 //    private void sendMeterValuesToClient(WebSocketSession webSocketSession, String meterValuesJson) throws IOException {
 //        if (webSocketSession.isOpen()) {

@@ -1,7 +1,9 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request;
 
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.RequestWithId;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.Enums.TriggerMessageRequestType;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Positive;
@@ -43,7 +45,7 @@ import java.util.UUID;
  */
 @XmlRootElement
 @XmlType(propOrder = {"requestedMessage", "connectorId"})
-public class TriggerMessageRequest extends RequestWithId {
+public class TriggerMessageRequest implements Request {
 
     @NotNull(message = "El campo requestedMessage es obligatorio")
     @JsonProperty("requestedMessage")
@@ -116,11 +118,24 @@ public class TriggerMessageRequest extends RequestWithId {
     }
 
     @Override
-    public String getAction() {
+    @JsonIgnore
+    public String getOcppMessageId() {
         return "";
     }
 
     @Override
+    public void setOcppMessageId(String id) {
+
+    }
+
+    @Override
+    @JsonIgnore
+    public String getAction() {
+        return "TriggerMessage";
+    }
+
+    @Override
+    @JsonIgnore
     public UUID getSessionIndex() {
         return null;
     }

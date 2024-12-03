@@ -6,6 +6,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.NotConnec
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.SugarUtil;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -182,7 +184,11 @@ public abstract class Communicator {
                 transactionQueue.add(call);
                 processTransactionQueue();
             } else {
-                radio.send(call);
+                ObjectMapper objectMapper = new ObjectMapper();
+                String jsonMessage = objectMapper.writeValueAsString(call);
+                logger.debug("Enviando mensaje JSON: {}", jsonMessage);
+
+                radio.send(jsonMessage);
             }
         } catch (NotConnectedException ex) {
             logger.warn("sendCall() failed: not connected");
@@ -195,6 +201,8 @@ public abstract class Communicator {
                         "The request can't be sent due to the lack of connection",
                         request);
             }
+        } catch (JsonProcessingException e) {
+            throw new RuntimeException(e);
         }
     }
 
