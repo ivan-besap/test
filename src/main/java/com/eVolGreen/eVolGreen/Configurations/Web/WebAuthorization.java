@@ -39,7 +39,7 @@ public class WebAuthorization {
                         .requestMatchers(HttpMethod.GET, "/api/verify-account").permitAll()
                         .requestMatchers("/**").permitAll() // Permitir acceso a los endpoints del Actuator
                         .requestMatchers("/prometheus/**").permitAll()
-                        .requestMatchers("/ocpp/**").permitAll()
+                        .requestMatchers("/api/ocpp/**").permitAll()
                         .requestMatchers("/error/**").permitAll()
                         .anyRequest().authenticated()
                 )
