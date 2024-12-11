@@ -15,6 +15,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.Ch
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.ChargingSchedule;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.MeterValue;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.IniciarCargaRemotaRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.Enums.TriggerMessageRequestType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.TriggerMessageRequest;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import org.slf4j.Logger;
@@ -808,37 +809,41 @@ public class OcppController {
         }
     }
 
-    @PostMapping("/trigger-heartbeat")
-    public ResponseEntity<String> triggerheartbeat(@RequestParam String chargePointId,
-                                                 @RequestBody TriggerMessageRequest request) {
-
-        UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
-        if (sessionId == null) {
-            logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
-        }
-
-        Session session = sessionStore.get(sessionId);
-        WebSocketSession webSocketSession = webSocketSessionStorage.get(sessionId);
-
-        if (session == null || webSocketSession == null || !webSocketSession.isOpen()) {
-            logger.error("La sesión para chargePointId {} no está activa.", chargePointId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body("La sesión para chargePointId " + chargePointId + " no está activa.");
-        }
-
+    @GetMapping("/triggerHeartbeat")
+    public ResponseEntity<String> triggerHeartbeat(@RequestParam String chargePointId) {
         try {
+            // Obtener el sessionId a partir del chargePointId
+            UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionId == null) {
+                return ResponseEntity.badRequest().body("No se encontró una sesión para el chargePointId: " + chargePointId);
+            }
+
+            // Obtener la sesión OCPP asociada
+            Session session = WebSocketHandler.sessionStore.get(sessionId);
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión no encontrada para el sessionId: " + sessionId);
+            }
+
+            // Obtener la sesión WebSocket asociada
+            WebSocketSession webSocketSession = WebSocketHandler.webSocketSessionStorage.get(sessionId);
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("La sesión WebSocket no está abierta o no se encontró.");
+            }
+
+            // Crear el TriggerMessageRequest
+            TriggerMessageRequest request = new TriggerMessageRequest();
+            request.setRequestedMessage(TriggerMessageRequestType.Heartbeat);
+
+            // Generar un messageId
             String messageId = UUID.randomUUID().toString();
 
-            // Opcional: Establecer el ocppMessageId si tu implementación lo requiere
-            // request.setOcppMessageId(messageId);
-
+            // Llamar a handleHeartbeatTrigger
             webSocketHandler.handleHeartbeatTrigger(session, webSocketSession, messageId, request);
-            return ResponseEntity.ok("Solicitud de " + request.getRequestedMessage() + " enviada exitosamente");
-        } catch (IOException e) {
-            logger.error("Error al enviar TriggerMessageRequest", e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error enviando solicitud");
+
+            return ResponseEntity.ok("Se envió el TriggerMessage (Heartbeat) correctamente.");
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error enviando TriggerMessage: " + e.getMessage());
         }
     }
 

@@ -27,7 +27,7 @@ public class SampledValue {
     private SampledValueMeasurand measurand = SampledValueMeasurand.Energy_Active_Import_Register; // Valor por defecto
 
     @JsonProperty("phase")
-    private String phase;
+    private SampledValuePhase phase;
 
     @JsonProperty("location")
     private SampledValueLocation location = SampledValueLocation.Outlet; // Valor por defecto
@@ -80,12 +80,12 @@ public class SampledValue {
         this.measurand = measurand;
     }
 
-    public String getPhase() {
+    public SampledValuePhase getPhase() {
         return phase;
     }
 
     @XmlElement
-    public void setPhase(String phase) {
+    public void setPhase(SampledValuePhase phase) {
         this.phase = phase;
     }
 

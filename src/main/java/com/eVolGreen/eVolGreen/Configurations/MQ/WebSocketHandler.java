@@ -597,6 +597,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
              */
             @Override
             public void handleConfirmation(String uniqueId, Confirmation confirmation) {
+                if (confirmation instanceof RemoteStartTransactionConfirmation) {
+                    // Aquí llega la confirmación de RemoteStartTransaction
+                    RemoteStartTransactionConfirmation conf = (RemoteStartTransactionConfirmation) confirmation;
+                    logger.info("Recibida confirmación para RemoteStartTransaction con uniqueId: {}", uniqueId);
+                    // Procesar la confirmación según tu lógica.
+                }
+
                 logger.info("Confirmación recibida para la solicitud {}: {}", uniqueId, confirmation);
             }
 
@@ -850,8 +857,13 @@ public class WebSocketHandler extends TextWebSocketHandler {
             TriggerMessageRequest triggerMessageRequest = objectMapper.convertValue(request, TriggerMessageRequest.class);
             logger.debug("Payload TriggerMessageRequest: {}", triggerMessageRequest);
 
-            // Enviar la solicitud a la estación de carga
-            session.sendRequest("TriggerMessage", triggerMessageRequest, messageId);
+            TriggerMessageRequest triggerRequest = new TriggerMessageRequest();
+            triggerRequest.setRequestedMessage(TriggerMessageRequestType.Heartbeat);
+            // Puedes especificar el conectorId si aplica (normalmente no para Heartbeat)
+
+            // Envías este request usando:
+            session.sendRequest("TriggerMessage", triggerRequest, messageId);
+
 
             logger.info("Solicitud de TriggerMessage enviada exitosamente para la sesión: {}", session.getSessionId());
         } catch (Exception e) {
