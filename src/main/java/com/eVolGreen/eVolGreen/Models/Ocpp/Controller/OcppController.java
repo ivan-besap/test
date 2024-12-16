@@ -38,7 +38,7 @@ import static org.apache.activemq.plugin.ForcePersistencyModeBroker.log;
 
 
 @RestController
-@RequestMapping("/api/ocpp")
+@RequestMapping("/api")
 public class OcppController {
 
     @Autowired

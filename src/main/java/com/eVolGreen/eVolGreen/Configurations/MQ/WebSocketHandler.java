@@ -47,14 +47,16 @@ import lombok.AllArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.socket.CloseStatus;
-import org.springframework.web.socket.TextMessage;
-import org.springframework.web.socket.WebSocketSession;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.stereotype.Component;
+import org.springframework.web.socket.*;
+import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -65,8 +67,10 @@ import java.util.concurrent.*;
  * y redireccionando solicitudes como BootNotification y Authorize al {@link JSONServer}.
  */
 @AllArgsConstructor
-public class WebSocketHandler extends TextWebSocketHandler {
+@Component
+public class WebSocketHandler extends AbstractWebSocketHandler {
 
+    private static final long MAX_PING_INTERVAL_MS = 30000; // 30 segundos
     private final UtilService utilService;
 
     private static final Logger logger = LoggerFactory.getLogger(WebSocketHandler.class);
@@ -97,6 +101,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
     private final WebSocketMetricsConfig webSocketMetricsConfig;
     private static final Map<String, UUID> chargePointIdToSessionIdMap = new ConcurrentHashMap<>();
+    private final Map<String, Long> sessionLastPingTime = new ConcurrentHashMap<>();
 
 
     /**
@@ -204,12 +209,22 @@ public class WebSocketHandler extends TextWebSocketHandler {
             webSocketMetricsConfig.incrementActiveConnections();
 
             // Configurar el intervalo de Heartbeat (por ejemplo, 30 segundos)
-            ChangeConfigurationRequest changeConfigRequest = new ChangeConfigurationRequest();
-            changeConfigRequest.setKey("HeartbeatInterval");
-            changeConfigRequest.setValue("10"); // Cambiar a 30 segundos
+            String  Key = "HeartbeatInterval";
+            String Value = "30";
+            ChangeConfigurationRequest changeConfigRequest = new ChangeConfigurationRequest(Key, Value);
             session.sendRequest("ChangeConfiguration", changeConfigRequest, UUID.randomUUID().toString());
 
             logger.info("Configurado HeartbeatInterval a 30 segundos para la sesión: {}", sessionUUID);
+
+            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+            scheduler.scheduleAtFixedRate(() -> {
+                try {
+                    verifyActiveSessions();
+                } catch (Exception e) {
+                    logger.error("Error verificando sesiones activas", e);
+                }
+            }, 0, 30, TimeUnit.SECONDS);
+
 
 //            // Registrar en Amazon MQ
 //            amazonMQCommunicator.addSession(sessionUUID, webSocketSession);
@@ -357,7 +372,28 @@ public class WebSocketHandler extends TextWebSocketHandler {
      * @throws IOException Si ocurre un error de procesamiento JSON.
      */
     private void handleAction(Session session, WebSocketSession webSocketSession, String payload) throws IOException {
-        Object[] array = objectMapper.readValue(payload, Object[].class);
+        if (payload == null || payload.isEmpty()) {
+            logger.warn("Mensaje vacío recibido.");
+            return;
+        }
+
+        // Intentar parsear el payload como un array JSON.
+        Object[] array;
+        try {
+            array = objectMapper.readValue(payload, Object[].class);
+        } catch (Exception e) {
+            logger.warn("Error al parsear el payload: {}", payload, e);
+            sendError(session, webSocketSession, null, "Mensaje no reconocido.");
+            return;
+        }
+
+        // Verificar si es un mensaje de control (e.g., "Ping").
+        if (array.length == 1 && "Ping".equalsIgnoreCase((String) array[0])) {
+            logger.debug("Ping detectado, enviando respuesta Pong.");
+            webSocketSession.sendMessage(new PongMessage());
+            return;
+        }
+
         String messageId = (String) array[1];
         String action = (String) array[2];
         Object requestPayload = array[3];
@@ -388,8 +424,12 @@ public class WebSocketHandler extends TextWebSocketHandler {
             case "SetChargingProfile" -> handleSetChargingProfile(session, webSocketSession, requestPayload, messageId);
             case "UnlockConnector" -> handleUnlockConnector(session, webSocketSession, requestPayload, messageId);
             case "Reset" -> handleReset(session, webSocketSession, requestPayload, messageId);
+            case "Ping" -> handlePingMessage(webSocketSession, new PingMessage((ByteBuffer) array[3]));
 
-            default -> sendError(session, webSocketSession, messageId, "Acción no soportada: " + action);
+            default -> {
+                logger.warn("Acción no soportada: {}", action);
+                sendError(session, webSocketSession, messageId, "Acción no soportada: " + action);
+            }
         }
     }
 
@@ -403,9 +443,11 @@ public class WebSocketHandler extends TextWebSocketHandler {
     @Override
     public void afterConnectionClosed(WebSocketSession webSocketSession, CloseStatus status) {
         try {
-            UUID sessionId = UUID.fromString(webSocketSession.getId());
-            removeSession(sessionId);
-            webSocketSessionStorage.remove(sessionId);
+            UUID sessionId = (UUID) webSocketSession.getAttributes().get("sessionId");
+            if (sessionId != null) {
+                sessionStore.remove(sessionId);
+                webSocketSessionStorage.remove(sessionId);
+            }
 
             // Eliminar el mapeo chargePointId -> sessionId
             String chargePointId = (String) webSocketSession.getAttributes().get("chargePointId");
@@ -449,28 +491,99 @@ public class WebSocketHandler extends TextWebSocketHandler {
         }
     }
 
-    /**
-     * Intenta reconectar la sesión si no se ha alcanzado el máximo de intentos permitidos.
-     *
-     * @param webSocketSession La sesión WebSocket que necesita reconexión.
-     */
-    private void attemptReconnection(WebSocketSession webSocketSession) {
-        if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-            reconnectAttempts++;
-            logger.warn("Intento de reconexión {} de {}", reconnectAttempts, MAX_RECONNECT_ATTEMPTS);
-            closeSessionWithError(webSocketSession);
-
-            // Obtiene la sesión OCPP asociada para reutilizar en la reconexión
-            Session ocppSession = sessionStore.get(UUID.fromString(webSocketSession.getId()));
-            if (ocppSession != null) {
-                reconnect(webSocketSession, ocppSession);
-            } else {
-                logger.warn("No se encontró la sesión OCPP asociada para reconectar: {}", webSocketSession.getId());
-            }
+    @Override
+    public void handleMessage(WebSocketSession session, WebSocketMessage<?> message) throws Exception {
+        if (message instanceof PingMessage pingMessage) {
+            logger.debug("Ping recibido desde la sesión: {}", session.getId());
+            handlePingMessage(session, pingMessage);
+        } else if (message instanceof PongMessage pongMessage) {
+            logger.debug("Pong recibido desde la sesión: {}", session.getId());
+            handlePongMessage(session, pongMessage);
+        } else if (message instanceof TextMessage textMessage) {
+            handleTextMessage(session, textMessage);
         } else {
-            logger.warn("Se alcanzó el máximo de intentos de reconexión. Cerrando sesión: {}", webSocketSession.getId());
-            closeSessionWithError(webSocketSession);
+            logger.warn("Tipo de mensaje no reconocido: {}", message.getClass().getSimpleName());
+        }
+    }
+
+
+    private void attemptReconnection(WebSocketSession webSocketSession) {
+        try {
+            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
+                reconnectAttempts++;
+                logger.warn("Intento de reconexión {}/{} para la sesión: {}", reconnectAttempts, MAX_RECONNECT_ATTEMPTS, webSocketSession.getId());
+
+                // Cierra la sesión actual de manera controlada
+                closeSessionWithError(webSocketSession);
+
+                // Obtiene la sesión OCPP asociada para intentar la reconexión
+                UUID sessionUUID = (UUID) webSocketSession.getAttributes().get("sessionId");
+                Session ocppSession = sessionStore.get(sessionUUID);
+
+                if (ocppSession != null) {
+                    logger.info("Iniciando intento de reconexión para la sesión OCPP con ID: {}", sessionUUID);
+                    reconnect(webSocketSession, ocppSession);
+                } else {
+                    logger.warn("Sesión OCPP no encontrada para el ID: {}. Eliminando la sesión de la lista activa.", webSocketSession.getId());
+                    sessions.remove(webSocketSession);
+                }
+            } else {
+                logger.error("Se alcanzó el máximo de intentos de reconexión para la sesión: {}. Cerrando sesión definitivamente.", webSocketSession.getId());
+                closeSessionPermanently(webSocketSession);
+            }
+        } catch (Exception e) {
+            logger.error("Error inesperado durante la reconexión de la sesión: {}", webSocketSession.getId(), e);
+        }
+    }
+
+//5
+    /**
+     * Reconecta una sesión WebSocket a la estación de carga asociada.
+     *
+     * @param webSocketSession La sesión WebSocket a reconectar.
+     * @param ocppSession      La sesión OCPP asociada.
+     */
+    private void reconnect(WebSocketSession webSocketSession, Session ocppSession) {
+        try {
+            ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+
+            scheduler.schedule(() -> {
+                try {
+                    logger.info("Intentando reconectar la sesión WebSocket: {}", webSocketSession.getId());
+
+                    if (!webSocketSession.isOpen()) {
+                        ocppSession.open(webSocketSession.getUri().toString(), createSessionEvents(ocppSession));
+                    }
+
+                    logger.info("Reconexión exitosa para la sesión: {}", webSocketSession.getId());
+                    reconnectAttempts = 0; // Reinicia el contador de intentos después de una reconexión exitosa
+                    scheduler.shutdown();
+
+                } catch (Exception e) {
+                    logger.error("Error durante el intento de reconexión para la sesión: {}", webSocketSession.getId(), e);
+                }
+            }, RECONNECT_INTERVAL_SECONDS, TimeUnit.SECONDS);
+
+        } catch (Exception e) {
+            logger.error("Error al programar la reconexión de la sesión: {}", webSocketSession.getId(), e);
+        }
+    }
+
+    /**
+     * Cierra una sesión de manera controlada después de superar el máximo de intentos de reconexión.
+     *
+     * @param webSocketSession La sesión WebSocket a cerrar.
+     */
+    private void closeSessionPermanently(WebSocketSession webSocketSession) {
+        try {
+            UUID sessionUUID = (UUID) webSocketSession.getAttributes().get("sessionId");
+            sessionStore.remove(sessionUUID);
+            webSocketSessionStorage.remove(sessionUUID);
             sessions.remove(webSocketSession);
+
+            logger.warn("Sesión cerrada y eliminada permanentemente: {}", webSocketSession.getId());
+        } catch (Exception e) {
+            logger.error("Error al cerrar permanentemente la sesión: {}", webSocketSession.getId(), e);
         }
     }
 
@@ -486,52 +599,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
             }
         } catch (IOException e) {
             logger.error("Error al cerrar la sesión debido a un error de transporte: {}", webSocketSession.getId(), e);
-        }
-    }
-
-
-//5
-    /**
-     * Programa una serie de reintentos de reconexión para la sesión WebSocket especificada.
-     * Si se alcanzan los intentos máximos sin éxito, se crea una nueva sesión OCPP y se registra.
-     *
-     * @param webSocketSession La sesión WebSocket que se intentará reconectar.
-     * @param ocppSession      La instancia de la sesión OCPP asociada.
-     */
-    private void reconnect(WebSocketSession webSocketSession, Session ocppSession) {
-        ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
-
-        scheduler.scheduleAtFixedRate(() -> {
-            if (reconnectAttempts < MAX_RECONNECT_ATTEMPTS) {
-                attemptReconnectionLogic(webSocketSession, ocppSession);
-            } else {
-                // Si se alcanzan los intentos máximos, crear una nueva sesión OCPP
-                createAndRegisterNewSession(webSocketSession);
-                scheduler.shutdown();
-            }
-        }, 0, RECONNECT_INTERVAL_SECONDS, TimeUnit.SECONDS);
-    }
-
-    /**
-     * Intenta restablecer la conexión de una sesión WebSocket existente.
-     * Si la sesión está abierta, la cierra de manera controlada para luego intentar la reconexión.
-     * Este método incrementa los intentos de reconexión y verifica el estado de la sesión.
-     *
-     * @param webSocketSession La sesión WebSocket que se intentará reconectar.
-     * @param ocppSession      La instancia de la sesión OCPP asociada.
-     */
-    private void attemptReconnectionLogic(WebSocketSession webSocketSession, Session ocppSession) {
-        try {
-            if (webSocketSession.isOpen()) {
-                webSocketSession.close(CloseStatus.SESSION_NOT_RELIABLE);
-            }
-            logger.info("Intentando reconectar la sesión: {}", webSocketSession.getId());
-
-            // Intentar reconexión reutilizando la misma instancia de Session
-            ocppSession.open(webSocketSession.getUri().toString(), createSessionEvents(ocppSession));
-            reconnectAttempts++;
-        } catch (Exception e) {
-            logger.error("Error al intentar reconectar la sesión: {}", webSocketSession.getId(), e);
         }
     }
 
@@ -863,6 +930,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
             // Envías este request usando:
             session.sendRequest("TriggerMessage", triggerRequest, messageId);
+            session.sendTextMessage(String.valueOf(triggerRequest),webSocketSession);
 
 
             logger.info("Solicitud de TriggerMessage enviada exitosamente para la sesión: {}", session.getSessionId());
@@ -1822,6 +1890,46 @@ public class WebSocketHandler extends TextWebSocketHandler {
             sendError(session, webSocketSession, messageId, "Error en TriggerMessageRequest: " + e.getMessage());
         }
     }
+
+    @Override
+    protected void handlePongMessage(WebSocketSession session, PongMessage message) throws Exception {
+        logger.debug("Pong recibido en la sesión: " + session.getId());
+        // Aquí puedes agregar lógica adicional, por ejemplo,
+        // actualizar un timestamp de último pong recibido, etc.
+    }
+
+    private void handlePingMessage(WebSocketSession session, PingMessage pingMessage) {
+        try {
+            logger.debug("Ping recibido. Respondiendo con Pong para la sesión: {}", session.getId());
+            session.sendMessage(new PongMessage(pingMessage.getPayload()));
+            sessionLastPingTime.put(session.getId(), System.currentTimeMillis());
+        } catch (IOException e) {
+            logger.error("Error al enviar PongMessage a la sesión: {}", session.getId(), e);
+            attemptReconnection(session);
+        }
+    }
+
+
+    // Método para verificar sesiones activas
+    @Scheduled(fixedRate = 30000) // Se ejecuta cada 30 segundos
+    private void verifyActiveSessions() {
+        long currentTime = System.currentTimeMillis();
+        sessionLastPingTime.forEach((sessionId, lastPingTime) -> {
+            if (currentTime - lastPingTime > MAX_PING_INTERVAL_MS) { // Por ejemplo, 30 segundos
+                logger.warn("La sesión {} no ha enviado un Ping en los últimos {} ms. Cerrando sesión.", sessionId, MAX_PING_INTERVAL_MS);
+                WebSocketSession webSocketSession = getWebSocketSessionById(sessionId);
+                if (webSocketSession != null && webSocketSession.isOpen()) {
+                    try {
+                        webSocketSession.close(CloseStatus.GOING_AWAY);
+                        logger.info("Sesión {} cerrada debido a inactividad.", sessionId);
+                    } catch (IOException e) {
+                        logger.error("Error al cerrar la sesión inactiva: {}", sessionId, e);
+                    }
+                }
+            }
+        });
+    }
+
 
 //    private void sendMeterValuesToClient(WebSocketSession webSocketSession, String meterValuesJson) throws IOException {
 //        if (webSocketSession.isOpen()) {
