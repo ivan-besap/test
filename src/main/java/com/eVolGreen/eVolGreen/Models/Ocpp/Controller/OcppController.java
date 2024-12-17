@@ -30,6 +30,8 @@ import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler.sessionStore;
 
@@ -696,85 +698,51 @@ public class OcppController {
         }
     }
 
-    @PostMapping("/get-configuration")
-    public ResponseEntity<?> getConfiguration(@RequestBody Map<String, Object> payload) {
-        logger.info("Solicitud recibida: {}", payload);
-
+    /**
+     * Endpoint para enviar una solicitud GetConfigurationRequest a un cargador específico.
+     *
+     * @param chargePointId El ID del punto de carga al que se enviará la solicitud.
+     * @param keys          (Opcional) Lista de claves de configuración que se desean obtener.
+     * @return La confirmación GetConfigurationConfirmation recibida del cargador.
+     */
+    @PostMapping("/getConfiguration")
+    public ResponseEntity<?> getConfiguration(
+            @RequestParam String chargePointId,
+            @RequestBody(required = false) List<String> keys) {
         try {
-            // Extraer los parámetros
-            String chargePointId = (String) payload.get("chargePointId");
-            List<String> keys = (List<String>) payload.get("keys"); // Lista de claves de configuración
-
-            // Validar parámetros obligatorios
-            if (chargePointId == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("Falta el parámetro obligatorio: chargePointId.");
+            // Obtener el UUID de la sesión asociada al chargePointId
+            UUID sessionUUID = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionUUID == null) {
+                return ResponseEntity.badRequest().body("ChargePointId no encontrado o no está conectado.");
             }
 
-            // Obtener la sesión
-            UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
-            if (sessionId == null) {
-                logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionUUID.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
             }
 
-            Session session = sessionStore.get(sessionId);
-            WebSocketSession webSocketSession = webSocketSessionStorage.get(sessionId);
-
-            if (session == null || webSocketSession == null || !webSocketSession.isOpen()) {
-                logger.error("La sesión para chargePointId {} no está activa.", chargePointId);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("La sesión para chargePointId " + chargePointId + " no está activa.");
+            // Obtener la sesión OCPP
+            Session session = webSocketHandler.getSessionById(sessionUUID.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
             }
 
-            // Crear la solicitud GetConfigurationRequest
-            GetConfigurationRequest request = new GetConfigurationRequest();
-            if (keys != null && !keys.isEmpty()) {
-                request.setKey(keys.toArray(new String[0]));
-            }
-
+            // Generar un messageId único para esta solicitud
             String messageId = UUID.randomUUID().toString();
 
-            // Enviar la solicitud a la Estación de Carga
-            CompletableFuture<Confirmation> futureResponse = session.sendRemoteStartTransaction("GetConfiguration", request, messageId);
+            // Enviar la solicitud GetConfigurationRequest de manera asíncrona con el messageId
+            CompletableFuture<GetConfigurationConfirmation> future = webSocketHandler.sendGetConfigurationRequestAsync(session, webSocketSession, keys, messageId);
 
-            // Manejar la respuesta asincrónicamente
-            futureResponse.whenComplete((confirmation, error) -> {
-                if (error != null) {
-                    logger.error("Error al recibir la confirmación para GetConfiguration: {}", error.getMessage(), error);
-                    try {
-                        webSocketHandler.sendError(session, webSocketSession, messageId, "Error en GetConfiguration: " + error.getMessage());
-                    } catch (IOException ioException) {
-                        logger.error("Error enviando error al cliente: {}", ioException.getMessage(), ioException);
-                    }
-                } else {
-                    try {
-                        if (confirmation instanceof GetConfigurationConfirmation) {
-                            GetConfigurationConfirmation getConfigConfirmation = (GetConfigurationConfirmation) confirmation;
-                            logger.info("GetConfigurationConfirmation recibida: {}", getConfigConfirmation);
+            // Esperar la confirmación con un timeout
+            GetConfigurationConfirmation confirmation = future.get(10, TimeUnit.SECONDS); // Ajusta el timeout según tus necesidades
 
-                            // Procesar la respuesta según sea necesario
-                            // Por ejemplo, puedes registrar las claves y valores de configuración
+            return ResponseEntity.ok(confirmation);
 
-                            // Opcionalmente, enviar la respuesta al cliente que inició la solicitud
-                        } else {
-                            logger.warn("Tipo de confirmación inesperado: {}", confirmation);
-                            webSocketHandler.sendError(session, webSocketSession, messageId, "Error: Confirmación inesperada para GetConfiguration.");
-                        }
-                    } catch (IOException e) {
-                        logger.error("Error enviando respuesta al cliente: {}", e.getMessage(), e);
-                    }
-                }
-            });
-
-            logger.info("GetConfigurationRequest enviado a chargePointId: {}", chargePointId);
-            return ResponseEntity.ok("GetConfigurationRequest enviado con éxito a chargePointId: " + chargePointId);
-
+        } catch (TimeoutException e) {
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body("Timeout esperando GetConfigurationConfirmation.");
         } catch (Exception e) {
-            logger.error("Error procesando la solicitud de GetConfiguration: {}", e.getMessage(), e);
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("Error interno al procesar la solicitud de GetConfiguration.");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al procesar la solicitud: " + e.getMessage());
         }
     }
 

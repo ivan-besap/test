@@ -21,11 +21,14 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enu
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.RegistrationStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.RemoteStartStopStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Utils.IdTagInfo;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Utils.KeyValueType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.ChargePointStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Confirmations.TriggerMessageConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.Enums.TriggerMessageRequestType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.TriggerMessageRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Confirmations.SecurityEventNotificationConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Request.SecurityEventNotificationRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirmations.ClearChargingProfileConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirmations.Enums.ChargingProfileStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirmations.Enums.ClearChargingProfileStatus;
@@ -102,6 +105,8 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
     private final WebSocketMetricsConfig webSocketMetricsConfig;
     private static final Map<String, UUID> chargePointIdToSessionIdMap = new ConcurrentHashMap<>();
     private final Map<String, Long> sessionLastPingTime = new ConcurrentHashMap<>();
+    private final Map<String, CompletableFuture<GetConfigurationConfirmation>> getConfigFutures = new ConcurrentHashMap<>();
+
 
 
     /**
@@ -387,51 +392,92 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             return;
         }
 
-        // Verificar si es un mensaje de control (e.g., "Ping").
-        if (array.length == 1 && "Ping".equalsIgnoreCase((String) array[0])) {
-            logger.debug("Ping detectado, enviando respuesta Pong.");
-            webSocketSession.sendMessage(new PongMessage());
+        if (array.length < 2) {
+            logger.warn("Mensaje con estructura incorrecta: {}", payload);
+            sendError(session, webSocketSession, null, "Mensaje con estructura incorrecta.");
             return;
         }
 
+        // Obtener el tipo de mensaje
+        Integer messageType = (Integer) array[0];
         String messageId = (String) array[1];
-        String action = (String) array[2];
-        Object requestPayload = array[3];
 
-        logger.debug("Acción recibida: {} con payload: {}", action, requestPayload.toString());
+        switch (messageType) {
+            case 2: // Call
+                if (array.length < 4) {
+                    logger.warn("Mensaje Call con estructura incorrecta: {}", payload);
+                    sendError(session, webSocketSession, messageId, "Mensaje Call con estructura incorrecta.");
+                    return;
+                }
+                String action = (String) array[2];
+                Object requestPayload = array[3];
+                logger.debug("Acción recibida: {} con payload: {}", action, requestPayload != null ? requestPayload.toString() : "null");
 
-        switch (action) {
-            case "Authorize" -> handleAuthorize(session, webSocketSession, requestPayload, messageId);
-            case "BootNotification" -> handleBootNotification(session, webSocketSession, requestPayload, messageId);
-            case "Heartbeat" -> handleHeartbeat(session, webSocketSession, requestPayload, messageId);
-            case "MeterValues" -> handleMeterValues(session, webSocketSession, requestPayload, messageId);
-            case "StartTransaction" -> handleStartTransaction(session, webSocketSession, requestPayload, messageId);
-            case "StopTransaction" -> handleStopTransaction(session, webSocketSession, requestPayload, messageId);
-            case "StatusNotification" -> handleStatusNotification(session, webSocketSession, requestPayload, messageId);
-            case "DataTransfer" -> handleDataTransfer(session, webSocketSession, requestPayload, messageId);
-            case "Available" -> handleAvailable(session, webSocketSession, requestPayload, messageId);
-            case "Preparing" -> handlePreparing(session, webSocketSession, requestPayload, messageId);
-            case "Charging" -> handleCharging(session, webSocketSession, requestPayload, messageId);
-            case "TriggerMessage" -> handleServerTriggerMessage(session, webSocketSession, requestPayload, messageId);
-            case "ChangeAvailability" -> handleChangeAvailability(session, webSocketSession, requestPayload, messageId);
-            case "GetConfiguration" -> handleGetConfiguration(session, webSocketSession, requestPayload, messageId);
-            case "RemoteStartTransaction" -> handleRemoteStartTransaction(session, webSocketSession, requestPayload, messageId);
-            case "RemoteStopTransaction" -> handleRemoteStopTransaction(session, webSocketSession, requestPayload, messageId);
-            case "ClearCache" -> handleClearCache(session, webSocketSession, requestPayload, messageId);
-            case "ChangeConfiguration" -> handleChangeConfiguration(session, webSocketSession, requestPayload, messageId);
-            case "ClearChargingProfile" -> handleClearChargingProfile(session, webSocketSession, requestPayload, messageId);
-            case "GetCompositeSchedule" -> handleGetCompositeSchedule(session, webSocketSession, requestPayload, messageId);
-            case "SetChargingProfile" -> handleSetChargingProfile(session, webSocketSession, requestPayload, messageId);
-            case "UnlockConnector" -> handleUnlockConnector(session, webSocketSession, requestPayload, messageId);
-            case "Reset" -> handleReset(session, webSocketSession, requestPayload, messageId);
-            case "Ping" -> handlePingMessage(webSocketSession, new PingMessage((ByteBuffer) array[3]));
+                switch (action) {
+                    case "Authorize" -> handleAuthorize(session, webSocketSession, requestPayload, messageId);
+                    case "BootNotification" -> handleBootNotification(session, webSocketSession, requestPayload, messageId);
+                    case "Heartbeat" -> handleHeartbeat(session, webSocketSession, requestPayload, messageId);
+                    case "MeterValues" -> handleMeterValues(session, webSocketSession, requestPayload, messageId);
+                    case "StartTransaction" -> handleStartTransaction(session, webSocketSession, requestPayload, messageId);
+                    case "StopTransaction" -> handleStopTransaction(session, webSocketSession, requestPayload, messageId);
+                    case "StatusNotification" -> handleStatusNotification(session, webSocketSession, requestPayload, messageId);
+                    case "DataTransfer" -> handleDataTransfer(session, webSocketSession, requestPayload, messageId);
+                    case "Available" -> handleAvailable(session, webSocketSession, requestPayload, messageId);
+                    case "Preparing" -> handlePreparing(session, webSocketSession, requestPayload, messageId);
+                    case "Charging" -> handleCharging(session, webSocketSession, requestPayload, messageId);
+                    case "TriggerMessage" -> handleServerTriggerMessage(session, webSocketSession, requestPayload, messageId);
+                    case "ChangeAvailability" -> handleChangeAvailability(session, webSocketSession, requestPayload, messageId);
+                    case "GetConfiguration" -> handleGetConfigurationRequest(session, webSocketSession, requestPayload, messageId);
+                    case "RemoteStartTransaction" -> handleRemoteStartTransaction(session, webSocketSession, requestPayload, messageId);
+                    case "RemoteStopTransaction" -> handleRemoteStopTransaction(session, webSocketSession, requestPayload, messageId);
+                    case "ClearCache" -> handleClearCache(session, webSocketSession, requestPayload, messageId);
+                    case "ChangeConfiguration" -> handleChangeConfiguration(session, webSocketSession, requestPayload, messageId);
+                    case "ClearChargingProfile" -> handleClearChargingProfile(session, webSocketSession, requestPayload, messageId);
+                    case "GetCompositeSchedule" -> handleGetCompositeSchedule(session, webSocketSession, requestPayload, messageId);
+                    case "SetChargingProfile" -> handleSetChargingProfile(session, webSocketSession, requestPayload, messageId);
+                    case "UnlockConnector" -> handleUnlockConnector(session, webSocketSession, requestPayload, messageId);
+                    case "Reset" -> handleReset(session, webSocketSession, requestPayload, messageId);
+                    case "SecurityEventNotification" -> handleSecurityEventNotification(session, webSocketSession, requestPayload, messageId);
+                    case "Ping" -> handlePingMessage(webSocketSession, new PingMessage((ByteBuffer) array[3]));
 
-            default -> {
-                logger.warn("Acción no soportada: {}", action);
-                sendError(session, webSocketSession, messageId, "Acción no soportada: " + action);
-            }
+                    default -> {
+                        logger.warn("Acción no soportada: {}", action);
+                        sendError(session, webSocketSession, messageId, "Acción no soportada: " + action);
+                    }
+                }
+                break;
+
+            case 3: // CallResult
+                if (array.length < 3) {
+                    logger.warn("Mensaje CallResult con estructura incorrecta: {}", payload);
+                    sendError(session, webSocketSession, messageId, "Mensaje CallResult con estructura incorrecta.");
+                    return;
+                }
+                Object responsePayload = array[2];
+                logger.debug("CallResult recibido para messageId: {} con payload: {}", messageId, responsePayload != null ? responsePayload.toString() : "null");
+                handleCallResult(session, messageId, responsePayload);
+                break;
+
+            case 4: // CallError
+                if (array.length < 5) {
+                    logger.warn("Mensaje CallError con estructura incorrecta: {}", payload);
+                    sendError(session, webSocketSession, messageId, "Mensaje CallError con estructura incorrecta.");
+                    return;
+                }
+                String errorCode = (String) array[2];
+                String errorDescription = (String) array[3];
+                Object errorDetails = array[4];
+                logger.error("CallError recibido para messageId: {} - Código: {}, Descripción: {}, Detalles: {}", messageId, errorCode, errorDescription, errorDetails);
+                handleCallError(session, messageId, errorCode, errorDescription, errorDetails);
+                break;
+
+            default:
+                logger.warn("Tipo de mensaje desconocido: {}", messageType);
+                sendError(session, webSocketSession, messageId, "Tipo de mensaje desconocido: " + messageType);
+                break;
         }
     }
+
 
 //3
     /**
@@ -784,7 +830,7 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         logger.error("Error: {}", errorMessage);
 
         // Formato del mensaje de error
-        String errorResponse = objectMapper.writeValueAsString(new Object[]{4, messageId, errorMessage});
+        String errorResponse = objectMapper.writeValueAsString(new Object[]{4, messageId, "InternalError", errorMessage, null});
 
         // Enviar mensaje de error a través de la sesión
         session.sendTextMessage(errorResponse, webSocketSession);
@@ -1929,6 +1975,182 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             }
         });
     }
+
+    /**
+     * Maneja la solicitud de notificación de eventos de seguridad y envía la confirmación correspondiente al cliente.
+     *
+     * <p>Esta solicitud es enviada por la estación de carga para notificar un evento de seguridad.</p>
+     *
+     * @param session           La instancia de la sesión OCPP.
+     * @param webSocketSession  La sesión WebSocket activa.
+     * @param requestPayload    El contenido de la solicitud SecurityEventNotification.
+     * @param messageId         El ID del mensaje que se está procesando.
+     * @throws IOException si ocurre un error al procesar o enviar la respuesta.
+     */
+    public void handleSecurityEventNotification(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // Deserializar el payload a SecurityEventNotificationRequest
+            SecurityEventNotificationRequest securityEventRequest = objectMapper.convertValue(requestPayload, SecurityEventNotificationRequest.class);
+
+            // Validar la solicitud si es necesario
+            if (!securityEventRequest.validate()) {
+                throw new IllegalArgumentException("SecurityEventNotificationRequest inválido.");
+            }
+
+            // Log detallado de la solicitud recibida
+            String requestJson = objectMapper.writeValueAsString(securityEventRequest);
+            logger.info("SecurityEventNotificationRequest recibido: {}", requestJson);
+
+            // Procesar la solicitud según la lógica de negocio
+            // Por ejemplo, enviar a Amazon MQ
+            jsonServer.sendMessageToMQ("SecurityEventNotification recibido: " + securityEventRequest.toString());
+
+            // Crear la confirmación de la respuesta
+            SecurityEventNotificationConfirmation confirmation = new SecurityEventNotificationConfirmation();
+
+            // Enviar la confirmación al cliente
+            sendResponse(session, webSocketSession, messageId, "SecurityEventNotification", confirmation);
+            logger.info("SecurityEventNotification completado exitosamente para la sesión: {}", session.getSessionId());
+
+        } catch (IllegalArgumentException e) {
+            // Manejar errores de validación
+            logger.error("Error en los argumentos de SecurityEventNotification: {}", e.getMessage());
+            sendError(session, webSocketSession, messageId, "Error en SecurityEventNotification: " + e.getMessage());
+        } catch (Exception e) {
+            // Manejar cualquier otro error inesperado
+            logger.error("Error procesando SecurityEventNotification para la sesión: {}", session != null ? session.getSessionId() : "Sesión no disponible", e);
+            sendError(session, webSocketSession, messageId, "Error en SecurityEventNotification: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Envía una solicitud GetConfigurationRequest al cargador y retorna un CompletableFuture que se completará con la confirmación.
+     *
+     * @param session           La instancia de la sesión OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param keys              Lista de claves de configuración que se desean obtener. Si es nula o vacía, se obtendrán todas las configuraciones.
+     * @return CompletableFuture que se completará con la GetConfigurationConfirmation.
+     * @throws IOException Si ocurre un error al enviar la solicitud.
+     */
+    public CompletableFuture<GetConfigurationConfirmation> sendGetConfigurationRequestAsync(Session session, WebSocketSession webSocketSession, List<String> keys,String messageId) throws IOException {
+        // Crear un CompletableFuture para manejar la confirmación
+        CompletableFuture<GetConfigurationConfirmation> future = new CompletableFuture<>();
+        getConfigFutures.put(messageId, future);
+        logger.debug("Stored CompletableFuture for messageId: {}", messageId);
+
+        // Construir la solicitud GetConfigurationRequest
+        GetConfigurationRequest getConfigRequest = new GetConfigurationRequest();
+        getConfigRequest.setOcppMessageId(messageId);
+
+        if (keys != null && !keys.isEmpty()) {
+            getConfigRequest.setKey(keys.toArray(new String[0]));
+        } else {
+            getConfigRequest.setKey(new String[0]);
+        }
+
+        // Validar la solicitud antes de enviarla
+        if (!getConfigRequest.validate()) {
+            logger.error("GetConfigurationRequest inválido. Claves exceden el límite permitido.");
+            sendError(session, webSocketSession, messageId, "GetConfigurationRequest inválido: Claves exceden el límite permitido.");
+            future.completeExceptionally(new IllegalArgumentException("GetConfigurationRequest inválido"));
+            return future;
+        }
+
+        // Serializar la solicitud a JSON
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "GetConfiguration", getConfigRequest});
+        logger.info("Enviando GetConfigurationRequest: {}", requestJson);
+
+        // Enviar la solicitud a través de la sesión OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+
+        return future;
+    }
+
+    private void handleGetConfigurationRequest(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        List<String> keys = null;
+        if (requestPayload != null) {
+            GetConfigurationRequest getConfigRequest = objectMapper.convertValue(requestPayload, GetConfigurationRequest.class);
+            keys = Arrays.asList(getConfigRequest.getKey());
+        }
+        CompletableFuture<GetConfigurationConfirmation> future = sendGetConfigurationRequestAsync(session, webSocketSession, keys, messageId);
+        future.thenAccept(confirmation -> {
+            // Procesa la confirmación si es necesario
+            if (confirmation.getConfigurationKey() != null) {
+                for (KeyValueType kv : confirmation.getConfigurationKey()) {
+                    logger.info("Configuración obtenida - Clave: {}, Valor: {}", kv.getKey(), kv.getValue());
+                    // Por ejemplo, almacena la configuración en una base de datos o en memoria
+                }
+            }
+            if (confirmation.getUnknownKey() != null) {
+                for (String unknownKey : confirmation.getUnknownKey()) {
+                    logger.warn("Clave de configuración desconocida: {}", unknownKey);
+                    // Implementa la lógica para manejar claves desconocidas, por ejemplo, notificar al administrador
+                }
+            }
+        }).exceptionally(ex -> {
+            logger.error("Error en GetConfiguration: {}", ex.getMessage());
+            return null;
+        });
+    }
+
+
+
+
+    private void handleCallResult(Session session, String messageId, Object responsePayload) {
+        logger.debug("Recibiendo CallResult para messageId: {}", messageId);
+        CompletableFuture<GetConfigurationConfirmation> future = getConfigFutures.remove(messageId);
+        if (future != null) {
+            logger.debug("Found CompletableFuture for messageId: {}", messageId);
+            try {
+                // Deserializar el payload a GetConfigurationConfirmation
+                GetConfigurationConfirmation confirmation = objectMapper.convertValue(responsePayload, GetConfigurationConfirmation.class);
+
+                // Validar la confirmación
+                if (!confirmation.validate()) {
+                    throw new IllegalArgumentException("GetConfigurationConfirmation inválido.");
+                }
+
+                // Completar el CompletableFuture con la confirmación
+                future.complete(confirmation);
+                logger.info("GetConfigurationConfirmation completado para messageId: {}", messageId);
+
+                // Procesar la configuración obtenida
+                if (confirmation.getConfigurationKey() != null) {
+                    for (KeyValueType kv : confirmation.getConfigurationKey()) {
+                        logger.info("Configuración obtenida - Clave: {}, Valor: {}", kv.getKey(), kv.getValue());
+                        // Implementa la lógica para almacenar o utilizar las configuraciones obtenidas
+                    }
+                }
+
+                if (confirmation.getUnknownKey() != null) {
+                    for (String unknownKey : confirmation.getUnknownKey()) {
+                        logger.warn("Clave de configuración desconocida: {}", unknownKey);
+                        // Implementa la lógica para manejar claves desconocidas si es necesario
+                    }
+                }
+
+            } catch (Exception e) {
+                logger.error("Error al procesar GetConfigurationConfirmation para messageId: {}", messageId, e);
+                future.completeExceptionally(e);
+            }
+        } else {
+            logger.warn("No se encontró un CompletableFuture para messageId: {}", messageId);
+        }
+    }
+
+
+    private void handleCallError(Session session, String messageId, String errorCode, String errorDescription, Object errorDetails) {
+        CompletableFuture<GetConfigurationConfirmation> future = getConfigFutures.remove(messageId);
+        if (future != null) {
+            Exception e = new RuntimeException("CallError - Código: " + errorCode + ", Descripción: " + errorDescription);
+            logger.error("CallError recibido para messageId: {} - Código: {}, Descripción: {}", messageId, errorCode, errorDescription);
+            future.completeExceptionally(e);
+        } else {
+            logger.warn("No se encontró un CompletableFuture para CallError messageId: {}", messageId);
+        }
+    }
+
+
 
 
 //    private void sendMeterValuesToClient(WebSocketSession webSocketSession, String meterValuesJson) throws IOException {
