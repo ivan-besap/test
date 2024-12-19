@@ -6,7 +6,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.Unsupport
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.SessionInformation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Feature;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Feature;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,11 +31,12 @@ public class Client {
     /**
      * Constructor para la inyección de dependencias necesarias.
      *
-     * @param session           El objeto de sesión inyectado que gestiona la conexión con el servidor
-     * @param featureRepository
+     * @param session           El objeto de sesión inyectado que gestiona la conexión con el servido
      * @param promiseRepository El repositorio que gestiona las promesas y las respuestas
      */
-    public Client(ISession session, FeatureRepository featureRepository, IPromiseRepository promiseRepository) {
+    public Client(
+            ISession session,
+            IPromiseRepository promiseRepository) {
         this.session = session;
         this.promiseRepository = promiseRepository;
     }

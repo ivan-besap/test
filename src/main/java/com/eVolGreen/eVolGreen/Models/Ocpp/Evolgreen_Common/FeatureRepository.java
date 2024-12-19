@@ -2,9 +2,8 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Feature;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.Profile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.MoreObjects;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Feature;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Profile.Profile;
 
 import java.util.HashMap;
 import java.util.Map;

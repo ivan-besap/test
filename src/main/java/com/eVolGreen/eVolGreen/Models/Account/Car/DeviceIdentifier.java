@@ -40,13 +40,16 @@ public class DeviceIdentifier {
 
     private Boolean activo = false;
 
+    private Boolean usable = false;
+
     public DeviceIdentifier() { }
 
-    public DeviceIdentifier(String NombreDeIdentificador, String RFID, LocalDate fechaExpiracion, Car auto, Boolean activo) {
+    public DeviceIdentifier(String NombreDeIdentificador, String RFID, LocalDate fechaExpiracion, Car auto, Boolean activo, Boolean usable) {
         this.NombreDeIdentificador = NombreDeIdentificador;
         this.RFID = RFID;
         this.fechaExpiracion = fechaExpiracion;
         this.activo = activo;
+        this.usable = usable;
     }
 
     public Long getId() {
@@ -105,6 +108,14 @@ public class DeviceIdentifier {
         this.activo = activo;
     }
 
+    public Boolean getUsable() {
+        return usable;
+    }
+
+    public void setUsable(Boolean usable) {
+        this.usable = usable;
+    }
+
     @Override
     public String toString() {
         return "DeviceIdentifier{" +
@@ -115,6 +126,7 @@ public class DeviceIdentifier {
                 ", auto=" + auto +
                 ", empresa=" + empresa +
                 ", activo=" + activo +
+                ", usable=" + usable +
                 '}';
     }
 }

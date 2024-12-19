@@ -21,6 +21,7 @@ import java.lang.reflect.Type;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.util.UUID;
 
 /**
  * Manejador de la comunicación JSON para el protocolo OCPP en eVolGreen.
@@ -40,7 +41,7 @@ import java.time.format.DateTimeParseException;
  * }
  * </pre>
  */
-public class JSONCommunicator extends Communicator {
+public abstract class JSONCommunicator extends Communicator {
 
     private static final Logger logger = LoggerFactory.getLogger(JSONCommunicator.class);
 
@@ -92,6 +93,8 @@ public class JSONCommunicator extends Communicator {
     public void connect(String uri, CommunicatorEvents events) {
 
     }
+
+    public abstract void receivedMessage(UUID sessionId, Object message);
 
     /**
      * Anotación personalizada que excluye ciertos campos de la serialización JSON.
@@ -195,7 +198,7 @@ public class JSONCommunicator extends Communicator {
      */
     @Override
     public Object packPayload(Object payload) {
-        return gson.toJson(payload);
+        return payload;
     }
 
     /**

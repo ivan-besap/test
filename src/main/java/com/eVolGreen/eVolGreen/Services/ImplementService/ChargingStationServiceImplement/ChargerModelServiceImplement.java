@@ -38,4 +38,16 @@ public class ChargerModelServiceImplement implements ChargerModelService {
     public ChargerModel findById(Long id) {
         return chargerModelRepository.findById(id).orElse(null);
     }
+
+    @Override
+    public List<ChargerModelDTO> getChargerModelsByEmpresa(Long empresaId) {
+        return chargerModelRepository.findByEmpresaId(empresaId).stream()
+                .map(model -> new ChargerModelDTO(model.getId(), model.getName()))
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public void deleteById(Long id) {
+        chargerModelRepository.deleteById(id);
+    }
 }

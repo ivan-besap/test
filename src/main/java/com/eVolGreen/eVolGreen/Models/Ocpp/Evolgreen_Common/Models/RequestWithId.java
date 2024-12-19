@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.MoreObjects;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 /**
  * La clase abstracta {@code RequestWithId} es la base para todas las solicitudes que deben
@@ -13,7 +14,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.MoreObject
  */
 public abstract class RequestWithId implements Request {
 
-    @Exclude
+    @JsonIgnore
     private String ocppMessageId;
 
     /**

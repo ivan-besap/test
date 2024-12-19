@@ -2,17 +2,17 @@ package com.eVolGreen.eVolGreen.Controllers.AccountController;
 
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.CarDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.FlotaDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.NewCarDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Car.Car;
 import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
+import com.eVolGreen.eVolGreen.Models.Account.Car.Flota;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Repositories.CarRepository;
 import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
-import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
-import com.eVolGreen.eVolGreen.Services.AccountService.AuditLogService;
-import com.eVolGreen.eVolGreen.Services.AccountService.CarService;
-import com.eVolGreen.eVolGreen.Services.AccountService.DeviceIdentifierService;
+import com.eVolGreen.eVolGreen.Repositories.FlotaRepository;
+import com.eVolGreen.eVolGreen.Services.AccountService.*;
 import org.apache.poi.ss.usermodel.*;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -29,6 +29,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api")
@@ -39,6 +41,12 @@ public class CarController {
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private FlotaService flotaService;
+
+    @Autowired
+    private FlotaRepository flotaRepository;
 
     @Autowired
     private AuditLogService auditLogService;
@@ -144,7 +152,8 @@ public class CarController {
                 carDTO.getCapacidadPotencia(),
                 empresa,  
                 true,
-                carDTO.getAlias()
+                carDTO.getAlias(),
+                null
         );
       
         carService.saveCar(nuevoAuto);
@@ -339,6 +348,123 @@ public class CarController {
             default:
                 return ""; // Otros tipos de celdas se ignoran
         }
+    }
+
+    @GetMapping("/flotas")
+    public ResponseEntity<List<FlotaDTO>> getFlotas(Authentication authentication) {
+        Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
+        if (accountOptional.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        Account account = accountOptional.get();
+        Empresa empresa = account.getEmpresa();
+        if (empresa == null) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+
+        List<FlotaDTO> flotasDTO = flotaService.getFlotasDTOByEmpresa(empresa);
+        return new ResponseEntity<>(flotasDTO, HttpStatus.OK);
+    }
+
+    @GetMapping("/flotas/{id}")
+    public ResponseEntity<FlotaDTO> getFlotaById(@PathVariable Long id) {
+        return flotaRepository.findById(id)
+                .map(flota -> new ResponseEntity<>(new FlotaDTO(flota), HttpStatus.OK))
+                .orElse(new ResponseEntity<>(HttpStatus.NOT_FOUND));
+    }
+
+    @PutMapping("flotas/{id}")
+    public ResponseEntity<String> updateFlota(@PathVariable Long id, @RequestBody Flota flotaDetails) {
+        return flotaRepository.findById(id)
+                .map(flota -> {
+                    flota.setNombreFlota(flotaDetails.getNombreFlota());
+                    flota.setPrecioFlota(flotaDetails.getPrecioFlota());
+                    flotaRepository.save(flota);
+                    return new ResponseEntity<>("Flota actualizada exitosamente", HttpStatus.OK);
+                })
+                .orElse(new ResponseEntity<>("Flota no encontrada", HttpStatus.NOT_FOUND));
+    }
+
+    @PostMapping("/create-flota")
+    public ResponseEntity<String> createFlota(@RequestBody FlotaDTO flotaDTO, Authentication authentication) {
+        // Obtiene la cuenta del usuario autenticado
+        Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
+        if (accountOptional.isEmpty()) {
+            return new ResponseEntity<>("Cuenta no encontrada", HttpStatus.NOT_FOUND);
+        }
+
+        Account account = accountOptional.get();
+        Empresa empresa = account.getEmpresa();
+
+        if (empresa == null) {
+            return new ResponseEntity<>("Empresa no asociada a la cuenta", HttpStatus.NOT_FOUND);
+        }
+
+        // Crear una nueva flota y asignarle la empresa del usuario
+        Flota nuevaFlota = new Flota();
+        nuevaFlota.setNombreFlota(flotaDTO.getNombreFlota());
+        nuevaFlota.setPrecioFlota(flotaDTO.getPrecioFlota());
+        nuevaFlota.setEmpresa(empresa);
+        nuevaFlota.setActivo(true); // Asigna el valor activo como true por defecto
+
+        flotaService.saveFlota(nuevaFlota);
+        return new ResponseEntity<>("Flota creada exitosamente", HttpStatus.CREATED);
+    }
+    @PostMapping("flotas/{flotaId}/assign-cars")
+    public ResponseEntity<String> assignCarsToFlota(@PathVariable Long flotaId, @RequestBody List<Long> carIds) {
+        Flota flota = flotaService.findById(flotaId);
+        if (flota == null) {
+            return new ResponseEntity<>("Flota no encontrada", HttpStatus.NOT_FOUND);
+        }
+
+        // Asignar cada auto a la flota
+        for (Long carId : carIds) {
+            Car car = carService.findById(carId);
+            if (car != null) {
+                car.setFlota(flota);
+                carService.saveCar(car);
+            }
+        }
+
+        return new ResponseEntity<>("Autos asignados a la flota exitosamente", HttpStatus.OK);
+    }
+
+    @PatchMapping("/flotas/{id}/delete")
+    public ResponseEntity<Object> deleteFlota(Authentication authentication, @PathVariable Long id) {
+        Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
+        if (accountOptional.isEmpty()) {
+            return new ResponseEntity<>("La cuenta no se encontró", HttpStatus.NOT_FOUND);
+        }
+        Account account = accountOptional.get();
+
+        Optional<Flota> flotaOptional = flotaRepository.findById(id);
+        if (flotaOptional.isEmpty()) {
+            return new ResponseEntity<>("La flota no se encontró", HttpStatus.NOT_FOUND);
+        }
+
+        Flota flota = flotaOptional.get();
+
+        if (!flota.getActivo()) {
+            return new ResponseEntity<>("La flota ya está desactivada", HttpStatus.BAD_REQUEST);
+        }
+
+        // Desactivar la flota
+        flota.setActivo(false);
+        flotaRepository.save(flota);
+
+        // Liberar los autos asociados a la flota
+        List<Car> cars = carRepository.findByFlota(flota);
+        for (Car car : cars) {
+            car.setFlota(null);
+            carRepository.save(car);
+        }
+
+        // Registrar la acción en los logs
+        String descripcion = "Usuario " + account.getEmail() + " eliminó la flota: " + flota.getNombreFlota() + " y liberó los autos asociados";
+        auditLogService.recordAction(descripcion, account);
+
+        return ResponseEntity.ok("La flota ha sido desactivada y los autos asociados han sido liberados correctamente.");
     }
 
 

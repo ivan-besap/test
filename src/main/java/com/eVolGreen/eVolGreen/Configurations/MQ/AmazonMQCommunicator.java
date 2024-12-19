@@ -1,294 +1,274 @@
 package com.eVolGreen.eVolGreen.Configurations.MQ;
 
-import com.amazonaws.auth.AWSStaticCredentialsProvider;
-import com.amazonaws.auth.BasicAWSCredentials;
-import com.amazonaws.services.mq.AmazonMQ;
-import com.amazonaws.services.mq.AmazonMQClientBuilder;
-import com.amazonaws.services.mq.model.ListBrokersRequest;
-import com.amazonaws.services.mq.model.ListBrokersResult;
-import com.amazonaws.services.mq.model.BrokerSummary;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Communicator;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.CommunicatorEvents;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.UnsupportedFeatureException;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Message;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.SessionInformation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.ServerEvents;
-import jakarta.jms.*;
-import org.apache.activemq.ActiveMQConnectionFactory;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.JSONCommunicator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.messaging.converter.MappingJackson2MessageConverter;
+import org.springframework.messaging.simp.stomp.StompHeaders;
+import org.springframework.messaging.simp.stomp.StompSession;
+import org.springframework.messaging.simp.stomp.StompSessionHandler;
+import org.springframework.scheduling.concurrent.ConcurrentTaskScheduler;
 import org.springframework.stereotype.Component;
-import org.springframework.web.socket.PingMessage;
+import org.springframework.web.socket.WebSocketHttpHeaders;
 import org.springframework.web.socket.WebSocketSession;
+import org.springframework.web.socket.client.WebSocketClient;
+import org.springframework.web.socket.client.standard.StandardWebSocketClient;
+import org.springframework.web.socket.messaging.WebSocketStompClient;
 
-import java.io.IOException;
-import java.util.Map;
 import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+
+import static com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler.sessionStore;
 
 /**
- * Gestiona la conexión y comunicación con Amazon MQ, enviando y recibiendo mensajes en una cola específica,
- * y manejando sesiones WebSocket activas. Implementa ServerEvents para comunicar eventos de sesión de vuelta a Amazon MQ.
- *
- * Esta clase extiende {@link Communicator} e integra Amazon MQ con el protocolo OCPP mediante la interfaz
- * {@link ServerEvents} para eventos de sesión y manejo de errores.
+ * `AmazonMQCommunicator` gestiona la comunicación con Amazon MQ usando STOMP sobre WSS.
+ * Extiende `JSONCommunicator` y asegura la entrega de mensajes entre el sistema central y las estaciones de carga.
+ * Proporciona métodos para inicializar sesiones de carga, enviar y recibir mensajes,
+ * y gestionar la reconexión en caso de errores de conexión.
  */
 @Component
-public class AmazonMQCommunicator  {
+public class AmazonMQCommunicator extends JSONCommunicator implements ServerEvents {
 
     private static final Logger logger = LoggerFactory.getLogger(AmazonMQCommunicator.class);
-//    private final ServerEvents serverEvents;
-//    private final AmazonMQ amazonMQClient;
-//    private final String brokerUrl;
-//    private final String brokerUser;
-//    private final String brokerPassword;
-    private String brokerId;
-    private final Map<UUID, WebSocketSession> activeSessions = new ConcurrentHashMap<>();
-    private final ExecutorService executorService = Executors.newFixedThreadPool(10);
+
+//    @Value("${amazon.mq.wss.endpoint}")
+    private String wssEndpoint;
+
+//    @Value("${amazon.mq.queue.name}")
+    private String queueName;
+
+    private final String username = "eVolGreen";
+    private final String password = "eVolGreen123";
+
+    private final SessionManager sessionManager;
+    private final WebSocketStompClient stompClient;
+
+    private final Queue queue;
+    private final PromiseFulfiller fulfiller;
+    private final IFeatureRepository featureRepository;
 
     /**
-     * Constructor que inicializa el cliente de Amazon MQ y configura los parámetros de conexión.
+     * Inicializa AmazonMQCommunicator con una instancia de `Radio` y configura el cliente STOMP.
      *
-     * @param awsConfig      configuración de credenciales de AWS.
-     * @param brokerUrl      URL del broker de Amazon MQ.
-     * @param brokerUser     nombre de usuario para la conexión al broker.
-     * @param brokerPassword contraseña para la conexión al broker.
-     * @param serverEvents   instancia de ServerEvents para manejar eventos de sesión.
+     * @param radio instancia de `Radio` para transmisión de mensajes.
+     * @param sessionManager El manejador de sesiones de cliente.
      */
-//    public AmazonMQCommunicator(AwsConfig awsConfig, String brokerUrl, String brokerUser,
-//                                String brokerPassword, ServerEvents serverEvents) {
-//        this.amazonMQClient = AmazonMQClientBuilder.standard()
-//                .withRegion("us-east-2")
-////                .withCredentials(new AWSStaticCredentialsProvider(
-////                        new BasicAWSCredentials(awsConfig.getAccessKey(), awsConfig.getSecretKey())))
-//                .build();
-//        this.brokerUrl = brokerUrl;
-//        this.brokerUser = brokerUser;
-//        this.brokerPassword = brokerPassword;
-//        this.serverEvents = serverEvents;
-//    }
-
-    /**
-     * Recupera el ID del broker de Amazon MQ.
-     *
-     * @return El ID del primer broker disponible, o {@code null} si no se encuentra ninguno.
-     */
-//    private String retrieveBrokerId() {
-//        ListBrokersRequest request = new ListBrokersRequest();
-//        try {
-//            ListBrokersResult result = amazonMQClient.listBrokers(request);
-//            if (!result.getBrokerSummaries().isEmpty()) {
-//                BrokerSummary brokerSummary = result.getBrokerSummaries().get(0);
-//                String brokerId = brokerSummary.getBrokerId();
-//                logger.info("Broker ID recuperado: {}", brokerId);
-//                return brokerId;
-//            } else {
-//                logger.warn("No se encontraron brokers en la cuenta de Amazon MQ.");
-//                return null;
-//            }
-//        } catch (Exception e) {
-//            logger.error("Error al recuperar el brokerId: ", e);
-//            return null;
-//        }
-//    }
-
-    /**
-     * Envía un mensaje a una cola específica en Amazon MQ.
-     *
-     * @param message   El contenido del mensaje a enviar.
-     * @param queueName El nombre de la cola de destino.
-     * @return {@code true} si el mensaje fue enviado con éxito, {@code false} de lo contrario.
-     */
-//    public boolean sendMessageToQueue(String message, String queueName) {
-//        if (brokerId == null && !initializeBrokerId()) {
-//            logger.error("No se pudo enviar el mensaje: no se encontró brokerId.");
-//            return false;
-//        }
-//        try {
-//            ActiveMQConnectionFactory connectionFactory = new ActiveMQConnectionFactory(brokerUrl);
-//            connectionFactory.setUserName(brokerUser);
-//            connectionFactory.setPassword(brokerPassword);
-//
-//            Connection connection = connectionFactory.createConnection();
-//            connection.start();
-//            Session session = connection.createSession(false, Session.AUTO_ACKNOWLEDGE);
-//            Destination destination = session.createQueue(queueName);
-//
-//            MessageProducer producer = session.createProducer(destination);
-//            TextMessage textMessage = session.createTextMessage(message);
-//            producer.send(textMessage);
-//
-//            producer.close();
-//            session.close();
-//            connection.close();
-//
-//            logger.info("Mensaje enviado exitosamente a la cola: {}", queueName);
-//            return true;
-//        } catch (Exception e) {
-//            logger.error("Error al enviar mensaje a la cola {}: ", queueName, e);
-//            return false;
-//        }
-//    }
-
-    /**
-     * Inicializa brokerId si aún no está configurado.
-     *
-     * @return {@code true} si brokerId se inicializó con éxito, {@code false} de lo contrario.
-     */
-//    private boolean initializeBrokerId() {
-//        this.brokerId = retrieveBrokerId();
-//        return this.brokerId != null;
-//    }
-
-    /**
-     * Cierra la conexión con el cliente de Amazon MQ.
-     */
-    public void closeConnection() {
-        logger.info("Conexión con Amazon MQ cerrada exitosamente");
+    @Autowired
+    public AmazonMQCommunicator(Radio radio, SessionManager sessionManager, Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository) {
+        super(radio);
+        this.queue = queue;
+        this.fulfiller = fulfiller;
+        this.featureRepository = featureRepository;
+        logger.info("Initializing AmazonMQCommunicator");
+        this.sessionManager = sessionManager;
+        try {
+            logger.info("Creating STOMP client");
+            this.stompClient = initializeStompClient();
+            logger.info("STOMP client created successfully");
+        } catch (Exception e) {
+            logger.error("Error creating STOMP client", e);
+            throw new RuntimeException("Failed to initialize AmazonMQCommunicator", e);
+        }
     }
 
     /**
-     * Recupera el ID del broker configurado para Amazon MQ.
+     * Configura el cliente WebSocket STOMP para WSS con heartbeat.
      *
-     * @return El {@code brokerId} actual, o {@code null} si no se pudo recuperar.
+     * @return instancia configurada de `WebSocketStompClient`.
      */
-//    public String getBrokerId() {
-//        if (this.brokerId == null) {
-//            this.brokerId = retrieveBrokerId();
-//        }
-//        return this.brokerId;
-//    }
-
-//    @Override
-//    public void connect(String uri, CommunicatorEvents events) {
-//        logger.info("Conectando a URI: {}", uri);
-//    }
-//
-//    @Override
-//    public <T> T unpackPayload(Object payload, Class<T> type) throws Exception {
-//        if (type.isInstance(payload)) {
-//            return type.cast(payload);
-//        } else {
-//            throw new IllegalArgumentException("Tipo de payload no coincide para: " + type.getName());
-//        }
-//    }
-//
-//    @Override
-//    public Object packPayload(Object payload) {
-//        return payload.toString();
-//    }
-//
-//    @Override
-//    protected Object makeCallResult(String uniqueId, String action, Object payload) {
-//        return "Resultado:" + uniqueId + ":" + action + ":" + payload;
-//    }
-//
-//    @Override
-//    protected Object makeCall(String uniqueId, String action, Object payload) {
-//        return action + ":" + payload;
-//    }
-//
-//    @Override
-//    protected Object makeCallError(String uniqueId, String action, String errorCode, String errorDescription) {
-//        return "Error:" + uniqueId + ":" + errorCode + ":" + errorDescription;
-//    }
-//
-//    @Override
-//    public boolean isClosed() {
-//        return false;
-//    }
-//
-//    @Override
-//    public Message parse(Object json) {
-//        return null; // Implementación pendiente
-//    }
-
-    /**
-     * Añade una sesión WebSocket activa al mapa de sesiones.
-     *
-     * @param sessionId ID único de la sesión.
-     * @param session   Sesión WebSocket.
-     */
-    public void addSession(UUID sessionId, WebSocketSession session) {
-        activeSessions.put(sessionId, session);
+    private WebSocketStompClient initializeStompClient() {
+        WebSocketClient webSocketClient = new StandardWebSocketClient();
+        WebSocketStompClient stompClient = new WebSocketStompClient(webSocketClient);
+        stompClient.setMessageConverter(new MappingJackson2MessageConverter());
+        stompClient.setDefaultHeartbeat(new long[]{10000, 10000});
+        stompClient.setTaskScheduler(new ConcurrentTaskScheduler());
+        return stompClient;
     }
 
     /**
-     * Elimina una sesión WebSocket activa del mapa de sesiones.
+     * Conecta un cliente específico a Amazon MQ con un `CustomStompSessionHandler`.
      *
-     * @param sessionId ID único de la sesión a eliminar.
+     * @param clientId el identificador del cliente.
+     */
+    public void connectToMQ(String clientId) {
+        if (!sessionManager.hasSession(clientId)) {
+            try {
+                StompHeaders connectHeaders = new StompHeaders();
+                connectHeaders.setAcceptVersion("1.1");
+                connectHeaders.setHeartbeat(new long[]{10000, 10000});
+                connectHeaders.setHost("b-53524436-...amazonaws.com");
+                connectHeaders.setLogin(username);
+                connectHeaders.setPasscode(password);
+
+                logger.info("Conectando al cliente {} a Amazon MQ a través de WSS", clientId);
+
+                StompSessionHandler sessionHandler = new CustomStompSessionHandler(clientId, sessionManager, wssEndpoint, 5000);
+                WebSocketHttpHeaders handshakeHeaders = new WebSocketHttpHeaders();
+
+                stompClient.connect(wssEndpoint, handshakeHeaders, connectHeaders, sessionHandler);
+
+                logger.info("Intentando conectar cliente {} a Amazon MQ a través de WSS", clientId);
+            } catch (Exception e) {
+                logger.error("Error al conectar con Amazon MQ para el cliente {}: {}", clientId, e.getMessage(), e);
+            }
+        } else {
+            logger.warn("El cliente {} ya tiene una sesión activa.", clientId);
+        }
+    }
+
+    /**
+     * Inicializa una nueva sesión STOMP asociada a un chargePointId con Amazon MQ.
+     *
+     * @param clientId      El identificador del cliente.
+     * @param chargePointId El identificador de la estación de carga.
+     */
+    public void initializeMQSession(String clientId, String chargePointId) {
+        try {
+            if (!sessionManager.hasSession(clientId)) {
+                UUID sessionUUID = UUID.randomUUID();
+
+                // Crear una sesión OCPP
+                Session session = new Session(sessionUUID, this, queue, fulfiller, featureRepository);
+                session.setChargePointId(chargePointId);
+
+                // Registrar la sesión en el sessionStore
+                sessionStore.put(sessionUUID, session);
+
+                // Conectar a Amazon MQ para el cliente y asignar sesión
+                connectToMQ(clientId);
+
+                logger.info("Sesión STOMP para chargePoint {} registrada y conectada a Amazon MQ.", chargePointId);
+            } else {
+                logger.warn("El cliente {} ya tiene una sesión STOMP activa.", clientId);
+            }
+        } catch (Exception e) {
+            logger.error("Error al establecer la conexión STOMP con Amazon MQ para el cliente {}: {}", clientId, e.getMessage(), e);
+        }
+    }
+
+
+    /**
+     * Inicializa una nueva sesión OCPP asociada a un chargePointId.
+     *
+     * @param sessionUUID   El identificador único de la sesión.
+     * @param chargePointId El identificador de la estación de carga.
+     * @return La instancia de {@link Session} que representa la sesión OCPP inicializada.
+     */
+    /**
+     * Inicializa una nueva sesión OCPP asociada a un chargePointId.
+     *
+     * @param sessionUUID   El identificador único de la sesión.
+     * @param chargePointId El identificador de la estación de carga.
+     * @return La instancia de {@link Session} que representa la sesión OCPP inicializada.
+     */
+    private Session initializeSession(UUID sessionUUID, String chargePointId) {
+        // Crear la sesión utilizando el AmazonMQCommunicator, Queue, PromiseFulfiller y el repositorio de características
+        Session session = new Session(sessionUUID, this, queue, fulfiller, featureRepository);
+
+        // Configurar el chargePointId en la sesión
+        session.setChargePointId(chargePointId);
+
+        // Agregar cualquier configuración adicional de la sesión si es necesario
+        logger.info("Sesión OCPP inicializada con ID: {} y chargePointId: {}", sessionUUID, chargePointId);
+
+        return session;
+    }
+
+
+
+
+    /**
+     * Envía un mensaje a Amazon MQ para un cliente específico.
+     *
+     * @param clientId el ID del cliente.
+     * @param message  El contenido del mensaje a enviar.
+     */
+    public void sendMessage(String clientId, String message) {
+        StompSession session = sessionManager.getSession(clientId);
+        if (session != null && session.isConnected()) {
+            session.send(queueName, message);
+            logger.info("Mensaje enviado a Amazon MQ por el cliente {}: {}", clientId, message);
+        } else {
+            logger.error("No se puede enviar el mensaje. Sesión STOMP no conectada para el cliente {}", clientId);
+        }
+    }
+
+    /**
+     * Cierra la sesión de STOMP para un cliente y elimina la sesión de `sessionManager`.
+     *
+     * @param clientId el identificador del cliente.
+     */
+    public void disconnectClient(String clientId) {
+        StompSession session = sessionManager.getSession(clientId);
+        if (session != null) {
+            session.disconnect();
+            sessionManager.removeSession(clientId);
+            logger.info("Sesión STOMP desconectada para el cliente {}", clientId);
+        } else {
+            logger.warn("No se encontró sesión activa para el cliente {}", clientId);
+        }
+    }
+
+    @Override
+    public void receivedMessage(UUID sessionId, Object message) {
+        // Implementación para manejar mensajes recibidos de Amazon MQ
+    }
+
+    @Override
+    public void authenticateSession(SessionInformation information, String username, String password) {
+        // Lógica de autenticación de sesión
+    }
+
+    @Override
+    public void newSession(UUID sessionIndex, SessionInformation information) {
+        // Crear una nueva sesión para un cliente
+    }
+
+    @Override
+    public void lostSession(UUID sessionIndex) {
+        // Lógica para manejar pérdida de sesión
+    }
+
+    @Override
+    public void handleError(String uniqueId, String errorCode, String errorDescription, Object payload) {
+        // Manejar errores de comunicación
+    }
+
+    @Override
+    public void handleConfirmation(String uniqueId, Confirmation confirmation) {
+        // Confirmación de mensaje
+    }
+
+    @Override
+    public Confirmation handleRequest(Request request) {
+        return null;
+    }
+
+    /**
+     * Agrega una sesión STOMP a la lista de sesiones activas.
+     *
+     * @param sessionUUID      Identificador de la sesión.
+     * @param webSocketSession La sesión de WebSocket.
+     */
+    public void addSession(UUID sessionUUID, WebSocketSession webSocketSession) {
+        // Lógica para agregar una sesión
+    }
+
+    /**
+     * Elimina una sesión STOMP de la lista de sesiones activas.
+     *
+     * @param sessionId El identificador de la sesión a eliminar.
      */
     public void removeSession(UUID sessionId) {
-        activeSessions.remove(sessionId);
+        // Lógica para remover una sesión
     }
 
-    /**
-     * Envía un mensaje de ping a todas las sesiones WebSocket activas. Programado para ejecutarse cada 30 segundos.
-     */
-    @Scheduled(fixedRate = 30000)
-    public void sendPingToClients() {
-        activeSessions.values().forEach(session -> {
-            if (session.isOpen()) {
-                try {
-                    session.sendMessage(new PingMessage());
-                } catch (IOException e) {
-                    logger.error("Error al enviar ping a la sesión: {}", session.getId(), e);
-                    removeSession(UUID.fromString(session.getId()));
-                }
-            }
-        });
+    public boolean isConnected(String someClientId) {
+        return sessionManager.hasSession(someClientId);
     }
-
-    public boolean isConnected() {
-        return true;
-    }
-
-    // Delegación de eventos de sesión a Amazon MQ
-//    public void newSession(UUID sessionIndex, SessionInformation information) {
-//        logger.info("Nueva sesión iniciada: {}", sessionIndex);
-//        sendSessionEvent("Nueva sesión iniciada: " + sessionIndex);
-//        serverEvents.newSession(sessionIndex, information);
-//    }
-//
-//    public void lostSession(UUID sessionIndex) {
-//        logger.warn("Sesión perdida: {}", sessionIndex);
-//        sendSessionEvent("Sesión perdida: " + sessionIndex);
-//        serverEvents.lostSession(sessionIndex);
-//    }
-//
-//    public void handleError(String uniqueId, String errorCode, String errorDescription, Object payload) {
-//        logger.error("Error en la solicitud: {} - {}", errorCode, errorDescription);
-//        sendErrorEvent("Error en la solicitud: " + errorCode + " - " + errorDescription);
-//        serverEvents.handleError(uniqueId, errorCode, errorDescription, payload);
-//    }
-//
-//    public void handleConfirmation(String uniqueId, Confirmation confirmation) {
-//        logger.info("Confirmación recibida: {}", confirmation);
-//        sendConfirmationEvent("Confirmación recibida: " + confirmation.toString());
-//        serverEvents.handleConfirmation(uniqueId, confirmation);
-//    }
-//
-//    public Confirmation handleRequest(Request request) throws UnsupportedFeatureException {
-//        logger.debug("Solicitud recibida: {}", request);
-//        return serverEvents.handleRequest(request);
-//    }
-//
-//    // Métodos de ayuda para enviar eventos a las colas de Amazon MQ
-//    void sendSessionEvent(String message) {
-//        sendMessageToQueue(message, "sessionEventsQueue");
-//    }
-//
-//    void sendErrorEvent(String message) {
-//        sendMessageToQueue(message, "errorEventsQueue");
-//    }
-//
-//    void sendConfirmationEvent(String message) {
-//        sendMessageToQueue(message, "confirmationEventsQueue");
-//    }
 }

@@ -19,10 +19,7 @@ import org.slf4j.LoggerFactory;
 import java.net.ConnectException;
 import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -119,7 +116,12 @@ public class WebSocketListener implements Listener {
                         .ProxiedAddress(proxiedAddress)
                         .build();
 
-                handler.newSession(sessionFactory.createSession(new JSONCommunicator(receiver)), information);
+                handler.newSession(sessionFactory.createSession(new JSONCommunicator(receiver) {
+                    @Override
+                    public void receivedMessage(UUID sessionId, Object message) {
+                        receiver.relay(message.toString());
+                    }
+                }), information);
             }
 
             @Override

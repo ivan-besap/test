@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.Repositories;
 
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Car.Car;
+import com.eVolGreen.eVolGreen.Models.Account.Car.Flota;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -21,5 +22,7 @@ public interface CarRepository extends JpaRepository<Car, Long> {
     // Buscar autos por empresa y estado activo
     @Query("SELECT c FROM Car c WHERE c.empresa = :empresa AND c.activo = :activo")
     List<Car> findByEmpresaAndActivo(@Param("empresa") Empresa empresa, @Param("activo") Boolean activo);
+
+    List<Car> findByFlota(Flota flota);
 }
 

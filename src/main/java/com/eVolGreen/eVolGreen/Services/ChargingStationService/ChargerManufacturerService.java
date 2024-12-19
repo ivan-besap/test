@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.Services.ChargingStationService;
 
 
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerManufacturerDTO;
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerModelDTO;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargerManufacturer;
 
 import java.util.List;
@@ -12,4 +13,8 @@ public interface ChargerManufacturerService {
     List<ChargerManufacturerDTO> getAllChargerManufacturers();  // Nuevo método
 
     ChargerManufacturer findById(Long id);
+
+    List<ChargerManufacturerDTO> getChargerManufacturerByEmpresa(Long empresaId);
+
+    void deleteById(Long id);
 }

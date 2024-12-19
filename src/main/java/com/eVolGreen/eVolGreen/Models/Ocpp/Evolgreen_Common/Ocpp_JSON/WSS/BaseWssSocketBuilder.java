@@ -1,15 +1,19 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WSS;
 
+import org.springframework.stereotype.Component;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Proxy;
 import java.net.Socket;
 import java.net.URI;
-import javax.net.ssl.SSLSocketFactory;
+import java.security.cert.X509Certificate;
+import javax.net.ssl.*;
 
 /**
  * Implementación base de WssSocketBuilder para conexiones WSS seguras en eVolGreen.
  */
+@Component
 public class BaseWssSocketBuilder implements WssSocketBuilder {
 
     public static final int DEFAULT_WSS_PORT = 443;
@@ -26,8 +30,26 @@ public class BaseWssSocketBuilder implements WssSocketBuilder {
     // Tiempo de espera de conexión (0 para sin límite)
     private int connectionTimeout = 0;
 
-    // Constructor privado para usar el patrón Builder
-    private BaseWssSocketBuilder() {}
+    // Constructor por defecto
+    public BaseWssSocketBuilder() {
+        // Configurar un SSLSocketFactory predeterminado que confía en todos los certificados
+        try {
+            SSLContext sslContext = SSLContext.getInstance("TLS");
+            TrustManager[] trustAllCerts = new TrustManager[]{
+                    new X509TrustManager() {
+                        public X509Certificate[] getAcceptedIssuers() {
+                            return null;
+                        }
+                        public void checkClientTrusted(X509Certificate[] certs, String authType) {}
+                        public void checkServerTrusted(X509Certificate[] certs, String authType) {}
+                    }
+            };
+            sslContext.init(null, trustAllCerts, new java.security.SecureRandom());
+            this.sslSocketFactory = sslContext.getSocketFactory();
+        } catch (Exception e) {
+            throw new RuntimeException("Error al configurar SSLContext predeterminado", e);
+        }
+    }
 
     // Método estático para obtener una instancia del Builder
     public static BaseWssSocketBuilder builder() {

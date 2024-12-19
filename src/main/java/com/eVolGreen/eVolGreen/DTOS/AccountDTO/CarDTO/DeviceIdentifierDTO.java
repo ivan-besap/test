@@ -24,6 +24,7 @@ public class DeviceIdentifierDTO {
     private Long empresa;
 
     private Boolean activo = false;
+    private Boolean usable = false;
 
     public DeviceIdentifierDTO(DeviceIdentifier deviceIdentifier) {
         id = deviceIdentifier.getId();
@@ -33,6 +34,7 @@ public class DeviceIdentifierDTO {
         this.empresa = deviceIdentifier.getEmpresa().getId();
         auto = deviceIdentifier.getAuto() != null ? deviceIdentifier.getAuto().getId() : null;
         activo = deviceIdentifier.getActivo();
+        usable = deviceIdentifier.getUsable();
     }
 
     public Long getId() {
@@ -62,6 +64,9 @@ public class DeviceIdentifierDTO {
     public Boolean getActivo() {
         return activo;
     }
+    public Boolean getUsable() {
+        return usable;
+    }
 
     @Override
     public String toString() {
@@ -73,6 +78,7 @@ public class DeviceIdentifierDTO {
                 ", auto=" + auto +
                 ", empresa=" + empresa +
                 ", activo=" + activo +
+                ", usable=" + usable +
                 '}';
     }
 }

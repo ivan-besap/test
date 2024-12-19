@@ -55,9 +55,14 @@ public class Car {
 
     private String alias;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "flota_id")
+    @JsonBackReference("Flota-Car") // Añadimos esta referencia para evitar ciclos en la serialización
+    private Flota flota;
+
     public Car() { }
 
-    public Car(String patente, String modelo, String vin, String color, String marca, String anoFabricacion, BigDecimal capacidadPotencia, Empresa empresa, Boolean activo, String alias) {
+    public Car(String patente, String modelo, String vin, String color, String marca, String anoFabricacion, BigDecimal capacidadPotencia, Empresa empresa, Boolean activo, String alias, Flota flota) {
         this.patente = patente;
         this.modelo = modelo;
         this.vin = vin;
@@ -68,6 +73,7 @@ public class Car {
         this.empresa = empresa;
         this.activo = activo;
         this.alias = alias;
+        this.flota = flota;
     }
 
     public long getId() {
@@ -165,6 +171,14 @@ public class Car {
         this.alias = alias;
     }
 
+    public Flota getFlota() {
+        return flota;
+    }
+
+    public void setFlota(Flota flota) {
+        this.flota = flota;
+    }
+
     @Override
     public String toString() {
         return "Car{" +
@@ -180,6 +194,7 @@ public class Car {
                 ", empresa=" + empresa +
                 ", activo=" + activo +
                 ", alias=" + alias +
+                ", flota=" + (flota != null ? flota.getId() : "null") +
                 '}';
     }
 }

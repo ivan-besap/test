@@ -1,102 +1,660 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Controller;
 
 import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Session;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargingProfileKindType;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Enums.ChargingProfilePurposeType;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.HeartbeatRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.RemoteStartTransactionRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.StartTransactionRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingProfile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.ChargingSchedule;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.Core.Requests.Utils.MeterValue;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.*;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.RemoteStartStopStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.ResetStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.UnlockStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.*;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.ChargingProfileKindType;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.ChargingProfilePurposeType;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.ResetType;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.ChargingProfile;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.ChargingSchedule;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.MeterValue;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.IniciarCargaRemotaRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Confirmations.TriggerMessageConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.Enums.TriggerMessageRequestType;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.TriggerMessageRequest;
+import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.time.ZonedDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
+import static com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler.sessionStore;
+
+import static com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler.webSocketSessionStorage;
+import static org.apache.activemq.plugin.ForcePersistencyModeBroker.log;
 
 
 @RestController
-@RequestMapping("/api/ocpp")
+@RequestMapping("/api")
 public class OcppController {
 
     @Autowired
     private WebSocketHandler webSocketHandler;
 
+    @Autowired
+    private UtilService utilService;
+
+    private static final int MAX_KEYS_LIMIT = 20;
+
     private static final Logger logger = LoggerFactory.getLogger(OcppController.class);
 
-    /**
-     * Endpoint para iniciar una transacción de carga remota en un punto de carga específico.
-     *
-     * Este método permite al servidor enviar una solicitud de inicio de transacción a un punto de carga
-     * remoto, proporcionando el ID de la sesión, el ID del conector y la etiqueta de identificación (idTag).
-     *
-     * @param sessionId  El identificador único (UUID) de la sesión WebSocket.
-     * @param connectorId  El ID del conector que se utilizará en la transacción.
-     * @param idTag  La etiqueta de identificación del usuario autorizando la transacción.
-     * @return Un ResponseEntity con un mensaje de éxito o de error, según el resultado.
-     */
-    @PostMapping("/start-transaction")
-    public ResponseEntity<String> startTransaction(
-            @RequestParam String sessionId,
-            @RequestParam String connectorId,
-            @RequestParam String idTag,
-            @RequestParam(required = false) Integer chargingProfileId,
-            @RequestParam(required = false) Integer stackLevel,
-            @RequestParam(required = false) ChargingProfilePurposeType chargingProfilePurpose,
-            @RequestParam(required = false) ChargingProfileKindType chargingProfileKind,
-            @RequestParam(required = false) ZonedDateTime validFrom,
-            @RequestParam(required = false) ZonedDateTime validTo) {
+    private final Map<Long, MeterValuesRequest> latestMeterValuesByConnector = new ConcurrentHashMap<>();
+
+    /** JL **/
+    @PostMapping("/iniciar-carga-remota")
+    public ResponseEntity<String> iniciarCargaRemotaEnSimulador(
+            @RequestParam String session,
+            @RequestBody RemoteStartTransactionRequest request) {
         try {
-            // Validar que el connectorId e idTag no sean nulos
-            if (connectorId == null || idTag == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El ID de conector y el idTag son requeridos.");
+            if (request == null || request.getIdTag() == null || request.getIdTag().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El campo 'idTag' es requerido.");
             }
 
-            // Obtener la sesión OCPP
-            Session ocppSession = getSessionOrThrow(sessionId);
-            WebSocketSession webSocketSession = getWebSocketSessionOrThrow(sessionId);
-
-            // Crear la solicitud RemoteStartTransactionRequest
-            RemoteStartTransactionRequest remoteStartRequest = new RemoteStartTransactionRequest(idTag);
-            remoteStartRequest.setConnectorId(Integer.parseInt(connectorId));
-
-            // Crear el ChargingProfile si los datos están presentes
-            if (chargingProfileId != null && stackLevel != null && chargingProfilePurpose != null && chargingProfileKind != null) {
-                ChargingProfile chargingProfile = new ChargingProfile(chargingProfileId, stackLevel, chargingProfilePurpose, chargingProfileKind, new ChargingSchedule());
-                chargingProfile.setValidFrom(validFrom);
-                chargingProfile.setValidTo(validTo);
-                remoteStartRequest.setChargingProfile(chargingProfile);
+            if (session == null || session.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El parámetro 'session' es requerido.");
             }
 
-            // Generar un ID de mensaje único
+            logger.info("Iniciando RemoteStartTransaction para sesión: {} y idTag: {}", session, request.getIdTag());
+
+            Session ocppSession = getSessionOrThrow(session);
+            WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
+
             String messageId = UUID.randomUUID().toString();
 
-            // Enviar la solicitud a través del WebSocketHandler
-            webSocketHandler.handleRemoteStartTransaction(ocppSession, webSocketSession, remoteStartRequest, messageId);
+            // Llamar al handler
+            webSocketHandler.handleRemoteStartTransaction(ocppSession, webSocketSession, request, messageId);
 
-            return ResponseEntity.ok("Transacción remota iniciada con éxito.");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error en la solicitud: " + e.getMessage());
+            return ResponseEntity.ok("Solicitud de RemoteStartTransaction enviada con éxito para idTag: " + request.getIdTag());
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al iniciar la transacción remota.");
+            logger.error("Error al enviar RemoteStartTransaction", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno: " + e.getMessage());
         }
     }
 
+    /** JL **/
+    @PostMapping("/detener-carga-remota")
+    public ResponseEntity<?> detenerCargaRemotaEnSimulador(@RequestParam String session,
+                                                           @RequestBody RemoteStopTransactionRequest request) {
+        try {
+            // 1. Validar parámetros
+            if (session == null || session.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El parámetro 'session' es requerido.");
+            }
 
+            if (request == null || request.getTransactionId() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El campo 'transactionId' en el request es requerido.");
+            }
 
+            logger.info("Solicitud para detener carga remota recibida. Session: {}, TransactionId: {}", session, request.getTransactionId());
 
+            // 2. Obtener sesiones activas
+            Session ocppSession = getSessionOrThrow(session);
+            WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
 
+            // 3. Generar un messageId único
+            String messageId = UUID.randomUUID().toString();
 
+            // 4. Llamar al handler para enviar el RemoteStopTransaction
+            webSocketHandler.handleRemoteStopTransaction(ocppSession, webSocketSession, request, messageId);
 
+            logger.info("Solicitud RemoteStopTransaction enviada exitosamente. Session: {}, MessageId: {}", session, messageId);
+
+            // 5. Retornar respuesta de éxito
+            return ResponseEntity.ok("Solicitud de detener carga remota enviada correctamente. MessageId: " + messageId);
+
+        } catch (IllegalArgumentException e) {
+            logger.error("Error en los parámetros de la solicitud: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Parámetro inválido: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error al procesar detener carga remota", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/detener-carga")
+    public ResponseEntity<String> detenerCarga() {
+        try {
+            log.info("Deteniendo carga en el simulador");
+
+            // Llamar al servicio para comunicar al simulador
+            utilService.detenerCargaEnSimulador();
+
+            return ResponseEntity.ok("Carga detenida con éxito");
+        } catch (Exception e) {
+            log.error("Error deteniendo la carga: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deteniendo la carga");
+        }
+    }
+
+    @PostMapping("/change-configuration")
+    public ResponseEntity<?> changeConfiguration(@RequestBody Map<String, Object> payload) {
+        logger.info("Solicitud recibida: {}", payload);
+
+        try {
+            // Extraer los parámetros
+            String chargePointId = (String) payload.get("chargePointId");
+            String key = (String) payload.get("key");
+            String value = (String) payload.get("value");
+
+            // Validar parámetros obligatorios
+            if (chargePointId == null || key == null || value == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                        .body("Faltan parámetros obligatorios: chargePointId, key o value.");
+            }
+
+            // Obtener la sesión
+            UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionId == null) {
+                logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+            }
+
+            Session session = sessionStore.get(sessionId);
+            WebSocketSession webSocketSession = webSocketSessionStorage.get(sessionId);
+
+            if (session == null || webSocketSession == null || !webSocketSession.isOpen()) {
+                logger.error("La sesión para chargePointId {} no está activa.", chargePointId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("La sesión para chargePointId " + chargePointId + " no está activa.");
+            }
+
+            // Crear la solicitud ChangeConfigurationRequest
+            ChangeConfigurationRequest request = new ChangeConfigurationRequest();
+            request.setKey(key);
+            request.setValue(value);
+
+            String messageId = UUID.randomUUID().toString();
+
+            // Enviar la solicitud a la Estación de Carga
+            CompletableFuture<Confirmation> futureResponse = session.sendRemoteStartTransaction("ChangeConfiguration", request, messageId);
+
+            // Manejar la respuesta asincrónicamente
+            futureResponse.whenComplete((confirmation, error) -> {
+                if (error != null) {
+                    logger.error("Error al recibir la confirmación para ChangeConfiguration: {}", error.getMessage(), error);
+                    try {
+                        webSocketHandler.sendError(session, webSocketSession, messageId, "Error en ChangeConfiguration: " + error.getMessage());
+                    } catch (IOException ioException) {
+                        logger.error("Error enviando error al cliente: {}", ioException.getMessage(), ioException);
+                    }
+                } else {
+                    try {
+                        if (confirmation instanceof ChangeConfigurationConfirmation) {
+                            ChangeConfigurationConfirmation changeConfigConfirmation = (ChangeConfigurationConfirmation) confirmation;
+                            logger.info("ChangeConfigurationConfirmation recibida: {}", changeConfigConfirmation);
+
+                            // Procesar la respuesta según sea necesario
+                            // Por ejemplo, verificar si el cambio fue aceptado o rechazado
+
+                            // Opcionalmente, enviar la respuesta al cliente que inició la solicitud
+                        } else {
+                            logger.warn("Tipo de confirmación inesperado: {}", confirmation);
+                            webSocketHandler.sendError(session, webSocketSession, messageId, "Error: Confirmación inesperada para ChangeConfiguration.");
+                        }
+                    } catch (IOException e) {
+                        logger.error("Error enviando respuesta al cliente: {}", e.getMessage(), e);
+                    }
+                }
+            });
+
+            logger.info("ChangeConfigurationRequest enviado a chargePointId: {}", chargePointId);
+            return ResponseEntity.ok("ChangeConfigurationRequest enviado con éxito a chargePointId: " + chargePointId);
+
+        } catch (Exception e) {
+            logger.error("Error procesando la solicitud de ChangeConfiguration: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error interno al procesar la solicitud de ChangeConfiguration.");
+        }
+    }
+
+    /**
+     * Endpoint para enviar una solicitud GetConfigurationRequest a un cargador específico.
+     *
+     * @return La confirmación GetConfigurationConfirmation recibida del cargador.
+     */
+    @PostMapping("/getConfiguration")
+    public ResponseEntity<?> getConfiguration(
+            @RequestParam String chargePointId,
+            @RequestBody(required = false) List<String> keys) {
+        try {
+            // Validación adicional de parámetros
+            if (keys != null && keys.size() > MAX_KEYS_LIMIT) {
+                return ResponseEntity.badRequest().body("Número de claves excede el límite permitido.");
+            }
+
+            // Obtener el UUID de la sesión asociada al chargePointId
+            UUID sessionUUID = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionUUID == null) {
+                return ResponseEntity.badRequest().body("ChargePointId no encontrado o no está conectado.");
+            }
+
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionUUID.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+            }
+
+            // Obtener la sesión OCPP
+            Session session = webSocketHandler.getSessionById(sessionUUID.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+            }
+
+            // Enviar la solicitud y obtener el CompletableFuture
+            CompletableFuture<GetConfigurationConfirmation> future = webSocketHandler.sendGetConfigurationRequestAsync(session, webSocketSession, keys);
+
+            // Esperar la confirmación con un timeout de 10 segundos
+            GetConfigurationConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            logger.debug("GetConfigurationConfirmation recibido para messageId: {}", confirmation);
+            return ResponseEntity.ok(confirmation);
+
+        } catch (TimeoutException e) {
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body("Timeout esperando GetConfigurationConfirmation.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt(); // Restaurar el estado de interrupción
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("El hilo fue interrumpido.");
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al procesar la solicitud: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/trigger-status")
+    public ResponseEntity<?> requestStatus(@RequestParam String chargePointId,
+                                           @RequestBody TriggerMessageRequest request) {
+        UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+        if (sessionId == null) {
+            logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+        }
+
+        Session session = WebSocketHandler.sessionStore.get(sessionId);
+        WebSocketSession webSocketSession = WebSocketHandler.webSocketSessionStorage.get(sessionId);
+
+        if (session == null || webSocketSession == null || !webSocketSession.isOpen()) {
+            logger.error("La sesión para chargePointId {} no está activa.", chargePointId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("La sesión para chargePointId " + chargePointId + " no está activa.");
+        }
+
+        try {
+            // Asegurar que el request tenga el requestedMessage correcto
+            request.setRequestedMessage(TriggerMessageRequestType.StatusNotification);
+
+            // Enviar la solicitud de TriggerMessage y obtener el CompletableFuture
+            CompletableFuture<TriggerMessageConfirmation> future =
+                    webSocketHandler.handleStatusNotificationTrigger(session, webSocketSession, request);
+
+            // Esperar la confirmación con un timeout (por ejemplo 10 seg)
+            TriggerMessageConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            logger.debug("TriggerMessageConfirmation recibido: {}", confirmation);
+            return ResponseEntity.ok(confirmation);
+
+        } catch (TimeoutException e) {
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body("Timeout esperando TriggerMessageConfirmation.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("El hilo fue interrumpido.");
+        } catch (Exception e) {
+            logger.error("Error procesando la solicitud TriggerMessage (StatusNotification): {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al procesar la solicitud: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/trigger-heartbeat")
+    public ResponseEntity<?> triggerHeartbeat(@RequestParam String chargePointId,
+                                              @RequestBody TriggerMessageRequest request) {
+        // Obtener el UUID de la sesión asociada al chargePointId
+        UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+        if (sessionId == null) {
+            logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+        }
+
+        Session session = WebSocketHandler.sessionStore.get(sessionId);
+        WebSocketSession webSocketSession = WebSocketHandler.webSocketSessionStorage.get(sessionId);
+
+        // Verificar que la sesión y la conexión WebSocket estén activas
+        if (session == null || webSocketSession == null || !webSocketSession.isOpen()) {
+            logger.error("La sesión para chargePointId {} no está activa.", chargePointId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("La sesión para chargePointId " + chargePointId + " no está activa.");
+        }
+
+        try {
+            // Asegurar que el request tenga el requestedMessage correcto
+            request.setRequestedMessage(TriggerMessageRequestType.Heartbeat);
+
+            // Enviar la solicitud TriggerMessage de manera asíncrona y obtener un CompletableFuture
+            CompletableFuture<TriggerMessageConfirmation> future =
+                    webSocketHandler.sendTriggerMessageRequestAsync(session, webSocketSession, request);
+
+            // Esperar la confirmación con un timeout (por ejemplo, 10 segundos)
+            TriggerMessageConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            logger.debug("TriggerMessageConfirmation recibido: {}", confirmation);
+            return ResponseEntity.ok(confirmation);
+
+        } catch (TimeoutException e) {
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT)
+                    .body("Timeout esperando TriggerMessageConfirmation.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("El hilo fue interrumpido.");
+        } catch (Exception e) {
+            logger.error("Error procesando la solicitud TriggerMessage (Heartbeat): {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al procesar la solicitud: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/trigger-diagnosticsStatusNotification")
+    public ResponseEntity<?> triggerDiagnosticsStatusNotification(@RequestParam String chargePointId,
+                                                                  @RequestBody TriggerMessageRequest request) {
+        try {
+            // Verificar que el punto de carga (chargePointId) esté conectado
+            UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionId == null) {
+                logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+            }
+
+            // Obtener la sesión OCPP y la sesión WebSocket
+            Session session = WebSocketHandler.sessionStore.get(sessionId);
+            WebSocketSession webSocketSession = WebSocketHandler.webSocketSessionStorage.get(sessionId);
+
+            if (session == null || webSocketSession == null || !webSocketSession.isOpen()) {
+                logger.error("La sesión para chargePointId {} no está activa.", chargePointId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("La sesión para chargePointId " + chargePointId + " no está activa.");
+            }
+
+            // Asegurar que el request tenga el requestedMessage correcto
+            request.setRequestedMessage(TriggerMessageRequestType.DiagnosticsStatusNotification);
+
+            // Enviar la solicitud TriggerMessage de manera asíncrona y obtener el Future de la confirmación
+            CompletableFuture<TriggerMessageConfirmation> future = webSocketHandler.handleDiagnosticsStatusNotificationTrigger(session, webSocketSession, request);
+
+            // Esperar la confirmación con timeout de 10 segundos
+            TriggerMessageConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            // Responder con la confirmación recibida
+            return ResponseEntity.ok(confirmation);
+
+        } catch (TimeoutException e) {
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT)
+                    .body("Timeout esperando TriggerMessageConfirmation.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("El hilo fue interrumpido.");
+        } catch (IOException e) {
+            logger.error("Error al enviar TriggerMessageRequest", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error enviando solicitud");
+        } catch (Exception e) {
+            logger.error("Error al procesar la solicitud de TriggerMessage (DiagnosticsStatusNotification): {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al procesar la solicitud: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/trigger-bootNotification")
+    public ResponseEntity<?> triggerBootNotification(@RequestParam String chargePointId,
+                                                     @RequestBody TriggerMessageRequest request) {
+        UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+        if (sessionId == null) {
+            logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+        }
+
+        Session session = WebSocketHandler.sessionStore.get(sessionId);
+        WebSocketSession webSocketSession = WebSocketHandler.webSocketSessionStorage.get(sessionId);
+
+        if (session == null || webSocketSession == null || !webSocketSession.isOpen()) {
+            logger.error("La sesión para chargePointId {} no está activa.", chargePointId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("La sesión para chargePointId " + chargePointId + " no está activa.");
+        }
+
+        try {
+            // Asegurar que el request tenga el requestedMessage correcto
+            request.setRequestedMessage(TriggerMessageRequestType.BootNotification);
+
+            CompletableFuture<TriggerMessageConfirmation> future = webSocketHandler.handleBootNotificationTrigger(session, webSocketSession, request);
+
+            // Esperar la confirmación con un timeout de 10 segundos
+            TriggerMessageConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            logger.debug("TriggerMessageConfirmation recibido: {}", confirmation);
+            return ResponseEntity.ok(confirmation);
+
+        } catch (TimeoutException e) {
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body("Timeout esperando TriggerMessageConfirmation.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("El hilo fue interrumpido.");
+        } catch (Exception e) {
+            logger.error("Error al procesar la solicitud de TriggerMessage (BootNotification): {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al procesar la solicitud: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/trigger-firmwareStatusNotification")
+    public ResponseEntity<?> triggerFirmwareStatusNotification(@RequestParam String chargePointId,
+                                                               @RequestBody TriggerMessageRequest request) {
+        // Obtener el UUID de la sesión asociada al chargePointId
+        UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+        if (sessionId == null) {
+            logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+        }
+
+        Session session = WebSocketHandler.sessionStore.get(sessionId);
+        WebSocketSession webSocketSession = WebSocketHandler.webSocketSessionStorage.get(sessionId);
+
+        // Verificar que la sesión y la conexión WebSocket estén activas
+        if (session == null || webSocketSession == null || !webSocketSession.isOpen()) {
+            logger.error("La sesión para chargePointId {} no está activa.", chargePointId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("La sesión para chargePointId " + chargePointId + " no está activa.");
+        }
+
+        try {
+            // Asegurar que el request tenga el requestedMessage correcto antes de enviar
+            request.setRequestedMessage(TriggerMessageRequestType.FirmwareStatusNotification);
+
+            // Enviar la solicitud TriggerMessage de manera asíncrona y obtener un CompletableFuture
+            CompletableFuture<TriggerMessageConfirmation> future =
+                    webSocketHandler.sendTriggerMessageRequestAsync(session, webSocketSession, request);
+
+            // Esperar la confirmación con un timeout de 10 segundos
+            TriggerMessageConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            logger.debug("TriggerMessageConfirmation recibido: {}", confirmation);
+            return ResponseEntity.ok(confirmation);
+
+        } catch (TimeoutException e) {
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT)
+                    .body("Timeout esperando TriggerMessageConfirmation.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("El hilo fue interrumpido.");
+        } catch (Exception e) {
+            logger.error("Error procesando la solicitud TriggerMessage (FirmwareStatusNotification): {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al procesar la solicitud: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/trigger-meterValues")
+    public ResponseEntity<?> triggerMeterValues(@RequestParam String chargePointId,
+                                                @RequestBody TriggerMessageRequest request) {
+        // Obtener el UUID de la sesión asociada al chargePointId
+        UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+        if (sessionId == null) {
+            logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+        }
+
+        Session session = WebSocketHandler.sessionStore.get(sessionId);
+        WebSocketSession webSocketSession = WebSocketHandler.webSocketSessionStorage.get(sessionId);
+
+        // Verificar que la sesión y la conexión WebSocket estén activas
+        if (session == null || webSocketSession == null || !webSocketSession.isOpen()) {
+            logger.error("La sesión para chargePointId {} no está activa.", chargePointId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("La sesión para chargePointId " + chargePointId + " no está activa.");
+        }
+
+        try {
+            // Asegurar que el request tenga el requestedMessage correcto
+            request.setRequestedMessage(TriggerMessageRequestType.MeterValues);
+
+            // Enviar la solicitud TriggerMessage de manera asíncrona y obtener un CompletableFuture
+            CompletableFuture<TriggerMessageConfirmation> future =
+                    webSocketHandler.sendTriggerMessageRequestAsync(session, webSocketSession, request);
+
+            // Esperar la confirmación con un timeout de 10 segundos
+            TriggerMessageConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            logger.debug("TriggerMessageConfirmation recibido: {}", confirmation);
+            return ResponseEntity.ok(confirmation);
+
+        } catch (TimeoutException e) {
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT)
+                    .body("Timeout esperando TriggerMessageConfirmation.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("El hilo fue interrumpido.");
+        } catch (Exception e) {
+            logger.error("Error procesando la solicitud TriggerMessage (MeterValues): {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al procesar la solicitud: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/unlock-connector")
+    public ResponseEntity<?> unlockConnector(@RequestParam String chargePointId,
+                                             @RequestBody UnlockConnectorRequest request) {
+        try {
+            // Validar el campo connectorId del request
+            if (!request.validate()) {
+                return ResponseEntity.badRequest().body("UnlockConnectorRequest inválido: connectorId debe ser mayor que 0.");
+            }
+
+            // Obtener el UUID de la sesión asociada al chargePointId
+            UUID sessionUUID = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionUUID == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+            }
+
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionUUID.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+            }
+
+            // Obtener la sesión OCPP
+            Session session = webSocketHandler.getSessionById(sessionUUID.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+            }
+
+            // Generar un messageId único para esta solicitud
+            String messageId = UUID.randomUUID().toString();
+
+            // Enviar la solicitud UnlockConnector
+            CompletableFuture<UnlockConnectorConfirmation> future = webSocketHandler.sendUnlockConnectorRequestAsync(session,webSocketSession,request);
+
+            // Esperar la confirmación con un timeout de 10 segundos
+            Confirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            // Verificar que la confirmación sea del tipo UnlockConnectorConfirmation
+            if (confirmation instanceof UnlockConnectorConfirmation) {
+                UnlockConnectorConfirmation unlockConfirmation = (UnlockConnectorConfirmation) confirmation;
+                logger.info("UnlockConnectorConfirmation recibida: {}", unlockConfirmation);
+
+                // Puedes procesar aquí el estado de la confirmación si lo deseas
+                return ResponseEntity.ok(unlockConfirmation);
+            } else {
+                logger.warn("Tipo de confirmación inesperado: {}", confirmation);
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                        .body("Error: Confirmación inesperada para UnlockConnector.");
+            }
+
+        } catch (TimeoutException e) {
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body("Timeout esperando UnlockConnectorConfirmation.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("El hilo fue interrumpido.");
+        } catch (Exception e) {
+            logger.error("Error procesando la solicitud de UnlockConnector: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error interno al procesar la solicitud de UnlockConnector.");
+        }
+    }
+
+    /** JL **/
+    @PostMapping("/reset-cargador")
+    public ResponseEntity<String> resetCargador(@RequestBody ResetRequest resetRequest, @RequestParam String session) {
+        try {
+            // Validar parámetros
+            if (resetRequest == null || resetRequest.getType() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El campo 'type' es requerido (Hard o Soft).");
+            }
+
+            if (session == null || session.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El parámetro 'session' es requerido.");
+            }
+
+            logger.info("Reseteando Cargador con session: {}. Tipo de reset: {}", session, resetRequest.getType());
+
+            // Obtener sesiones activas
+            Session ocppSession = getSessionOrThrow(session);
+            WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
+
+            // Generar messageId único
+            String messageId = UUID.randomUUID().toString();
+
+            // Llamar al handler
+            webSocketHandler.handleReset(ocppSession, webSocketSession, resetRequest, messageId);
+
+            return ResponseEntity.ok("Solicitud de Reset enviada con éxito. Tipo: " + resetRequest.getType());
+
+        } catch (Exception e) {
+            logger.error("Error al enviar la solicitud de Reset", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno: " + e.getMessage());
+        }
+    }
 
     private Session getSessionOrThrow(String sessionId) {
         Session ocppSession = webSocketHandler.getSessionById(sessionId);
@@ -113,72 +671,6 @@ public class OcppController {
         }
         return webSocketSession;
     }
-
-
-    // 2 HearBeat
-    @PostMapping("/heartbeat")
-    public ResponseEntity<String> sendHeartbeat(@RequestParam String sessionId) {
-        try {
-            Session ocppSession = getSessionOrThrow(sessionId);
-            WebSocketSession webSocketSession = getWebSocketSessionOrThrow(sessionId);
-
-            // Enviar Heartbeat y procesar respuesta
-            sendHeartbeatRequest(ocppSession, webSocketSession);
-
-            return ResponseEntity.ok("Heartbeat enviado.");
-        } catch (IllegalArgumentException e) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(e.getMessage());
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error enviando Heartbeat.");
-        }
-    }
-
-        private void sendHeartbeatRequest(Session ocppSession, WebSocketSession webSocketSession) throws IOException {
-            HeartbeatRequest request = new HeartbeatRequest();
-            webSocketHandler.handleHeartbeat(ocppSession, webSocketSession, request, UUID.randomUUID().toString());
-        }
-
-// 3 MeterValue
-@GetMapping("/meter-values")
-public ResponseEntity<List<MeterValue>> getMeterValues(
-        @RequestParam String sessionId,
-        @RequestParam String transactionId) {
-    try {
-
-        // Recuperar la sesión OCPP y la sesión WebSocket
-        Session ocppSession = getSessionOrThrow(sessionId);
-        WebSocketSession webSocketSession = getWebSocketSessionOrThrow(sessionId);
-
-        // Recuperar las métricas de carga para la sesión y transacción dadas
-        List<MeterValue> meterValues = retrieveMeterValues(ocppSession, transactionId);
-
-        if (meterValues.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(meterValues);
-        }
-
-        return ResponseEntity.ok(meterValues);
-
-    } catch (IllegalArgumentException e) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
-    } catch (Exception e) {
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
-    }
-}
-
-    // Método que recupera las métricas de carga (meter values) para una sesión y transacción dadas
-    private List<MeterValue> retrieveMeterValues(Session ocppSession, String transactionId) {
-
-        List<MeterValue> meterValues = new ArrayList<>();
-
-        // Ejemplo básico de datos simulados
-        MeterValue sampleMeterValue = new MeterValue();
-        meterValues.add(sampleMeterValue);
-
-        return meterValues;
-    }
-
-
-// 4
 
     @GetMapping("/get-session-by-idTag")
     public ResponseEntity<String> getSessionByIdTag(@RequestParam String idTag) {

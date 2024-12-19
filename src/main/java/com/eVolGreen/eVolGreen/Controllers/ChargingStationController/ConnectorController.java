@@ -11,6 +11,7 @@ import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.ConnectorStatus;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.TypeConnector;
+import com.eVolGreen.eVolGreen.Repositories.AccountRepository;
 import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.AuditLogService;
@@ -48,6 +49,9 @@ public class ConnectorController {
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private AccountRepository accountRepository;
 
     @Autowired
     private ChargingStationsService chargingStationsService;
@@ -291,15 +295,23 @@ public class ConnectorController {
     public ResponseEntity<String> changeChargingStationStatus(@RequestParam Long id, @RequestParam ConnectorStatus activeStatus) {
         boolean result = connectorService.updateConnectorStatus(id, activeStatus);
         if (result) {
-            return ResponseEntity.ok("Estado de la estación actualizado correctamente.");
+            return ResponseEntity.ok("Estado del conector actualizado correctamente.");
         } else {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Estación no encontrada.");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Conector no encontrado.");
         }
     }
     @PatchMapping("/connectors/{id}/assign-fee")
     public ResponseEntity<Object> assignFeeToConnector(
+            Authentication authentication,
             @PathVariable Long id,
             @RequestParam Long tarifaId) {
+
+        Optional<Account> cuentaOpt = accountRepository.findByEmail(authentication.getName());
+        if (cuentaOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Empresa no encontrada");
+        }
+        Account cuentaUsuario = cuentaOpt.get();
+
 
         Connector connector = connectorService.findById(id);
         if (connector == null) {
@@ -313,6 +325,13 @@ public class ConnectorController {
 
         connector.setTarifa(tarifa);
         connectorService.saveConnector(connector);
+
+        tarifa.setNombreConector(connector.getAlias());
+        tarifa.setNombreCargador(connector.getCargador().getoCPPid());
+        feeService.saveFee(tarifa);
+
+        String descripcion = "Usuario " + cuentaUsuario.getEmail() + " asignó el la tarifa : " + tarifa.getNombreTarifa() + " al conector: " + connector.getAlias();
+        auditLogService.recordAction(descripcion, cuentaUsuario);
 
         return ResponseEntity.status(HttpStatus.OK).body("La tarifa fue asignada al conector correctamente.");
     }

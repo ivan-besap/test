@@ -1,35 +1,39 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Configuration;
 
-import com.amazonaws.regions.Regions;
-import com.amazonaws.services.mq.AmazonMQ;
-import com.amazonaws.services.mq.AmazonMQClientBuilder;
 import com.eVolGreen.eVolGreen.Configurations.MQ.AmazonMQCommunicator;
-import com.eVolGreen.eVolGreen.Configurations.MQ.AwsConfig;
+import com.eVolGreen.eVolGreen.Configurations.MQ.SessionManager;
 import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
+import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketMetricsConfig;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.AuthenticationException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.*;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WSS.BaseWssSocketBuilder;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WSS.WssSocketBuilder;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WebSocketReceiver;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.WebSocketReceiverEvents;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ClientCoreEventHandler;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ClientRemoteTriggerEventHandler;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Handler.ServerCoreEventHandler;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.ClientCoreProfile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.ClientRemoteTriggerProfile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.ServerCoreProfile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Feature.Profile.ServerRemoteTriggerProfile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.JSONClient;
-import com.eVolGreen.eVolGreen.Models.Ocpp.JSONServer;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Handler.ClientCoreEventHandler;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Handler.ClientRemoteTriggerEventHandler;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Handler.ServerCoreEventHandler;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Profile.ClientCoreProfile;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Profile.ClientRemoteTriggerProfile;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Profile.ServerCoreProfile;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Profile.ServerRemoteTriggerProfile;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.JSONClient;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.JSONServer;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.JSONConfiguration;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Confirmations.TriggerMessageConfirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Models.RemoteTrigger.Request.TriggerMessageRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Confirmations.TriggerMessageConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.TriggerMessageRequest;
+import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
 import com.google.gson.JsonSyntaxException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.web.client.RestTemplate;
 
+import javax.net.ssl.SSLContext;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
@@ -47,14 +51,9 @@ import static com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.JSO
 @Configuration
 public class AppConfig {
 
-    @Value("${spring.activemq.broker-url}")
-    private String brokerUrl;
+    private Communicator communicator;
 
-    @Value("${spring.activemq.user}")
-    private String brokerUser;
-
-    @Value("${spring.activemq.password}")
-    private String brokerPassword;
+    private WebSocketMetricsConfig webSocketMetricsConfig;
 
     /**
      * Almacenamiento compartido de sesiones para manejar las conexiones activas.
@@ -68,6 +67,12 @@ public class AppConfig {
         return new ConcurrentHashMap<>();
     }
 
+    @Bean
+    public RestTemplate restTemplate() {
+        return new RestTemplate();
+    }
+
+
     /**
      * Configura y devuelve una instancia de {@link FeatureRepository}.
      *
@@ -78,19 +83,27 @@ public class AppConfig {
         return new FeatureRepository();
     }
 
+
     /**
-     * Configura y devuelve una instancia de {@link JSONClient} para gestionar la comunicación OCPP utilizando el perfil de cliente.
+     * Configura y proporciona una instancia de {@link JSONClient} con soporte para WebSocket seguro (WSS).
      *
-     * @param coreProfile El perfil de núcleo del cliente.
-     * @param mqCommunicator El comunicador de Amazon MQ.
-     * @return una instancia configurada de {@link JSONClient}.
+     * <p>Este bean inicializa un {@link JSONClient} utilizando el {@link ClientCoreProfile} proporcionado
+     * y habilita la comunicación segura mediante WebSocket (WSS) configurando un {@link WssSocketBuilder} predeterminado.</p>
+     *
+     * @param coreProfile el perfil principal del cliente que define las funcionalidades y comportamientos
+     *                    esenciales del cliente OCPP.
+     * @return una instancia configurada de {@link JSONClient} lista para establecer conexiones seguras
+     *         mediante WSS.
      */
     @Bean
-    public JSONClient jsonClient(ClientCoreProfile coreProfile, AmazonMQCommunicator mqCommunicator) {
-        String identity = UUID.randomUUID().toString();
-        JSONConfiguration configuration = JSONConfiguration.get();
-        return new JSONClient(coreProfile, identity, configuration, mqCommunicator);
+    public JSONClient jsonClient(ClientCoreProfile coreProfile) {
+        JSONClient jsonClient = new JSONClient(coreProfile);
+
+        return jsonClient;
     }
+
+
+
 
     /**
      * Configura y devuelve una instancia de {@link ISessionFactory} para la creación de sesiones.
@@ -110,15 +123,15 @@ public class AppConfig {
      * @param communicator El comunicador OCPP.
      * @param jsonServer El servidor JSON.
      * @param coreProfile El perfil de núcleo del servidor.
-     * @param amazonMQCommunicator El comunicador de Amazon MQ.
+//     * @param amazonMQCommunicator El comunicador de Amazon MQ.
      * @return una instancia configurada de {@link WebSocketHandler}.
      */
     @Bean
-    public WebSocketHandler webSocketHandler(ISessionFactory sessionFactory, Communicator communicator,
-                                             JSONServer jsonServer, ServerCoreProfile coreProfile,
-                                             AmazonMQCommunicator amazonMQCommunicator) {
+    public WebSocketHandler webSocketHandler(UtilService utilService, ISessionFactory sessionFactory, Communicator communicator,
+                                             JSONServer jsonServer, ServerCoreProfile coreProfile, Queue queue,
+                                             PromiseFulfiller fulfiller, FeatureRepository featureRepository,WebSocketMetricsConfig webSocketMetricsConfig) {
 
-        return new WebSocketHandler(sessionFactory, communicator, jsonServer, coreProfile, amazonMQCommunicator);
+        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository,webSocketMetricsConfig);
     }
 
     /**
@@ -162,26 +175,22 @@ public class AppConfig {
     /**
      * Configura y devuelve una instancia de {@link AmazonMQCommunicator} para la comunicación con Amazon MQ.
      *
-     * @param awsConfig Configuración de credenciales de AWS.
-     * @param serverEvents Manejador de eventos de servidor.
      * @return una instancia configurada de {@link AmazonMQCommunicator}.
      */
+
 //    @Bean
-//    public AmazonMQCommunicator amazonMQCommunicator(AwsConfig awsConfig, ServerEvents serverEvents) {
-//        return new AmazonMQCommunicator(awsConfig, brokerUrl, brokerUser, brokerPassword, serverEvents);
+//    public AmazonMQCommunicator amazonMQCommunicator(Radio radio, SessionManager sessionManager, Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository) {
+//        try {
+//            return new AmazonMQCommunicator(radio, sessionManager, queue, fulfiller, featureRepository);
+//        } catch (Exception e) {
+//            throw new RuntimeException("Error al instanciar AmazonMQCommunicator", e);
+//        }
 //    }
 
-    /**
-     * Configura y devuelve una instancia de {@link AmazonMQ}, que es el cliente de Amazon MQ.
-     *
-     * @return una instancia configurada de {@link AmazonMQ}.
-     */
-//    @Bean
-//    public AmazonMQ amazonMQClient() {
-//        return AmazonMQClientBuilder.standard()
-//                .withRegion(Regions.US_EAST_2)
-//                .build();
-//    }
+    @Bean
+    public SessionManager sessionManager() {
+        return new SessionManager();
+    }
 
      /**
      * Configura y devuelve una instancia de {@link JSONConfiguration} para la configuración de JSON en OCPP.
@@ -283,7 +292,7 @@ public class AppConfig {
             @Override
             public Object packPayload(Object payload) {
                 // Serialización del payload usando la lógica de OCPP y Gson
-                return gson.toJson(payload);
+                return payload;
             }
 
             @Override
@@ -294,9 +303,14 @@ public class AppConfig {
 
             @Override
             protected Object makeCall(String uniqueId, String action, Object payload) {
-                // Genera el Call OCPP con el formato adecuado
-                return String.format(CALL_FORMAT, uniqueId, action, packPayload(payload));
+                List<Object> call = new ArrayList<>();
+                call.add(2); // Tipo de mensaje: Call
+                call.add(uniqueId);
+                call.add(action);
+                call.add(payload); // Agregar el payload como objeto
+                return call;
             }
+
 
             @Override
             protected Object makeCallError(String uniqueId, String action, String errorCode, String errorDescription) {
@@ -312,30 +326,44 @@ public class AppConfig {
 
             @Override
             public Message parse(Object message) {
-                JsonArray array = JsonParser.parseString(message.toString()).getAsJsonArray();
-                String messageId = array.get(0).getAsString();
-                int messageType = array.get(1).getAsInt();
-                Message parsedMessage = null;
+                Message parsedMessage;
+                JsonArray array;
+                String messageId = "-1";
 
-                switch (messageType) {
-                    case TYPENUMBER_CALL:
-                        parsedMessage = new CallMessage();
-                        parsedMessage.setAction(array.get(2).getAsString());
-                        parsedMessage.setPayload(array.get(3).toString());
-                        break;
-                    case TYPENUMBER_CALLRESULT:
-                        parsedMessage = new CallResultMessage();
-                        parsedMessage.setPayload(array.get(2).toString());
-                        break;
-                    case TYPENUMBER_CALLERROR:
-                        parsedMessage = new CallErrorMessage();
-                        ((CallErrorMessage) parsedMessage).setErrorCode(array.get(2).getAsString());
-                        ((CallErrorMessage) parsedMessage).setErrorDescription(array.get(3).getAsString());
-                        ((CallErrorMessage) parsedMessage).setRawPayload(array.get(4).toString());
-                        break;
-                    default:
-                        logger.error("Tipo de mensaje desconocido: {}. Mensaje: {}", messageType, message);
-                        sendCallError(messageId, null, "MessageTypeNotSupported", "Tipo de mensaje no soportado: " + messageType);
+                try {
+                    array = JsonParser.parseString(message.toString()).getAsJsonArray();
+                    messageId = array.get(INDEX_UNIQUEID).getAsString();
+
+                    int messageType = array.get(INDEX_MESSAGEID).getAsInt();
+                    switch (messageType) {
+                        case TYPENUMBER_CALL:
+                            parsedMessage = new CallMessage();
+                            parsedMessage.setAction(array.get(INDEX_CALL_ACTION).getAsString());
+                            parsedMessage.setPayload(array.get(INDEX_CALL_PAYLOAD).toString());
+                            break;
+                        case TYPENUMBER_CALLRESULT:
+                            parsedMessage = new CallResultMessage();
+                            parsedMessage.setPayload(array.get(INDEX_CALLRESULT_PAYLOAD).toString());
+                            break;
+                        case TYPENUMBER_CALLERROR:
+                            parsedMessage = new CallErrorMessage();
+                            ((CallErrorMessage) parsedMessage).setErrorCode(array.get(INDEX_CALLERROR_ERRORCODE).getAsString());
+                            ((CallErrorMessage) parsedMessage).setErrorDescription(array.get(INDEX_CALLERROR_DESCRIPTION).getAsString());
+                            ((CallErrorMessage) parsedMessage).setRawPayload(array.get(INDEX_CALLERROR_PAYLOAD).toString());
+                            break;
+                        default:
+                            logger.error("Tipo de mensaje desconocido: {}. Contenido del mensaje: {}", messageType, message);
+                            sendCallError(messageId, null, "MessageTypeNotSupported", "Tipo de mensaje no soportado: " + messageType);
+                            return null;
+                    }
+                } catch (JsonSyntaxException e) {
+                    logger.error("Error de sintaxis JSON al analizar el mensaje: {}. Error: {}", message, e.getMessage());
+                    sendCallError(messageId, null, "RpcFrameworkError", "Error de sintaxis JSON: " + e.getMessage());
+                    return null;
+                } catch (Exception e) {
+                    logger.error("Error inesperado al analizar el mensaje: {}. Error: {}", message, e.getMessage());
+                    sendCallError(messageId, null, "RpcFrameworkError", "Error inesperado: " + e.getMessage());
+                    return null;
                 }
 
                 parsedMessage.setId(messageId);
@@ -399,9 +427,10 @@ public class AppConfig {
         };
     }
 
-
-
-
+    @Bean
+    public Radio radio(WebSocketReceiverEvents receiverEvents) {
+        return new WebSocketReceiver(receiverEvents);
+    }
 
 
 
