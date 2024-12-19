@@ -59,26 +59,35 @@ public class OcppController {
     /** JL **/
     @PostMapping("/iniciar-carga-remota")
     public ResponseEntity<String> iniciarCargaRemotaEnSimulador(
-            @RequestParam String session,
+            @RequestParam String chargePointId,
             @RequestBody RemoteStartTransactionRequest request) {
         try {
             if (request == null || request.getIdTag() == null || request.getIdTag().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El campo 'idTag' es requerido.");
             }
 
-            if (session == null || session.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El parámetro 'session' es requerido.");
+            // Obtener el UUID de la sesión asociada al chargePointId
+            UUID sessionUUID = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionUUID == null) {
+                return ResponseEntity.badRequest().body("ChargePointId no encontrado o no está conectado.");
             }
 
-            logger.info("Iniciando RemoteStartTransaction para sesión: {} y idTag: {}", session, request.getIdTag());
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionUUID.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+            }
 
-            Session ocppSession = getSessionOrThrow(session);
-            WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
+            // Obtener la sesión OCPP
+            Session session = webSocketHandler.getSessionById(sessionUUID.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+            }
 
             String messageId = UUID.randomUUID().toString();
 
             // Llamar al handler
-            webSocketHandler.handleRemoteStartTransaction(ocppSession, webSocketSession, request, messageId);
+            webSocketHandler.handleRemoteStartTransaction(session, webSocketSession, request, messageId);
 
             return ResponseEntity.ok("Solicitud de RemoteStartTransaction enviada con éxito para idTag: " + request.getIdTag());
         } catch (Exception e) {
