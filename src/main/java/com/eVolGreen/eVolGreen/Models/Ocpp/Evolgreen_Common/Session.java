@@ -7,6 +7,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.Unsupport
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Utilities.MoreObjects;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.web.socket.TextMessage;
@@ -85,6 +86,22 @@ public class Session implements ISession {
     public void sendRequest(String action, Request payload, String uuid) {
         ensureRadioConnected();  // Verifica y conecta el radio si está desconectado
         communicator.sendCall(uuid, action, payload);
+    }
+
+    public CompletableFuture<Confirmation> sendRequest1(String action, Request payload, String uuid) {
+        CompletableFuture<Confirmation> promise = new CompletableFuture<>();
+        registerPendingPromise(uuid, action, promise);
+        try {
+            // Serializar la solicitud a JSON con la estructura correcta del envelope OCPP
+            ObjectMapper objectMapper = new ObjectMapper();
+            String requestJson = objectMapper.writeValueAsString(new Object[]{2, uuid, action, payload});
+            sendTextMessage(requestJson, webSocketSession);
+            logger.debug("Solicitud {} enviada con messageId: {}", action, uuid);
+        } catch (Exception e) {
+            logger.error("Error enviando solicitud {}: {}", action, e.getMessage(), e);
+            promise.completeExceptionally(e);
+        }
+        return promise;
     }
 
     /**
@@ -200,10 +217,12 @@ public class Session implements ISession {
     }
 
     public void sendTextMessage(String message, WebSocketSession webSocketSession) throws IOException {
-        if (webSocketSession.isOpen()) {
+        if (webSocketSession != null && webSocketSession.isOpen()) {
             webSocketSession.sendMessage(new TextMessage(message));
+            logger.debug("Mensaje enviado: {}", message);
         } else {
-            throw new IOException("La sesión WebSocket no está abierta.");
+            logger.warn("No se puede enviar mensaje. Sesión WebSocket está cerrada o nula.");
+            throw new IOException("Sesión WebSocket está cerrada o nula.");
         }
     }
 
@@ -314,10 +333,14 @@ public class Session implements ISession {
         }
     }
 
-    private void addPendingPromise(String id, String action, CompletableFuture<Confirmation> promise) {
+    public void addPendingPromise(String id, String action, CompletableFuture<Confirmation> promise) {
         synchronized (pendingPromises) {
             pendingPromises.put(id, new AbstractMap.SimpleImmutableEntry<>(action, promise));
         }
+    }
+
+    public void registerPendingPromise(String messageId, String action, CompletableFuture<Confirmation> promise) {
+        addPendingPromise(messageId, action, promise);
     }
 
     @Override
@@ -384,4 +407,29 @@ public class Session implements ISession {
                 .add("events", events)
                 .toString();
     }
+
+    /**
+     * Obtiene y remueve el CompletableFuture asociado a un messageId.
+     *
+     * @param messageId El identificador único del mensaje.
+     * @return El CompletableFuture correspondiente o null si no existe.
+     */
+    public CompletableFuture<Confirmation> getPendingPromise(String messageId) {
+        AbstractMap.SimpleImmutableEntry<String, CompletableFuture<Confirmation>> entry = pendingPromises.remove(messageId);
+        if (entry != null) {
+            return entry.getValue();
+        }
+        return null;
+    }
+
+    public String getPendingAction(String messageId) {
+        synchronized (pendingPromises) {
+            AbstractMap.SimpleImmutableEntry<String, CompletableFuture<Confirmation>> entry = pendingPromises.get(messageId);
+            if (entry != null) {
+                return entry.getKey(); // La clave (key) del entry es la acción
+            }
+            return null; // Si no existe el messageId, retorna null
+        }
+    }
+
 }
