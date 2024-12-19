@@ -319,6 +319,7 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
     @Override
     protected void handleTextMessage(WebSocketSession webSocketSession, TextMessage message) throws Exception {
         String payload = message.getPayload();
+        logger.info("Mensaje recibido desde el WebSocket: {}", payload);
         logger.debug("Payload recibido: {}", payload);
 
         if (!isValidJsonFormat(payload)) {
@@ -427,16 +428,16 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                     case "Charging" -> handleCharging(session, webSocketSession, requestPayload, messageId);
                     case "TriggerMessage" -> handleServerTriggerMessage(session, webSocketSession, requestPayload, messageId);
                     case "ChangeAvailability" -> handleChangeAvailability(session, webSocketSession, requestPayload, messageId);
-                    case "GetConfiguration" -> handleGetConfigurationRequest(session, webSocketSession, requestPayload, messageId);
-                    case "RemoteStartTransaction" -> handleRemoteStartTransaction(session, webSocketSession, requestPayload, messageId);
-                    case "RemoteStopTransaction" -> handleRemoteStopTransaction(session, webSocketSession, requestPayload, messageId);
+                    case "GetConfiguration" -> handleGetConfigurationRequest2(session, webSocketSession, requestPayload, messageId);
+                    case "RemoteStartTransaction" -> handleRemoteStartTransaction2(session, webSocketSession, requestPayload, messageId);
+                    case "RemoteStopTransaction" -> handleRemoteStopTransaction2(session, webSocketSession, requestPayload, messageId);
                     case "ClearCache" -> handleClearCache(session, webSocketSession, requestPayload, messageId);
                     case "ChangeConfiguration" -> handleChangeConfiguration(session, webSocketSession, requestPayload, messageId);
                     case "ClearChargingProfile" -> handleClearChargingProfile(session, webSocketSession, requestPayload, messageId);
                     case "GetCompositeSchedule" -> handleGetCompositeSchedule(session, webSocketSession, requestPayload, messageId);
                     case "SetChargingProfile" -> handleSetChargingProfile(session, webSocketSession, requestPayload, messageId);
-                    case "UnlockConnector" -> handleUnlockConnector(session, webSocketSession, requestPayload, messageId);
-                    case "Reset" -> handleReset(session, webSocketSession, requestPayload, messageId);
+                    case "UnlockConnector" -> handleUnlockConnector2(session, webSocketSession, requestPayload, messageId);
+                    case "Reset" -> handleReset2(session, webSocketSession, requestPayload, messageId);
                     case "SecurityEventNotification" -> handleSecurityEventNotification(session, webSocketSession, requestPayload, messageId);
                     case "Ping" -> handlePingMessage(webSocketSession, new PingMessage((ByteBuffer) array[3]));
 
@@ -1427,6 +1428,52 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         }
     }
 
+    public void handleUnlockConnector2(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // Validar que el payload no sea nulo
+            if (requestPayload == null) {
+                throw new IllegalArgumentException("El payload de la solicitud no puede ser nulo.");
+            }
+
+            // Convertir el payload en una instancia de UnlockConnectorRequest
+            UnlockConnectorRequest unlockConnectorRequest = objectMapper.convertValue(requestPayload, UnlockConnectorRequest.class);
+
+            // Validar que el connectorId no sea nulo
+            if (unlockConnectorRequest.getConnectorId() == null) {
+                throw new IllegalArgumentException("El campo 'connectorId' es requerido.");
+            }
+
+            logger.info("Solicitud de UnlockConnector recibida para el conector: {}", unlockConnectorRequest.getConnectorId());
+
+            // Construir el mensaje OCPP para el cargador
+            Map<String, Object> ocppMessage = new HashMap<>();
+            ocppMessage.put("messageId", messageId);
+            ocppMessage.put("action", "UnlockConnector");
+            ocppMessage.put("connectorId", unlockConnectorRequest.getConnectorId());
+
+            // Serializar el mensaje en formato JSON
+            String jsonMessage = objectMapper.writeValueAsString(ocppMessage);
+            logger.info("Enviando mensaje UnlockConnector al cargador: {}", jsonMessage);
+
+            // Verificar si la sesión WebSocket está abierta
+            if (!webSocketSession.isOpen()) {
+                throw new IllegalStateException("La sesión WebSocket no está abierta.");
+            }
+
+            // Enviar el mensaje al cargador
+            webSocketSession.sendMessage(new TextMessage(jsonMessage));
+
+            logger.info("UnlockConnector enviado con éxito para connectorId: {}", unlockConnectorRequest.getConnectorId());
+        } catch (IllegalArgumentException e) {
+            logger.error("Error en los argumentos de UnlockConnector: {}", e.getMessage());
+            sendError(ocppSession, webSocketSession, messageId, "Error en UnlockConnector: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error procesando UnlockConnector para la sesión: {}", ocppSession != null ? ocppSession.getSessionId() : "Sesión no disponible", e);
+            sendError(ocppSession, webSocketSession, messageId, "Error en UnlockConnector: " + e.getMessage());
+        }
+    }
+
+
     void handleReset(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
         try {
             // Convertir el payload en una instancia de ResetRequest
@@ -1447,6 +1494,51 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             sendError(ocppSession, webSocketSession, messageId, "Error en Reset: " + e.getMessage());
         }
     }
+    public void handleReset2(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // 1. Convertir el payload a ResetRequest
+            ResetRequest resetRequest = objectMapper.convertValue(requestPayload, ResetRequest.class);
+
+            // 2. Validar el tipo de reinicio (Hard o Soft)
+            if (resetRequest.getType() == null) {
+                logger.error("El campo 'type' en ResetRequest es requerido.");
+                sendError(ocppSession, webSocketSession, messageId, "El campo 'type' es requerido (Hard o Soft).");
+                return;
+            }
+            logger.info("Solicitud de Reset recibida. Tipo: {}", resetRequest.getType());
+
+            // 3. Construir el mensaje OCPP sin incluir "payload"
+            Object[] ocppMessage = new Object[]{
+                    2, // MessageTypeId para una llamada (Call)
+                    messageId, // ID único del mensaje
+                    "Reset", // Acción
+                    Map.of("type", resetRequest.getType()) // El cuerpo del mensaje con el campo "type"
+            };
+
+            // 4. Serializar el mensaje en formato JSON
+            String jsonMessage = objectMapper.writeValueAsString(ocppMessage);
+            logger.info("Enviando mensaje Reset al cargador: {}", jsonMessage);
+
+            // 5. Enviar el mensaje al cargador a través de WebSocket
+            if (webSocketSession.isOpen()) {
+                webSocketSession.sendMessage(new TextMessage(jsonMessage));
+                logger.info("Mensaje de Reset ({}) enviado correctamente para la sesión: {}", resetRequest.getType(), ocppSession.getSessionId());
+            } else {
+                logger.error("La sesión WebSocket no está activa para el chargePointId: {}", ocppSession.getChargePointId());
+                sendError(ocppSession, webSocketSession, messageId, "La sesión WebSocket no está activa.");
+            }
+
+        } catch (IllegalArgumentException e) {
+            // Error en la conversión del payload
+            logger.error("Error en los argumentos de ResetRequest: {}", e.getMessage());
+            sendError(ocppSession, webSocketSession, messageId, "Parámetros inválidos en ResetRequest: " + e.getMessage());
+        } catch (Exception e) {
+            // Error general inesperado
+            logger.error("Error al procesar la solicitud de Reset", e);
+            sendError(ocppSession, webSocketSession, messageId, "Error inesperado en Reset: " + e.getMessage());
+        }
+    }
+
 
 //23
     /**
@@ -1540,23 +1632,32 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                 throw new IllegalStateException("La sesión WebSocket no está abierta.");
             }
 
-            // Log de envío
-            logger.info("Enviando RemoteStartTransactionRequest al simulador...");
-            logger.info("Contenido del mensaje enviado: {}", objectMapper.writeValueAsString(remoteStartRequest));
+            // Construir el mensaje OCPP con los datos del RemoteStartTransactionRequest
+            Map<String, Object> ocppMessage = new HashMap<>();
+            ocppMessage.put("messageId", messageId);
+            ocppMessage.put("action", "RemoteStartTransaction");
 
-            // Enviar el mensaje al simulador
-            session.sendRequest("RemoteStartTransaction", remoteStartRequest, messageId);
+            // Directamente agregar los datos requeridos por el esquema
+            ocppMessage.put("idTag", remoteStartRequest.getIdTag());
+            if (remoteStartRequest.getConnectorId() != null) {
+                ocppMessage.put("connectorId", remoteStartRequest.getConnectorId());
+            }
+            if (remoteStartRequest.getChargingProfile() != null) {
+                ocppMessage.put("chargingProfile", remoteStartRequest.getChargingProfile());
+            }
 
-            // Log de éxito
-            logger.info("RemoteStartTransactionRequest enviado con éxito para idTag: {}, connectorId: {}", remoteStartRequest.getIdTag(), remoteStartRequest.getConnectorId());
-            logger.info("Esperando confirmación del simulador...");
+            // Serializar el mensaje en formato JSON
+            String jsonMessage = objectMapper.writeValueAsString(ocppMessage);
+            logger.info("Enviando mensaje RemoteStartTransaction al cargador: {}", jsonMessage);
 
+            // Enviar el mensaje al cargador a través de WebSocket
+            webSocketSession.sendMessage(new TextMessage(jsonMessage));
+
+            logger.info("RemoteStartTransaction enviado con éxito para idTag: {}, connectorId: {}", remoteStartRequest.getIdTag(), remoteStartRequest.getConnectorId());
         } catch (IllegalArgumentException e) {
-            // Manejo de errores con argumentos inválidos
             logger.error("Error en los argumentos de RemoteStartTransaction: {}", e.getMessage());
             sendError(session, webSocketSession, messageId, "Error en RemoteStartTransaction: " + e.getMessage());
         } catch (Exception e) {
-            // Manejo de errores generales
             logger.error("Error procesando RemoteStartTransaction para la sesión: {}", session != null ? session.getSessionId() : "Sesión no disponible", e);
             sendError(session, webSocketSession, messageId, "Error en RemoteStartTransaction: " + e.getMessage());
         }
@@ -1615,6 +1716,47 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             sendError(ocppSession, webSocketSession, messageId, "Error in RemoteStopTransaction: " + e.getMessage());
         }
     }
+    public void handleRemoteStopTransaction2(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // 1. Convertir el requestPayload en un RemoteStopTransactionRequest
+            RemoteStopTransactionRequest remoteStopTransactionRequest = objectMapper.convertValue(requestPayload, RemoteStopTransactionRequest.class);
+
+            // 2. Validar que transactionId no sea null
+            Integer transactionId = remoteStopTransactionRequest.getTransactionId();
+            if (transactionId == null) {
+                logger.error("El campo transactionId es null en la solicitud RemoteStopTransaction.");
+                sendError(ocppSession, webSocketSession, messageId, "transactionId es requerido.");
+                return;
+            }
+            logger.info("Solicitud de RemoteStopTransaction recibida para transactionId: {}", transactionId);
+
+            // 3. Crear el mensaje final para el cargador (sin incluir campos adicionales como "payload")
+            Map<String, Object> ocppMessage = new HashMap<>();
+            ocppMessage.put("transactionId", transactionId);
+
+            // 4. Serializar el mensaje en JSON y enviarlo a través del WebSocket
+            String jsonMessage = objectMapper.writeValueAsString(ocppMessage);
+            logger.info("Enviando mensaje RemoteStopTransaction al cargador: {}", jsonMessage);
+
+            if (webSocketSession.isOpen()) {
+                webSocketSession.sendMessage(new TextMessage(jsonMessage));
+                logger.info("Mensaje RemoteStopTransaction enviado al cargador para transactionId: {}", transactionId);
+            } else {
+                logger.error("La sesión WebSocket no está activa para el chargePointId: {}", ocppSession.getChargePointId());
+                sendError(ocppSession, webSocketSession, messageId, "WebSocketSession no está activa.");
+            }
+
+        } catch (IllegalArgumentException e) {
+            // Manejo de errores específicos de conversión
+            logger.error("Error en los argumentos de RemoteStopTransaction: {}", e.getMessage());
+            sendError(ocppSession, webSocketSession, messageId, "Parámetros inválidos: " + e.getMessage());
+        } catch (Exception e) {
+            // Manejo general de errores
+            logger.error("Error procesando RemoteStopTransaction", e);
+            sendError(ocppSession, webSocketSession, messageId, "Error en RemoteStopTransaction: " + e.getMessage());
+        }
+    }
+
 //25
     /**
      * Maneja la solicitud de ClearCache, con el objetivo de limpiar la caché del punto de carga.
@@ -2093,10 +2235,77 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         });
     }
 
+    public void handleGetConfigurationRequest2(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // Convertir el requestPayload en un GetConfigurationRequest
+            GetConfigurationRequest getConfigRequest = objectMapper.convertValue(requestPayload, GetConfigurationRequest.class);
+            List<String> keys = null;
+
+            if (getConfigRequest.getKey() != null) {
+                keys = Arrays.asList(getConfigRequest.getKey()); // Convertir el array de claves en una lista
+            }
+
+            // Construir el mensaje OCPP para GetConfiguration
+            Map<String, Object> ocppMessage = new HashMap<>();
+            ocppMessage.put("messageId", messageId);
+            ocppMessage.put("action", "GetConfiguration");
+
+            // Agregar las claves directamente al mensaje si existen
+            if (keys != null && !keys.isEmpty()) {
+                ocppMessage.put("key", keys);
+            }
+
+            // Serializar el mensaje en JSON y enviarlo
+            String jsonMessage = objectMapper.writeValueAsString(ocppMessage);
+            logger.info("Enviando mensaje GetConfiguration al cargador: {}", jsonMessage);
+
+            if (webSocketSession.isOpen()) {
+                webSocketSession.sendMessage(new TextMessage(jsonMessage));
+                logger.info("Mensaje GetConfiguration enviado exitosamente al cargador.");
+            } else {
+                logger.error("La sesión WebSocket no está activa para el chargePointId: {}", session.getChargePointId());
+                sendError(session, webSocketSession, messageId, "WebSocketSession no está activa.");
+            }
+
+            // Manejar la respuesta de forma asíncrona
+            CompletableFuture<GetConfigurationConfirmation> future = sendGetConfigurationRequestAsync(session, webSocketSession, keys, messageId);
+            future.thenAccept(confirmation -> {
+                if (confirmation.getConfigurationKey() != null) {
+                    for (KeyValueType kv : confirmation.getConfigurationKey()) {
+                        logger.info("Configuración obtenida - Clave: {}, Valor: {}", kv.getKey(), kv.getValue());
+                        // Almacenar o manejar la configuración obtenida
+                    }
+                }
+                if (confirmation.getUnknownKey() != null) {
+                    for (String unknownKey : confirmation.getUnknownKey()) {
+                        logger.warn("Clave de configuración desconocida: {}", unknownKey);
+                        // Manejar claves desconocidas
+                    }
+                }
+            }).exceptionally(ex -> {
+                logger.error("Error en GetConfiguration: {}", ex.getMessage());
+                return null;
+            });
+
+        } catch (IllegalArgumentException e) {
+            logger.error("Error en los argumentos de GetConfigurationRequest: {}", e.getMessage());
+            sendError(session, webSocketSession, messageId, "Parámetros inválidos: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error procesando GetConfigurationRequest", e);
+            sendError(session, webSocketSession, messageId, "Error en GetConfigurationRequest: " + e.getMessage());
+        }
+    }
+
 
 
 
     private void handleCallResult(Session session, String messageId, Object responsePayload) {
+        logger.info("CallResult recibido para messageId: {} con payload: {}", messageId, responsePayload);
+        if (responsePayload != null) {
+            logger.info("Respuesta del cargador: {}", responsePayload);
+        } else {
+            logger.warn("El payload de la respuesta está vacío para messageId: {}", messageId);
+        }
         logger.debug("Recibiendo CallResult para messageId: {}", messageId);
         CompletableFuture<GetConfigurationConfirmation> future = getConfigFutures.remove(messageId);
         if (future != null) {

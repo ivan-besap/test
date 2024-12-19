@@ -37,10 +37,12 @@ public class WebAuthorization {
                         .requestMatchers(HttpMethod.POST, "api/adminCompany/updateAdminCompany&CompanyUser").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/fees/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/verify-account").permitAll()
-                        .requestMatchers("/**").permitAll() // Permitir acceso a los endpoints del Actuator
+                        .requestMatchers("/command/**").permitAll()
                         .requestMatchers("/prometheus/**").permitAll()
-                        .requestMatchers("/api/ocpp/**").permitAll()
+                        .requestMatchers("/ocpp/**").permitAll()
+                        .requestMatchers("/**").permitAll() // Permitir acceso a los endpoints del Actuator
                         .requestMatchers("/error/**").permitAll()
+                        .requestMatchers("/actuator/**").permitAll()
                         .anyRequest().authenticated()
                 )
                 .headers(headers -> headers

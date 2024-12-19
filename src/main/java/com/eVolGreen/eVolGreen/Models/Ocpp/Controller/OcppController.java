@@ -467,33 +467,33 @@ public class OcppController {
     }
 
     @PostMapping("/iniciar-carga-remota2")
-    public void iniciarCargaRemotaEnSimulador2(@RequestParam String session,
-                                               @RequestBody RemoteStartTransactionRequest request) throws Exception {
-//        String url = "http://localhost:8081/api/charge-point/remote-start";
+    public ResponseEntity<String> iniciarCargaRemotaEnSimulador2(
+            @RequestParam String session,
+            @RequestBody RemoteStartTransactionRequest request) {
+        try {
+            if (request == null || request.getIdTag() == null || request.getIdTag().isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El campo 'idTag' es requerido.");
+            }
 
-//        UUID sessionId = session.getSessionId();
-        Session ocppSession = getSessionOrThrow(session);
-        WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
+            if (session == null || session.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El parámetro 'session' es requerido.");
+            }
 
+            logger.info("Iniciando RemoteStartTransaction para sesión: {} y idTag: {}", session, request.getIdTag());
 
-        // Configurar los encabezados de la solicitud si son necesarios
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Content-Type", "application/json");
+            Session ocppSession = getSessionOrThrow(session);
+            WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
 
-        // Crear la solicitud HTTP con el payload y los encabezados
-        HttpEntity<RemoteStartTransactionRequest> requestEntity = new HttpEntity<>(request, headers);
+            String messageId = UUID.randomUUID().toString();
 
-        String messageId = UUID.randomUUID().toString();
+            // Llamar al handler
+            webSocketHandler.handleRemoteStartTransaction2(ocppSession, webSocketSession, request, messageId);
 
-        // Enviar la solicitud POST al simulador
-        webSocketHandler.handleRemoteStartTransaction2(ocppSession, webSocketSession, request, messageId);
-
-        // Verificar si la respuesta es exitosa
-//        if (!response.getStatusCode().is2xxSuccessful()) {
-//            throw new Exception("Error al iniciar la carga remota en el simulador: " + response.getBody());
-//        }
-
-        log.info("Carga remota en simulador iniciada con éxito para connectorId: {} y idTag: {}", request.getConnectorId(), request.getIdTag());
+            return ResponseEntity.ok("Solicitud de RemoteStartTransaction enviada con éxito para idTag: " + request.getIdTag());
+        } catch (Exception e) {
+            logger.error("Error al enviar RemoteStartTransaction", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno: " + e.getMessage());
+        }
     }
 
 
@@ -529,34 +529,75 @@ public class OcppController {
 //    }
 
     @PostMapping("/detener-carga-remota")
-    public void detenerCargaRemotaEnSimulador(@RequestParam String session,
-                                              @RequestBody RemoteStopTransactionRequest request) throws Exception {
-//        String url = "http://localhost:8081/api/charge-point/remote-start";
+    public ResponseEntity<?> detenerCargaRemotaEnSimulador(@RequestParam String session,
+                                                           @RequestBody RemoteStopTransactionRequest request) {
+        try {
+            // 1. Validar parámetros
+            if (session == null || session.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El parámetro 'session' es requerido.");
+            }
 
-//        UUID sessionId = session.getSessionId();
-        Session ocppSession = getSessionOrThrow(session);
-        WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
+            if (request == null || request.getTransactionId() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El campo 'transactionId' en el request es requerido.");
+            }
 
+            logger.info("Solicitud para detener carga remota recibida. Session: {}, TransactionId: {}", session, request.getTransactionId());
 
-        // Configurar los encabezados de la solicitud si son necesarios
-        HttpHeaders headers = new HttpHeaders();
-        headers.set("Content-Type", "application/json");
+            // 2. Obtener sesiones activas
+            Session ocppSession = getSessionOrThrow(session);
+            WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
 
-        // Crear la solicitud HTTP con el payload y los encabezados
-        HttpEntity<RemoteStopTransactionRequest> requestEntity = new HttpEntity<>(request, headers);
+            // 3. Generar un messageId único
+            String messageId = UUID.randomUUID().toString();
 
-        String messageId = UUID.randomUUID().toString();
+            // 4. Llamar al handler para enviar el RemoteStopTransaction
+            webSocketHandler.handleRemoteStopTransaction2(ocppSession, webSocketSession, request, messageId);
 
-        // Enviar la solicitud POST al simulador
-        webSocketHandler.handleRemoteStopTransaction(ocppSession, webSocketSession, request, messageId);
+            logger.info("Solicitud RemoteStopTransaction enviada exitosamente. Session: {}, MessageId: {}", session, messageId);
 
-        // Verificar si la respuesta es exitosa
-//        if (!response.getStatusCode().is2xxSuccessful()) {
-//            throw new Exception("Error al iniciar la carga remota en el simulador: " + response.getBody());
-//        }
+            // 5. Retornar respuesta de éxito
+            return ResponseEntity.ok("Solicitud de detener carga remota enviada correctamente. MessageId: " + messageId);
 
-//        log.info("Carga remota en simulador iniciada con éxito para connectorId: {} y idTag: {}", request.getConnectorId(), request.getIdTag());
+        } catch (IllegalArgumentException e) {
+            logger.error("Error en los parámetros de la solicitud: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Parámetro inválido: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error al procesar detener carga remota", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno: " + e.getMessage());
+        }
     }
+
+    @PostMapping("/getConfiguration")
+    public ResponseEntity<String> getConfiguration(@RequestParam String sessionId, @RequestBody GetConfigurationRequest requestPayload) {
+        try {
+            // Obtener la sesión WebSocket y la OCPP Session a partir del sessionId
+            UUID sessionUUID = UUID.fromString(sessionId);
+            WebSocketSession webSocketSession = WebSocketHandler.webSocketSessionStorage.get(sessionUUID);
+            Session ocppSession = WebSocketHandler.sessionStore.get(sessionUUID);
+
+            if (webSocketSession == null || ocppSession == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró una sesión activa para el sessionId: " + sessionId);
+            }
+
+            if (!webSocketSession.isOpen()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("La sesión WebSocket no está activa para el sessionId: " + sessionId);
+            }
+
+            // Crear un mensajeId único para el mensaje
+            String messageId = UUID.randomUUID().toString();
+
+            // Llamar al WebSocketHandler para manejar la solicitud
+            webSocketHandler.handleGetConfigurationRequest2(ocppSession, webSocketSession, requestPayload, messageId);
+
+            return ResponseEntity.ok("Solicitud GetConfiguration enviada exitosamente al cargador.");
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Error en el sessionId: " + e.getMessage());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error procesando GetConfiguration: " + e.getMessage());
+        }
+    }
+
+
 
     @GetMapping("/obtener-ultimo-meter-value-json")
     public ResponseEntity<String> getLastMeterValuesJson() {
@@ -599,19 +640,38 @@ public class OcppController {
     }
 
     @PostMapping("/reset-cargador")
-    public ResponseEntity<String> resetCargador(@RequestParam ResetType resetType, @RequestParam String ocppid) {
+    public ResponseEntity<String> resetCargador(@RequestBody ResetRequest resetRequest, @RequestParam String session) {
         try {
-            log.info("Reseteando Cargador: {} en el simulador. Tipo de reset: {}", ocppid, resetType);
+            // Validar parámetros
+            if (resetRequest == null || resetRequest.getType() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El campo 'type' es requerido (Hard o Soft).");
+            }
 
-            // Llamar al servicio para comunicar al simulador
-            utilService.resetCargadorSimulador(resetType, ocppid);
+            if (session == null || session.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El parámetro 'session' es requerido.");
+            }
 
-            return ResponseEntity.ok("Cargador Reseteado con éxito");
+            logger.info("Reseteando Cargador con session: {}. Tipo de reset: {}", session, resetRequest.getType());
+
+            // Obtener sesiones activas
+            Session ocppSession = getSessionOrThrow(session);
+            WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
+
+            // Generar messageId único
+            String messageId = UUID.randomUUID().toString();
+
+            // Llamar al handler
+            webSocketHandler.handleReset2(ocppSession, webSocketSession, resetRequest, messageId);
+
+            return ResponseEntity.ok("Solicitud de Reset enviada con éxito. Tipo: " + resetRequest.getType());
+
         } catch (Exception e) {
-            log.error("Error Reseteando el Cargador: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error Reseteando el cargador");
+            logger.error("Error al enviar la solicitud de Reset", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno: " + e.getMessage());
         }
     }
+
+
 
 
     // Método que maneja la lógica de inicio de la transacción de carga remota
@@ -705,46 +765,46 @@ public class OcppController {
      * @param keys          (Opcional) Lista de claves de configuración que se desean obtener.
      * @return La confirmación GetConfigurationConfirmation recibida del cargador.
      */
-    @PostMapping("/getConfiguration")
-    public ResponseEntity<?> getConfiguration(
-            @RequestParam String chargePointId,
-            @RequestBody(required = false) List<String> keys) {
-        try {
-            // Obtener el UUID de la sesión asociada al chargePointId
-            UUID sessionUUID = webSocketHandler.getSessionIdByChargePointId(chargePointId);
-            if (sessionUUID == null) {
-                return ResponseEntity.badRequest().body("ChargePointId no encontrado o no está conectado.");
-            }
-
-            // Obtener la WebSocketSession asociada
-            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionUUID.toString());
-            if (webSocketSession == null || !webSocketSession.isOpen()) {
-                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
-            }
-
-            // Obtener la sesión OCPP
-            Session session = webSocketHandler.getSessionById(sessionUUID.toString());
-            if (session == null) {
-                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
-            }
-
-            // Generar un messageId único para esta solicitud
-            String messageId = UUID.randomUUID().toString();
-
-            // Enviar la solicitud GetConfigurationRequest de manera asíncrona con el messageId
-            CompletableFuture<GetConfigurationConfirmation> future = webSocketHandler.sendGetConfigurationRequestAsync(session, webSocketSession, keys, messageId);
-
-            // Esperar la confirmación con un timeout
-            GetConfigurationConfirmation confirmation = future.get(10, TimeUnit.SECONDS); // Ajusta el timeout según tus necesidades
-
-            return ResponseEntity.ok(confirmation);
-
-        } catch (TimeoutException e) {
-            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body("Timeout esperando GetConfigurationConfirmation.");
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al procesar la solicitud: " + e.getMessage());
-        }
-    }
+//    @PostMapping("/getConfiguration")
+//    public ResponseEntity<?> getConfiguration(
+//            @RequestParam String chargePointId,
+//            @RequestBody(required = false) List<String> keys) {
+//        try {
+//            // Obtener el UUID de la sesión asociada al chargePointId
+//            UUID sessionUUID = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+//            if (sessionUUID == null) {
+//                return ResponseEntity.badRequest().body("ChargePointId no encontrado o no está conectado.");
+//            }
+//
+//            // Obtener la WebSocketSession asociada
+//            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionUUID.toString());
+//            if (webSocketSession == null || !webSocketSession.isOpen()) {
+//                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+//            }
+//
+//            // Obtener la sesión OCPP
+//            Session session = webSocketHandler.getSessionById(sessionUUID.toString());
+//            if (session == null) {
+//                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+//            }
+//
+//            // Generar un messageId único para esta solicitud
+//            String messageId = UUID.randomUUID().toString();
+//
+//            // Enviar la solicitud GetConfigurationRequest de manera asíncrona con el messageId
+//            CompletableFuture<GetConfigurationConfirmation> future = webSocketHandler.sendGetConfigurationRequestAsync(session, webSocketSession, keys, messageId);
+//
+//            // Esperar la confirmación con un timeout
+//            GetConfigurationConfirmation confirmation = future.get(10, TimeUnit.SECONDS); // Ajusta el timeout según tus necesidades
+//
+//            return ResponseEntity.ok(confirmation);
+//
+//        } catch (TimeoutException e) {
+//            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body("Timeout esperando GetConfigurationConfirmation.");
+//        } catch (Exception e) {
+//            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al procesar la solicitud: " + e.getMessage());
+//        }
+//    }
 
     @PostMapping("/trigger-status")
     public ResponseEntity<String> requestStatus(@RequestParam String chargePointId,
@@ -1021,6 +1081,37 @@ public class OcppController {
             logger.error("Error procesando la solicitud de UnlockConnector: {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error interno al procesar la solicitud de UnlockConnector.");
+        }
+    }
+
+    @PostMapping("/unlock-connector2")
+    public ResponseEntity<String> unlockConnector(@RequestParam String session, @RequestBody UnlockConnectorRequest request) {
+        try {
+            // Validar parámetros
+            if (request == null || request.getConnectorId() == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El campo 'connectorId' es requerido.");
+            }
+
+            if (session == null || session.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El parámetro 'session' es requerido.");
+            }
+
+            logger.info("Procesando UnlockConnector para sesión: {} y connectorId: {}", session, request.getConnectorId());
+
+            // Obtener las sesiones activas
+            Session ocppSession = getSessionOrThrow(session);
+            WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
+
+            // Generar messageId único
+            String messageId = UUID.randomUUID().toString();
+
+            // Llamar al handler
+            webSocketHandler.handleUnlockConnector2(ocppSession, webSocketSession, request, messageId);
+
+            return ResponseEntity.ok("Solicitud de UnlockConnector enviada con éxito para connectorId: " + request.getConnectorId());
+        } catch (Exception e) {
+            logger.error("Error al enviar UnlockConnector", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno: " + e.getMessage());
         }
     }
 
