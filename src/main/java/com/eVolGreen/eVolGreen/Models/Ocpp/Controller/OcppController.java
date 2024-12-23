@@ -98,29 +98,39 @@ public class OcppController {
 
     /** JL **/
     @PostMapping("/detener-carga-remota")
-    public ResponseEntity<?> detenerCargaRemotaEnSimulador(@RequestParam String session,
+    public ResponseEntity<?> detenerCargaRemotaEnSimulador(@RequestParam String chargePointId,
                                                            @RequestBody RemoteStopTransactionRequest request) {
         try {
             // 1. Validar parámetros
-            if (session == null || session.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El parámetro 'session' es requerido.");
-            }
-
             if (request == null || request.getTransactionId() == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El campo 'transactionId' en el request es requerido.");
             }
 
-            logger.info("Solicitud para detener carga remota recibida. Session: {}, TransactionId: {}", session, request.getTransactionId());
+            logger.info("Solicitud para detener carga remota recibida. CargadorId: {}, TransactionId: {}", chargePointId, request.getTransactionId());
 
             // 2. Obtener sesiones activas
-            Session ocppSession = getSessionOrThrow(session);
-            WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
+            UUID sessionUUID = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionUUID == null) {
+                return ResponseEntity.badRequest().body("ChargePointId no encontrado o no está conectado.");
+            }
 
-            // 3. Generar un messageId único
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionUUID.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+            }
+
+            // Obtener la sesión OCPP
+            Session session = webSocketHandler.getSessionById(sessionUUID.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+            }
+
             String messageId = UUID.randomUUID().toString();
 
+
             // 4. Llamar al handler para enviar el RemoteStopTransaction
-            webSocketHandler.handleRemoteStopTransaction(ocppSession, webSocketSession, request, messageId);
+            webSocketHandler.handleRemoteStopTransaction(session, webSocketSession, request, messageId);
 
             logger.info("Solicitud RemoteStopTransaction enviada exitosamente. Session: {}, MessageId: {}", session, messageId);
 
@@ -634,28 +644,38 @@ public class OcppController {
 
     /** JL **/
     @PostMapping("/reset-cargador")
-    public ResponseEntity<String> resetCargador(@RequestBody ResetRequest resetRequest, @RequestParam String session) {
+    public ResponseEntity<String> resetCargador(@RequestBody ResetRequest resetRequest, @RequestParam String chargePointId) {
         try {
             // Validar parámetros
             if (resetRequest == null || resetRequest.getType() == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El campo 'type' es requerido (Hard o Soft).");
             }
 
-            if (session == null || session.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El parámetro 'session' es requerido.");
-            }
 
-            logger.info("Reseteando Cargador con session: {}. Tipo de reset: {}", session, resetRequest.getType());
+            logger.info("Reseteando Cargador con id: {}. Tipo de reset: {}", chargePointId, resetRequest.getType());
 
             // Obtener sesiones activas
-            Session ocppSession = getSessionOrThrow(session);
-            WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
+            UUID sessionUUID = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionUUID == null) {
+                return ResponseEntity.badRequest().body("ChargePointId no encontrado o no está conectado.");
+            }
 
-            // Generar messageId único
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionUUID.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+            }
+
+            // Obtener la sesión OCPP
+            Session session = webSocketHandler.getSessionById(sessionUUID.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+            }
+
             String messageId = UUID.randomUUID().toString();
 
             // Llamar al handler
-            webSocketHandler.handleReset(ocppSession, webSocketSession, resetRequest, messageId);
+            webSocketHandler.handleReset(session, webSocketSession, resetRequest, messageId);
 
             return ResponseEntity.ok("Solicitud de Reset enviada con éxito. Tipo: " + resetRequest.getType());
 
