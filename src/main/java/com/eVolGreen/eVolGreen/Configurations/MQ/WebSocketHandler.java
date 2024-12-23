@@ -15,17 +15,21 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Profile.ServerCorePro
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Profile.ServerRemoteTriggerProfile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.JSONServer;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.*;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.AuthorizationStatus;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.DataTransferStatus;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.RegistrationStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Utils.IdTagInfo;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Utils.KeyValueType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.ChargePointStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Confirmations.DiagnosticsStatusNotificationConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Confirmations.FirmwareStatusNotificationConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Confirmations.GetDiagnosticsConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Confirmations.UpdateFirmwareConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Request.DiagnosticsStatusNotificationRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Request.FirmwareStatusNotificationRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Request.GetDiagnosticsRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Request.UpdateFirmwareRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.LocalAuthList.Confirmations.GetLocalListVersionConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.LocalAuthList.Request.GetLocalListVersionRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Confirmations.Enums.TriggerMessageStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Confirmations.TriggerMessageConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.Enums.TriggerMessageRequestType;
@@ -541,8 +545,12 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                 break;
             case "FirmwareStatusNotification":
                 handleFirmwareStatusNotification(session, webSocketSession, requestPayload, messageId);
+                break;
+            case "GetDiagnostics":
+                handleGetDiagnostics(session, webSocketSession, requestPayload, messageId);
+                break;
             default:
-                logger.warn("Acción no soportada: {}", action);
+                logger.warn("Acción no soportada_: {}", action);
                 sendError(session, webSocketSession, messageId, "Acción no soportada: " + action);
                 break;
         }
@@ -1528,49 +1536,34 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         }
     }
 
-    /** JL **/
-    public void handleReset(Session ocppSession, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+    public void handleReset(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
         try {
-            // 1. Convertir el payload a ResetRequest
+            // Convertir el payload a ResetRequest
             ResetRequest resetRequest = objectMapper.convertValue(requestPayload, ResetRequest.class);
 
-            // 2. Validar el tipo de reinicio (Hard o Soft)
+            // Validar el tipo de reinicio (Hard o Soft)
             if (resetRequest.getType() == null) {
                 logger.error("El campo 'type' en ResetRequest es requerido.");
-                sendError(ocppSession, webSocketSession, messageId, "El campo 'type' es requerido (Hard o Soft).");
+                sendError(session, webSocketSession, messageId, "El campo 'type' es requerido (Hard o Soft).");
                 return;
             }
             logger.info("Solicitud de Reset recibida. Tipo: {}", resetRequest.getType());
 
-            // 3. Construir el mensaje OCPP sin incluir "payload"
-            Object[] ocppMessage = new Object[]{
-                    2, // MessageTypeId para una llamada (Call)
-                    messageId, // ID único del mensaje
-                    "Reset", // Acción
-                    Map.of("type", resetRequest.getType()) // El cuerpo del mensaje con el campo "type"
-            };
+            ResetConfirmation confirmation = new ResetConfirmation();
+            confirmation.setStatus(ResetStatus.Accepted);
 
-            // 4. Serializar el mensaje en formato JSON
-            String jsonMessage = objectMapper.writeValueAsString(ocppMessage);
-            logger.info("Enviando mensaje Reset al cargador: {}", jsonMessage);
-
-            // 5. Enviar el mensaje al cargador a través de WebSocket
-            if (webSocketSession.isOpen()) {
-                webSocketSession.sendMessage(new TextMessage(jsonMessage));
-                logger.info("Mensaje de Reset ({}) enviado correctamente para la sesión: {}", resetRequest.getType(), ocppSession.getSessionId());
-            } else {
-                logger.error("La sesión WebSocket no está activa para el chargePointId: {}", ocppSession.getChargePointId());
-                sendError(ocppSession, webSocketSession, messageId, "La sesión WebSocket no está activa.");
-            }
+            // Enviar la respuesta al cliente
+            sendResponse(session, webSocketSession, messageId, "Reset", confirmation);
+            logger.info("Reset manejado exitosamente para la sesión: {}", session.getSessionId());
 
         } catch (IllegalArgumentException e) {
             // Error en la conversión del payload
             logger.error("Error en los argumentos de ResetRequest: {}", e.getMessage());
-            sendError(ocppSession, webSocketSession, messageId, "Parámetros inválidos en ResetRequest: " + e.getMessage());
+            sendError(session, webSocketSession, messageId, "Parámetros inválidos en ResetRequest: " + e.getMessage());
         } catch (Exception e) {
             // Error general inesperado
             logger.error("Error al procesar la solicitud de Reset", e);
-            sendError(ocppSession, webSocketSession, messageId, "Error inesperado en Reset: " + e.getMessage());
+            sendError(session, webSocketSession, messageId, "Error inesperado en Reset: " + e.getMessage());
         }
     }
 
@@ -1608,7 +1601,7 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
     /** JL **/
     public void handleRemoteStartTransaction(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
         try {
-            logger.debug("Procesando RemoteStartTransaction con messageId: {}", messageId);
+            logger.debug("Procesando RemoteStartTransaction recibido con messageId: {}", messageId);
 
             // Validar que el payload no sea nulo
             if (requestPayload == null) {
@@ -1619,36 +1612,11 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             RemoteStartTransactionRequest remoteStartRequest = objectMapper.convertValue(requestPayload, RemoteStartTransactionRequest.class);
             logger.debug("Payload deserializado: {}", remoteStartRequest);
 
-            // Verificar si la sesión es válida
-            if (session == null) {
-                throw new IllegalStateException("Sesión OCPP no encontrada para el ID proporcionado.");
-            }
+            RemoteStartTransactionConfirmation confirmation = new RemoteStartTransactionConfirmation();
+            confirmation.setStatus(RemoteStartStopStatus.Accepted);
 
-            // Confirmar que la sesión WebSocket está abierta
-            if (!webSocketSession.isOpen()) {
-                throw new IllegalStateException("La sesión WebSocket no está abierta.");
-            }
-
-            // Construir el mensaje OCPP con los datos del RemoteStartTransactionRequest
-            Map<String, Object> ocppMessage = new HashMap<>();
-            ocppMessage.put("messageId", messageId);
-            ocppMessage.put("action", "RemoteStartTransaction");
-
-            // Directamente agregar los datos requeridos por el esquema
-            ocppMessage.put("idTag", remoteStartRequest.getIdTag());
-            if (remoteStartRequest.getConnectorId() != null) {
-                ocppMessage.put("connectorId", remoteStartRequest.getConnectorId());
-            }
-            if (remoteStartRequest.getChargingProfile() != null) {
-                ocppMessage.put("chargingProfile", remoteStartRequest.getChargingProfile());
-            }
-
-            // Serializar el mensaje en formato JSON
-            String jsonMessage = objectMapper.writeValueAsString(ocppMessage);
-            logger.info("Enviando mensaje RemoteStartTransaction al cargador: {}", jsonMessage);
-
-            // Enviar el mensaje al cargador a través de WebSocket
-            webSocketSession.sendMessage(new TextMessage(jsonMessage));
+            sendResponse(session, webSocketSession, messageId, "RemoteStartTransaction", confirmation);
+            logger.info("RemoteStartTransaction manejado exitosamente para la sesión: {}", session.getSessionId());
 
             logger.info("RemoteStartTransaction enviado con éxito para idTag: {}, connectorId: {}", remoteStartRequest.getIdTag(), remoteStartRequest.getConnectorId());
         } catch (IllegalArgumentException e) {
@@ -1787,9 +1755,11 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         try {
             // Conversión del payload a ChangeConfigurationRequest
             ChangeConfigurationRequest changeConfigurationRequest = objectMapper.convertValue(requestPayload, ChangeConfigurationRequest.class);
+            logger.info("ChangeConfigurationRequest recibido: {}", changeConfigurationRequest);
 
             // Log de la solicitud para referencia
             ChangeConfigurationConfirmation confirmation = new ChangeConfigurationConfirmation();
+            confirmation.setStatus(ConfigurationStatus.Accepted);
 
             // Envía la respuesta de confirmación al cliente
             sendResponse(ocppSession, webSocketSession, messageId, "ChangeConfiguration", confirmation);
@@ -2144,7 +2114,9 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         session.sendTextMessage(requestJson, webSocketSession);
         logger.debug("TriggerMessageRequest enviado para messageId: {}", messageId);
 
+        logger.info(String.valueOf(future));
         return future;
+
     }
 
     public CompletableFuture<UnlockConnectorConfirmation> sendUnlockConnectorRequestAsync(Session session, WebSocketSession webSocketSession, UnlockConnectorRequest request) throws IOException {
@@ -2178,6 +2150,272 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         return future;
     }
 
+    public CompletableFuture<RemoteStartTransactionConfirmation> sendRemoteStartTransactionRequestAsync(Session session, WebSocketSession webSocketSession, RemoteStartTransactionRequest request) throws IOException {
+        //Generar un messageId unico para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando RemoteStartTransactionRequest con messageId: {}", messageId);
+
+        // Crear el CompletableFuture para manejar la confirmación
+        CompletableFuture<RemoteStartTransactionConfirmation> future = new CompletableFuture<>();
+
+        // Registrar la promesa pendiente en el mapa de la sesión
+        session.registerPendingPromise(messageId, "RemoteStartTransaction", (CompletableFuture) future);
+        logger.debug("Completar promesa para messageId: {}",messageId);
+
+        if (!request.validate()) {
+            logger.error("RemoteStartTransactionRequest inválido: connectorId debe ser mayor que 0.");
+            sendError(session, webSocketSession, messageId, "RemoteStartTransactionRequest inválido: connectorId debe ser mayor que 0.");
+            future.completeExceptionally(new IllegalArgumentException("RemoteStartTransactionRequest inválido"));
+            return future;
+        }
+
+        // Serializar la solicitud
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "RemoteStartTransaction", request});
+        logger.info("Enviando RemoteStartTransactionRequest: {}", requestJson);
+
+        // Enviar la solicitud a través de la sesión OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("RemoteStartTransactionRequest enviado para messageId: {}", messageId);
+
+        return future;
+    }
+
+    public CompletableFuture<RemoteStopTransactionConfirmation> sendRemoteStopTransactionRequestAsync(Session session, WebSocketSession webSocketSession, RemoteStopTransactionRequest request) throws IOException {
+        //Generar un messageId unico para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando RemoteStopTransactionRequest con messageId: {}", messageId);
+
+        // Crear el CompletableFuture para manejar la confirmación
+        CompletableFuture<RemoteStopTransactionConfirmation> future = new CompletableFuture<>();
+
+        // Registrar la promesa pendiente en el mapa de la sesión
+        session.registerPendingPromise(messageId, "RemoteStopTransaction", (CompletableFuture) future);
+        logger.debug("Completar promesa para messageId: {}", messageId);
+
+        if (!request.validate()) {
+            logger.error("RemoteStopTransactionRequest inválido: connectorId debe ser mayor que 0.");
+            sendError(session, webSocketSession, messageId, "RemoteStopTransactionRequest inválido: connectorId debe ser mayor que 0.");
+            future.completeExceptionally(new IllegalArgumentException("RemoteStopTransactionRequest inválido"));
+            return future;
+        }
+
+        // Serializar la solicitud
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "RemoteStopTransaction", request});
+        logger.info("Enviando RemoteStopTransactionRequest: {}", requestJson);
+
+        // Enviar la solicitud a través de la sesión OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("RemoteStopTransactionRequest enviado para messageId: {}", messageId);
+
+        return future;
+    }
+
+    public CompletableFuture<ChangeConfigurationConfirmation> sendChangeConfigurationRequestAsync(Session session, WebSocketSession webSocketSession, ChangeConfigurationRequest request) throws IOException {
+        //Generar un messageId unico para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando ChangeConfigurationRequest con messageId: {}", messageId);
+
+        // Crear el CompletableFuture para manejar la confirmación
+        CompletableFuture<ChangeConfigurationConfirmation> future = new CompletableFuture<>();
+
+        // Registrar la promesa pendiente en el mapa de la sesión
+        session.registerPendingPromise(messageId, "ChangeConfiguration", (CompletableFuture) future);
+        logger.debug("Completar promesa para messageId: {}", messageId);
+
+        if (!request.validate()) {
+            logger.error("ChangeConfigurationRequest inválido: key y value son requeridos.");
+            sendError(session, webSocketSession, messageId, "ChangeConfigurationRequest inválido: key y value son requeridos.");
+            future.completeExceptionally(new IllegalArgumentException("ChangeConfigurationRequest inválido"));
+            return future;
+        }
+
+        // Serializar la solicitud
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "ChangeConfiguration", request});
+        logger.info("Enviando ChangeConfigurationRequest: {}", requestJson);
+
+        // Enviar la solicitud a través de la sesión OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("ChangeConfigurationRequest enviado para messageId: {}", messageId);
+
+        return future;
+    }
+
+    /**
+     * Envía de manera asíncrona la solicitud GetDiagnostics al cargador y retorna un CompletableFuture
+     * que se completará cuando llegue la confirmación (GetDiagnosticsConfirmation).
+     *
+     * @param session           La instancia de la sesión OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param request           El objeto GetDiagnosticsRequest con la información requerida.
+     * @return                  Un CompletableFuture que se completará con la confirmación GetDiagnosticsConfirmation.
+     * @throws IOException      Si ocurre un error al enviar el mensaje.
+     */
+    public CompletableFuture<GetDiagnosticsConfirmation> sendGetDiagnosticsRequestAsync(
+            Session session,
+            WebSocketSession webSocketSession,
+            GetDiagnosticsRequest request
+    ) throws IOException {
+
+        // Generar un messageId único para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando GetDiagnosticsRequest con messageId: {}", messageId);
+
+        // Crear un CompletableFuture para manejar la confirmación
+        CompletableFuture<GetDiagnosticsConfirmation> future = new CompletableFuture<>();
+
+        // Registrar la promesa pendiente en el mapa de la sesión
+        session.registerPendingPromise(messageId, "GetDiagnostics", (CompletableFuture) future);
+
+        // Validar la solicitud antes de enviarla
+        if (!request.validate()) {
+            logger.error("GetDiagnosticsRequest inválido: el campo 'location' es obligatorio.");
+            sendError(session, webSocketSession, messageId, "GetDiagnosticsRequest inválido: 'location' es obligatorio.");
+            future.completeExceptionally(new IllegalArgumentException("GetDiagnosticsRequest inválido"));
+            return future;
+        }
+
+        // Serializar la solicitud a JSON con la estructura OCPP (array con [2, messageId, action, payload])
+        String requestJson = objectMapper.writeValueAsString(
+                new Object[]{2, messageId, "GetDiagnostics", request}
+        );
+        logger.info("Enviando GetDiagnosticsRequest: {}", requestJson);
+
+        // 6. Enviar la solicitud a través de la sesión OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("GetDiagnosticsRequest enviado para messageId: {}", messageId);
+
+        return future;
+    }
+
+    public CompletableFuture<ResetConfirmation> sendResetRequestAsync(Session session, WebSocketSession webSocketSession, ResetRequest resetRequest) throws IOException {
+        // Generar un messageId único para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando ResetRequest con messageId: {}", messageId);
+
+        // Crear un CompletableFuture para manejar la confirmación
+        CompletableFuture<ResetConfirmation> future = new CompletableFuture<>();
+
+        // Registrar la promesa pendiente en el mapa de la sesión
+        session.registerPendingPromise(messageId, "Reset", (CompletableFuture) future);
+        logger.debug("Stored CompletableFuture for messageId: {}", messageId);
+
+        // Validar la solicitud antes de enviarla
+        if (!resetRequest.validate()) {
+            logger.error("ResetRequest inválido: type es requerido.");
+            sendError(session, webSocketSession, messageId, "ResetRequest inválido: type es requerido.");
+            future.completeExceptionally(new IllegalArgumentException("ResetRequest inválido"));
+            return future;
+        }
+
+        // Serializar la solicitud a JSON con la estructura OCPP correcta
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "Reset", resetRequest});
+        logger.info("Enviando ResetRequest: {}", requestJson);
+
+        // Enviar la solicitud a través de la sesión OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("ResetRequest enviado para messageId: {}", messageId);
+
+        return future;
+    }
+
+    public CompletableFuture<ClearCacheConfirmation> sendClearCacheRequestAsync(Session session, WebSocketSession webSocketSession, ClearCacheRequest request) throws IOException {
+
+        // Generar un messageId único para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.info("ClearCacheRequest con messageId: {}", messageId);
+
+        // Crear un CompletableFuture para esperar la confirmación
+        CompletableFuture<ClearCacheConfirmation> future = new CompletableFuture<>();
+
+        // Registrar la promesa pendiente en el mapa de la sesión
+        session.registerPendingPromise(messageId, "ClearCache", (CompletableFuture) future);
+
+        // Serializar el payload a JSON
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "ClearCache", request});
+
+        //Enviar la solcitud a traves de la session OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.info("ClearCacheRequest enviado para la sesión: {}", session.getSessionId());
+
+        return future;
+    }
+
+    public CompletableFuture<GetLocalListVersionConfirmation> sendGetLocalListVersionRequestAsync(Session session, WebSocketSession webSocketSession, GetLocalListVersionRequest request) throws IOException {
+
+        //Generar un messageId unico para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.info("Solicitud GetLocalListVersion enviada: {}", messageId);
+
+        // Crear el CompletableFuture para manejar la confirmación
+        CompletableFuture<GetLocalListVersionConfirmation> future = new CompletableFuture<>();
+
+        // Registrar la promesa pendiente en el mapa de la sesión
+        session.registerPendingPromise(messageId, "GetLocalListVersion", (CompletableFuture) future);
+        logger.info("Promise registrada para messageId: {}", messageId);
+
+        // Serializar la solicitud
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "GetLocalListVersion", request});
+        logger.info("Solicitud serializada: {}", requestJson);
+
+        // Enviar la solicitud a través de la sesión OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("GetLocalVersionRequest enviado para messageId: {}", messageId);
+
+
+        return future;
+    }
+
+    public CompletableFuture<ChangeAvailabilityConfirmation> sendChangeAvailabilityRequestAsync(Session session, WebSocketSession webSocketSession, ChangeAvailabilityRequest request) throws IOException {
+
+        //Generar un messageId unico para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando ChangeAvailabilityRequest con messageId: {}", messageId);
+
+        //Crear un CompletableFuture para esperar la confirmación
+        CompletableFuture<ChangeAvailabilityConfirmation> future = new CompletableFuture<>();
+
+        //Registrar el CompletableFuture para esperar la confirmación
+        session.registerPendingPromise(messageId, "ChangeAvailability", (CompletableFuture) future);
+
+        //Serializar el payload a JSON
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "ChangeAvailability", request});
+
+        //Enviar la solicitud a traves de la sesion OCPP
+        session.sendTextMessage(requestJson,webSocketSession);
+        logger.debug("ChangeAvailabilityRequest enviado con messageId: {}", messageId);
+
+        return future;
+    }
+
+    public CompletableFuture<UpdateFirmwareConfirmation> sendUpdateFirmwareRequestAsync(Session session, WebSocketSession webSocketSession, UpdateFirmwareRequest request) throws IOException {
+        // Generar un messageId único para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando UpdateFirmwareRequest con messageId: {}", messageId);
+
+        // Crear un CompletableFuture para manejar la confirmación
+        CompletableFuture<UpdateFirmwareConfirmation> future = new CompletableFuture<>();
+
+        // Registrar la promesa pendiente en el mapa de la sesión
+        session.registerPendingPromise(messageId, "UpdateFirmware", (CompletableFuture) future);
+        logger.debug("Stored CompletableFuture for messageId: {}", messageId);
+
+        // Validar la solicitud antes de enviarla
+        if (!request.validate()) {
+            logger.error("UpdateFirmwareRequest inválido: location y retrieveDate son requeridos.");
+            future.completeExceptionally(new IllegalArgumentException("UpdateFirmwareRequest inválido"));
+            return future;
+        }
+
+        // Serializar la solicitud a JSON con la estructura OCPP correcta
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "UpdateFirmware", request});
+        logger.info("Enviando UpdateFirmwareRequest: {}", requestJson);
+
+        // Enviar la solicitud a través de la sesión OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("UpdateFirmwareRequest enviado para messageId: {}", messageId);
+
+        return future;
+    }
 
     /**
      * Maneja la recepción de CallResult y completa el CompletableFuture correspondiente.
@@ -2214,10 +2452,36 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                 case "UnlockConnector":
                     confirmation = objectMapper.convertValue(responsePayload, UnlockConnectorConfirmation.class);
                     break;
-                // Agrega más casos para otras acciones que retornan confirmaciones diferentes
-                // case "RemoteStartTransaction":
-                //     confirmation = objectMapper.convertValue(responsePayload, RemoteStartTransactionConfirmation.class);
-                //     break;
+                case "RemoteStartTransaction":
+                    confirmation = objectMapper.convertValue(responsePayload, RemoteStartTransactionConfirmation.class);
+                    break;
+                case "RemoteStopTransaction":
+                    confirmation = objectMapper.convertValue(responsePayload, RemoteStopTransactionConfirmation.class);
+                    break;
+                case "FirmwareStatusNotification":
+                    confirmation = objectMapper.convertValue(responsePayload, FirmwareStatusNotificationConfirmation.class);
+                    break;
+                case "ChangeConfiguration":
+                    confirmation = objectMapper.convertValue(responsePayload, ChangeConfigurationConfirmation.class);
+                    break;
+                case "GetDiagnostics":
+                    confirmation = objectMapper.convertValue(responsePayload, GetDiagnosticsConfirmation.class);
+                    break;
+                case "Reset":
+                    confirmation = objectMapper.convertValue(responsePayload, ResetConfirmation.class);
+                    break;
+                case "ClearCache":
+                    confirmation = objectMapper.convertValue(responsePayload, ClearCacheConfirmation.class);
+                    break;
+                case "GetLocalListVersion":
+                    confirmation = objectMapper.convertValue(responsePayload, GetLocalListVersionConfirmation.class);
+                    break;
+                case "ChangeAvailability":
+                    confirmation = objectMapper.convertValue(responsePayload, ChangeAvailabilityConfirmation.class);
+                    break;
+                case "UpdateFirmware":
+                    confirmation = objectMapper.convertValue(responsePayload, UpdateFirmwareConfirmation.class);
+                    break;
                 default:
                     logger.warn("Acción no soportada o no mapeada: {}", action);
                     future.completeExceptionally(new IllegalStateException("Acción no soportada: " + action));
@@ -2267,6 +2531,7 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
 
             // Crear la confirmación de la respuesta
             DiagnosticsStatusNotificationConfirmation confirmation = new DiagnosticsStatusNotificationConfirmation();
+            logger.info("DiagnosticsStatusNotificationConfirmation creada: {}", confirmation);
 
             // Enviar la confirmación al cliente
             sendResponse(session, webSocketSession, messageId, "DiagnosticsStatusNotification", confirmation);
@@ -2298,7 +2563,13 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                 throw new IllegalArgumentException("DiagnosticsStatusNotificationRequest inválido.");
             }
 
-            logger.info("FirmwareStatusNotification manejado exitosamente para la sesión: {}", session.getSessionId());
+            // Crear la confirmación de la respuesta
+            FirmwareStatusNotificationConfirmation confirmation = new FirmwareStatusNotificationConfirmation();
+            logger.info("FirmwareStatusNotificationConfirmation creada: {}", confirmation);
+
+            // Enviar la confirmación al cliente
+            sendResponse(session, webSocketSession, messageId, "FirmwareStatusNotification", confirmation);
+            logger.info("FirmwareStatusNotification completado exitosamente para la sesión: {}", session.getSessionId());
 
         } catch (IllegalArgumentException e) {
             // Manejar errores de validación
@@ -2309,6 +2580,41 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             logger.error("Error procesando FirmawareNotificationRequest para la sesión: {}",
                     session != null ? session.getSessionId() : "Sesión no disponible", e);
             sendError(session, webSocketSession, messageId, "Error en FirmawareNotificationRequest: " + e.getMessage());
+        }
+    }
+
+    private void handleGetDiagnostics(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // 1. Convertir el payload en un objeto GetDiagnosticsRequest
+            GetDiagnosticsRequest getDiagnosticsRequest = objectMapper.convertValue(requestPayload, GetDiagnosticsRequest.class);
+            logger.info("Solicitud GetDiagnostics recibida: {}", getDiagnosticsRequest);
+
+            // 2. Validar la solicitud si deseas
+            if (!getDiagnosticsRequest.validate()) {
+                throw new IllegalArgumentException("GetDiagnosticsRequest inválido (location es requerido).");
+            }
+
+            // 3. (Opcional) Enviar log a Amazon MQ o lo que necesites
+            jsonServer.sendMessageToMQ("GetDiagnostics request received: " + getDiagnosticsRequest);
+
+            // 4. Opcional: Si la estación manda la request, aquí generas la confirmación...
+            //    Sin embargo, OCPP 1.6 define GetDiagnosticsRequest usualmente inicia del CS -> Charger,
+            //    no al revés, así que a menudo no se maneja este "caso" en el handler de la Estación.
+            //    => Pero supongamos envías una confirmación "vacía" localmente:
+            GetDiagnosticsConfirmation confirmation = new GetDiagnosticsConfirmation();
+            // si hay un "fileName" o algo, se setea acá. Por ejemplo:
+            // confirmation.setFileName("diagnostic_log.txt");
+
+            // 5. Enviar la respuesta
+            sendResponse(session, webSocketSession, messageId, "GetDiagnostics", confirmation);
+            logger.info("GetDiagnostics completado exitosamente para la sesión: {}", session.getSessionId());
+
+        } catch (IllegalArgumentException e) {
+            logger.error("Error en los argumentos de GetDiagnostics: {}", e.getMessage());
+            sendError(session, webSocketSession, messageId, "Error en GetDiagnostics: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error procesando GetDiagnostics para la sesión: {}", session.getSessionId(), e);
+            sendError(session, webSocketSession, messageId, "Error en GetDiagnostics: " + e.getMessage());
         }
     }
 

@@ -3,7 +3,10 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Controller;
 import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Session;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.DiagnosticsFile;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.DiagnosticsFileRepository;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.*;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.ClearCacheStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.RemoteStartStopStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.ResetStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.UnlockStatus;
@@ -14,7 +17,14 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.Re
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.ChargingProfile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.ChargingSchedule;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.MeterValue;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Confirmations.DiagnosticsStatusNotificationConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Confirmations.GetDiagnosticsConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Confirmations.UpdateFirmwareConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Request.GetDiagnosticsRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Request.UpdateFirmwareRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.IniciarCargaRemotaRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.LocalAuthList.Confirmations.GetLocalListVersionConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.LocalAuthList.Request.GetLocalListVersionRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Confirmations.TriggerMessageConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.Enums.TriggerMessageRequestType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.TriggerMessageRequest;
@@ -27,6 +37,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
@@ -50,21 +61,25 @@ public class OcppController {
     @Autowired
     private UtilService utilService;
 
+    @Autowired
+    private DiagnosticsFileRepository diagnosticsFileRepository;
+
     private static final int MAX_KEYS_LIMIT = 20;
 
     private static final Logger logger = LoggerFactory.getLogger(OcppController.class);
 
     private final Map<Long, MeterValuesRequest> latestMeterValuesByConnector = new ConcurrentHashMap<>();
 
-    /** JL **/
     @PostMapping("/iniciar-carga-remota")
-    public ResponseEntity<String> iniciarCargaRemotaEnSimulador(
+    public ResponseEntity<?> iniciarCargaRemotaEnSimulador(
             @RequestParam String chargePointId,
             @RequestBody RemoteStartTransactionRequest request) {
         try {
             if (request == null || request.getIdTag() == null || request.getIdTag().isEmpty()) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El campo 'idTag' es requerido.");
             }
+
+            logger.info("Solicitud para iniciar carga remota recibida. Carcador: {}, idTag: {}", chargePointId, request.getIdTag());
 
             // Obtener el UUID de la sesión asociada al chargePointId
             UUID sessionUUID = webSocketHandler.getSessionIdByChargePointId(chargePointId);
@@ -84,48 +99,62 @@ public class OcppController {
                 return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
             }
 
-            String messageId = UUID.randomUUID().toString();
+            // Enviar la solicitud y obtener el CompletableFuture
+            CompletableFuture<RemoteStartTransactionConfirmation> future = webSocketHandler.sendRemoteStartTransactionRequestAsync(session, webSocketSession, request);
 
-            // Llamar al handler
-            webSocketHandler.handleRemoteStartTransaction(session, webSocketSession, request, messageId);
+            // Esperar la confirmación con un timeout de 10 segundos
+            RemoteStartTransactionConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
 
-            return ResponseEntity.ok("Solicitud de RemoteStartTransaction enviada con éxito para idTag: " + request.getIdTag());
+           logger.info("Solicitud RemoteStartTransaction enviada exitosamente. Session: {}, chargePointId: {}", session, chargePointId);
+            return ResponseEntity.ok(confirmation);
+
         } catch (Exception e) {
             logger.error("Error al enviar RemoteStartTransaction", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno: " + e.getMessage());
         }
     }
 
-    /** JL **/
     @PostMapping("/detener-carga-remota")
-    public ResponseEntity<?> detenerCargaRemotaEnSimulador(@RequestParam String session,
+    public ResponseEntity<?> detenerCargaRemotaEnSimulador(@RequestParam String chargePointId,
                                                            @RequestBody RemoteStopTransactionRequest request) {
         try {
             // 1. Validar parámetros
-            if (session == null || session.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El parámetro 'session' es requerido.");
+            if (chargePointId == null || chargePointId.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El parámetro 'chargePointId' es requerido.");
             }
 
             if (request == null || request.getTransactionId() == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El campo 'transactionId' en el request es requerido.");
             }
 
-            logger.info("Solicitud para detener carga remota recibida. Session: {}, TransactionId: {}", session, request.getTransactionId());
+            logger.info("Solicitud para detener carga remota recibida. Carcador: {}, TransactionId: {}", chargePointId, request.getTransactionId());
 
-            // 2. Obtener sesiones activas
-            Session ocppSession = getSessionOrThrow(session);
-            WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
+            // Obtener el UUID de la sesión asociada al chargePointId
+            UUID sessionUUID = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionUUID == null) {
+                return ResponseEntity.badRequest().body("ChargePointId no encontrado o no está conectado.");
+            }
 
-            // 3. Generar un messageId único
-            String messageId = UUID.randomUUID().toString();
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionUUID.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+            }
 
-            // 4. Llamar al handler para enviar el RemoteStopTransaction
-            webSocketHandler.handleRemoteStopTransaction(ocppSession, webSocketSession, request, messageId);
+            // Obtener la sesión OCPP
+            Session session = webSocketHandler.getSessionById(sessionUUID.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+            }
 
-            logger.info("Solicitud RemoteStopTransaction enviada exitosamente. Session: {}, MessageId: {}", session, messageId);
+            // Enviar la solicitud y obtener el CompletableFuture
+            CompletableFuture<RemoteStopTransactionConfirmation> future = webSocketHandler.sendRemoteStopTransactionRequestAsync(session, webSocketSession,request);
 
-            // 5. Retornar respuesta de éxito
-            return ResponseEntity.ok("Solicitud de detener carga remota enviada correctamente. MessageId: " + messageId);
+            // Esperar la confirmación con un timeout de 10 segundos
+            RemoteStopTransactionConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            logger.info("Solicitud RemoteStopTransaction enviada exitosamente. Session: {}, chargePointId: {}", session, chargePointId);
+            return ResponseEntity.ok(confirmation);
 
         } catch (IllegalArgumentException e) {
             logger.error("Error en los parámetros de la solicitud: {}", e.getMessage());
@@ -136,92 +165,34 @@ public class OcppController {
         }
     }
 
-    @PostMapping("/detener-carga")
-    public ResponseEntity<String> detenerCarga() {
-        try {
-            log.info("Deteniendo carga en el simulador");
-
-            // Llamar al servicio para comunicar al simulador
-            utilService.detenerCargaEnSimulador();
-
-            return ResponseEntity.ok("Carga detenida con éxito");
-        } catch (Exception e) {
-            log.error("Error deteniendo la carga: {}", e.getMessage());
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error deteniendo la carga");
-        }
-    }
-
     @PostMapping("/change-configuration")
-    public ResponseEntity<?> changeConfiguration(@RequestBody Map<String, Object> payload) {
-        logger.info("Solicitud recibida: {}", payload);
+    public ResponseEntity<?> changeConfiguration(@RequestParam String chargePointId,
+                                                 @RequestBody ChangeConfigurationRequest request) {
+
+        // Obtener el UUID de la sesión asociada al chargePointId
+        UUID sessionUUID = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+        if (sessionUUID == null) {
+            return ResponseEntity.badRequest().body("ChargePointId no encontrado o no está conectado.");
+        }
+
+        // Obtener la WebSocketSession asociada
+        WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionUUID.toString());
+        if (webSocketSession == null || !webSocketSession.isOpen()) {
+            return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+        }
+
+        // Obtener la sesión OCPP
+        Session session = webSocketHandler.getSessionById(sessionUUID.toString());
+        if (session == null) {
+            return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+        }
 
         try {
-            // Extraer los parámetros
-            String chargePointId = (String) payload.get("chargePointId");
-            String key = (String) payload.get("key");
-            String value = (String) payload.get("value");
+            // Enviar la solicitud y obtener el CompletableFuture
+            CompletableFuture<ChangeConfigurationConfirmation> future = webSocketHandler.sendChangeConfigurationRequestAsync(session, webSocketSession, request);
 
-            // Validar parámetros obligatorios
-            if (chargePointId == null || key == null || value == null) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                        .body("Faltan parámetros obligatorios: chargePointId, key o value.");
-            }
-
-            // Obtener la sesión
-            UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
-            if (sessionId == null) {
-                logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
-            }
-
-            Session session = sessionStore.get(sessionId);
-            WebSocketSession webSocketSession = webSocketSessionStorage.get(sessionId);
-
-            if (session == null || webSocketSession == null || !webSocketSession.isOpen()) {
-                logger.error("La sesión para chargePointId {} no está activa.", chargePointId);
-                return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                        .body("La sesión para chargePointId " + chargePointId + " no está activa.");
-            }
-
-            // Crear la solicitud ChangeConfigurationRequest
-            ChangeConfigurationRequest request = new ChangeConfigurationRequest();
-            request.setKey(key);
-            request.setValue(value);
-
-            String messageId = UUID.randomUUID().toString();
-
-            // Enviar la solicitud a la Estación de Carga
-            CompletableFuture<Confirmation> futureResponse = session.sendRemoteStartTransaction("ChangeConfiguration", request, messageId);
-
-            // Manejar la respuesta asincrónicamente
-            futureResponse.whenComplete((confirmation, error) -> {
-                if (error != null) {
-                    logger.error("Error al recibir la confirmación para ChangeConfiguration: {}", error.getMessage(), error);
-                    try {
-                        webSocketHandler.sendError(session, webSocketSession, messageId, "Error en ChangeConfiguration: " + error.getMessage());
-                    } catch (IOException ioException) {
-                        logger.error("Error enviando error al cliente: {}", ioException.getMessage(), ioException);
-                    }
-                } else {
-                    try {
-                        if (confirmation instanceof ChangeConfigurationConfirmation) {
-                            ChangeConfigurationConfirmation changeConfigConfirmation = (ChangeConfigurationConfirmation) confirmation;
-                            logger.info("ChangeConfigurationConfirmation recibida: {}", changeConfigConfirmation);
-
-                            // Procesar la respuesta según sea necesario
-                            // Por ejemplo, verificar si el cambio fue aceptado o rechazado
-
-                            // Opcionalmente, enviar la respuesta al cliente que inició la solicitud
-                        } else {
-                            logger.warn("Tipo de confirmación inesperado: {}", confirmation);
-                            webSocketHandler.sendError(session, webSocketSession, messageId, "Error: Confirmación inesperada para ChangeConfiguration.");
-                        }
-                    } catch (IOException e) {
-                        logger.error("Error enviando respuesta al cliente: {}", e.getMessage(), e);
-                    }
-                }
-            });
+            // Esperar la confirmación con un timeout de 10 segundos
+            ChangeConfigurationConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
 
             logger.info("ChangeConfigurationRequest enviado a chargePointId: {}", chargePointId);
             return ResponseEntity.ok("ChangeConfigurationRequest enviado con éxito a chargePointId: " + chargePointId);
@@ -406,19 +377,8 @@ public class OcppController {
             // Enviar la solicitud TriggerMessage de manera asíncrona y obtener el Future de la confirmación
             CompletableFuture<TriggerMessageConfirmation> future = webSocketHandler.handleDiagnosticsStatusNotificationTrigger(session, webSocketSession, request);
 
-            // Esperar la confirmación con timeout de 10 segundos
-            TriggerMessageConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+            return ResponseEntity.ok("Solicitud de DiagnosticsStatusNotification enviada con éxito.");
 
-            // Responder con la confirmación recibida
-            return ResponseEntity.ok(confirmation);
-
-        } catch (TimeoutException e) {
-            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT)
-                    .body("Timeout esperando TriggerMessageConfirmation.");
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body("El hilo fue interrumpido.");
         } catch (IOException e) {
             logger.error("Error al enviar TriggerMessageRequest", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -632,32 +592,37 @@ public class OcppController {
         }
     }
 
-    /** JL **/
     @PostMapping("/reset-cargador")
-    public ResponseEntity<String> resetCargador(@RequestBody ResetRequest resetRequest, @RequestParam String session) {
+    public ResponseEntity<String> resetCargador(@RequestParam String chargePointId,
+                                                @RequestBody ResetRequest resetRequest) {
         try {
             // Validar parámetros
             if (resetRequest == null || resetRequest.getType() == null) {
                 return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El campo 'type' es requerido (Hard o Soft).");
             }
 
-            if (session == null || session.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("El parámetro 'session' es requerido.");
+            UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionId == null) {
+                logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
             }
 
-            logger.info("Reseteando Cargador con session: {}. Tipo de reset: {}", session, resetRequest.getType());
+            Session session = WebSocketHandler.sessionStore.get(sessionId);
+            WebSocketSession webSocketSession = WebSocketHandler.webSocketSessionStorage.get(sessionId);
 
-            // Obtener sesiones activas
-            Session ocppSession = getSessionOrThrow(session);
-            WebSocketSession webSocketSession = getWebSocketSessionOrThrow(session);
+            if (session == null || webSocketSession == null || !webSocketSession.isOpen()) {
+                logger.error("La sesión para chargePointId {} no está activa.", chargePointId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("La sesión para chargePointId " + chargePointId + " no está activa.");
+            }
+            // Llamar a sendResetRequestAsync
+            CompletableFuture<ResetConfirmation> future =
+                    webSocketHandler.sendResetRequestAsync(session, webSocketSession, resetRequest);
 
-            // Generar messageId único
-            String messageId = UUID.randomUUID().toString();
+            ResetConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
 
-            // Llamar al handler
-            webSocketHandler.handleReset(ocppSession, webSocketSession, resetRequest, messageId);
-
-            return ResponseEntity.ok("Solicitud de Reset enviada con éxito. Tipo: " + resetRequest.getType());
+            return ResponseEntity.ok("ResetConfirmation recibido: " + confirmation);
 
         } catch (Exception e) {
             logger.error("Error al enviar la solicitud de Reset", e);
@@ -665,20 +630,60 @@ public class OcppController {
         }
     }
 
-    private Session getSessionOrThrow(String sessionId) {
-        Session ocppSession = webSocketHandler.getSessionById(sessionId);
-        if (ocppSession == null) {
-            throw new IllegalArgumentException("No se encontró la sesión OCPP para ID: " + sessionId);
-        }
-        return ocppSession;
-    }
+    @PostMapping("/getDiagnostics")
+    public ResponseEntity<?> getDiagnostics(
+            @RequestParam String chargePointId,
+            @RequestBody GetDiagnosticsRequest request
+    ) {
+        try {
+            // Validar que el chargePointId y la request sean correctos
+            if (chargePointId == null || chargePointId.isEmpty()) {
+                return ResponseEntity.badRequest().body("El parámetro 'chargePointId' es requerido.");
+            }
+            if (!request.validate()) {
+                return ResponseEntity.badRequest().body("GetDiagnosticsRequest inválido: 'location' es obligatorio.");
+            }
 
-    private WebSocketSession getWebSocketSessionOrThrow(String sessionId) {
-        WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionId);
-        if (webSocketSession == null) {
-            throw new IllegalArgumentException("No se encontró la sesión WebSocket para ID: " + sessionId);
+            // Obtener la sesión OCPP
+            UUID sessionUUID = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionUUID == null) {
+                logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+            }
+
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionUUID.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+            }
+
+            // Obtener la Session OCPP
+            Session session = webSocketHandler.getSessionById(sessionUUID.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada para chargePointId: " + chargePointId);
+            }
+
+            // Llamar a sendGetDiagnosticsRequestAsync
+            CompletableFuture<GetDiagnosticsConfirmation> future =
+                    webSocketHandler.sendGetDiagnosticsRequestAsync(session, webSocketSession, request);
+
+            // Esperar la confirmación con un timeout (p.e. 10 segundos)
+            GetDiagnosticsConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            logger.info("GetDiagnosticsConfirmation recibido: {}", confirmation);
+            return ResponseEntity.ok(confirmation);
+
+        } catch (TimeoutException e) {
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body("Timeout esperando GetDiagnosticsConfirmation.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("El hilo fue interrumpido.");
+        } catch (Exception e) {
+            logger.error("Error procesando la solicitud GetDiagnostics", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error interno: " + e.getMessage());
         }
-        return webSocketSession;
     }
 
     @GetMapping("/get-session-by-idTag")
@@ -714,5 +719,207 @@ public class OcppController {
         // Agregar más asociaciones según sea necesario
         return idTagToSessionMap;
     }
+
+    /**
+     * Recibe el archivo de diagnóstico en formato binario y lo persiste en la base de datos.
+     *
+     * @param fileData bytes del archivo subido (por la estación o algún cliente).
+     * @return Mensaje indicando el resultado de la operación.
+     */
+    @PostMapping(consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ResponseEntity<String> handleDiagnosticsUpload(@RequestBody byte[] fileData) {
+        try {
+            if (fileData == null || fileData.length == 0) {
+                return ResponseEntity.badRequest().body("No se recibió ningún archivo de diagnóstico.");
+            }
+
+            DiagnosticsFile newFile = new DiagnosticsFile();
+            newFile.setCreatedAt(LocalDateTime.now());
+            newFile.setFileData(fileData);
+
+            // Guardar en la DB
+            diagnosticsFileRepository.save(newFile);
+
+            return ResponseEntity.ok("Archivo de diagnóstico recibido y almacenado en la DB con ID: " + newFile.getId());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al guardar el archivo en la base de datos: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/clear-cache")
+    public ResponseEntity <?> clearCache   (@RequestParam String chargePointId,
+                                            @RequestBody ClearCacheRequest request) {
+        try {
+
+            if (!request.validate()) {
+                return ResponseEntity.badRequest().body("ClearCacheRequest inválido");
+            }
+
+            // Obtener el UUID de la sesión asociada al chargePointId
+            UUID sessionUUID = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionUUID == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+            }
+
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionUUID.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+            }
+
+            // Obtener la sesión OCPP
+            Session session = webSocketHandler.getSessionById(sessionUUID.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+            }
+
+            // Enviar la solicitud y obtener el CompletableFuture
+            CompletableFuture<ClearCacheConfirmation> future =
+                    webSocketHandler.sendClearCacheRequestAsync(session, webSocketSession, request);
+
+            ClearCacheConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            if (confirmation.getStatus() != ClearCacheStatus.Accepted) {
+                return ResponseEntity.badRequest().body("ClearCacheRequest no fue aceptado por el cargador.");
+            }
+
+            logger.info("ClearCacheConfirmation recibido: {}", confirmation);
+            return ResponseEntity.ok(confirmation);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al limpiar el cache: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/get-local-list-version")
+    public ResponseEntity<?> getLocalListVersion(@RequestParam String chargePointId,
+                                                 @RequestBody GetLocalListVersionRequest request) {
+        try {
+            // Obtener el UUID de la sesión asociada al chargePointId
+            UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionId == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+            }
+
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionId.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+            }
+
+            // Obtener la sesión OCPP
+            Session session = webSocketHandler.getSessionById(sessionId.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+            }
+
+            // Enviar la solicitud y obtener el CompletableFuture
+            CompletableFuture<GetLocalListVersionConfirmation> future =
+                    webSocketHandler.sendGetLocalListVersionRequestAsync(session, webSocketSession,request);
+
+            // Esperar la confirmación con un timeout de 10 segundos
+            GetLocalListVersionConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            logger.info("GetLocalListVersionConfirmation recibido: {}", confirmation);
+            return ResponseEntity.ok(confirmation);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al obtener la versión de la lista local: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/change-availability")
+    public ResponseEntity<?> changeAvailability(@RequestParam String chargePointId,
+                                                @RequestBody ChangeAvailabilityRequest request) {
+        try {
+            // Validar el request
+            if (!request.validate()) {
+                return ResponseEntity.badRequest().body("ChangeAvailabilityRequest inválido.");
+            }
+
+            // Obtener el UUID de la sesión asociada al chargePointId
+            UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionId == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+            }
+
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionId.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+            }
+
+            // Obtener la sesión OCPP
+            Session session = webSocketHandler.getSessionById(sessionId.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+            }
+
+            // Enviar la solicitud y obtener el CompletableFuture
+            CompletableFuture<ChangeAvailabilityConfirmation> future =
+                    webSocketHandler.sendChangeAvailabilityRequestAsync(session, webSocketSession, request);
+
+            // Esperar la confirmación con un timeout de 10 segundos
+            ChangeAvailabilityConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            logger.info("ChangeAvailabilityConfirmation recibido: {}", confirmation);
+            return ResponseEntity.ok(confirmation);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al cambiar la disponibilidad: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/update-firmware")
+    public ResponseEntity<?> updateFirmware(@RequestParam String chargePointId,
+                                            @RequestBody UpdateFirmwareRequest request) {
+        try {
+            // Validar el request
+            if (!request.validate()) {
+                return ResponseEntity.badRequest().body("UpdateFirmwareRequest inválido.");
+            }
+
+            // Obtener el UUID de la sesión asociada al chargePointId
+            UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionId == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+            }
+
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionId.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+            }
+
+            // Obtener la sesión OCPP
+            Session session = webSocketHandler.getSessionById(sessionId.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+            }
+
+            // Enviar la solicitud y obtener el CompletableFuture
+            CompletableFuture<UpdateFirmwareConfirmation> future =
+                    webSocketHandler.sendUpdateFirmwareRequestAsync(session, webSocketSession, request);
+
+            // Esperar la confirmación con un timeout de 10 segundos
+            UpdateFirmwareConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            logger.info("UpdateFirmwareConfirmation recibido: {}", confirmation);
+            return ResponseEntity.ok(confirmation);
+
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al actualizar el firmware: " + e.getMessage());
+        }
+    }
+
 
 }
