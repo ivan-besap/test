@@ -29,11 +29,17 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Request.Firmw
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Request.GetDiagnosticsRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Request.UpdateFirmwareRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.LocalAuthList.Confirmations.GetLocalListVersionConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.LocalAuthList.Confirmations.SendLocalListConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.LocalAuthList.Request.GetLocalListVersionRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.LocalAuthList.Request.SendLocalListRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Confirmations.Enums.TriggerMessageStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Confirmations.TriggerMessageConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.Enums.TriggerMessageRequestType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.TriggerMessageRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Reservation.Confirmations.CancelReservationConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Reservation.Confirmations.ReserveNowConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Reservation.Request.CancelReservationRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Reservation.Request.ReserveNowRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Confirmations.SecurityEventNotificationConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Request.SecurityEventNotificationRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirmations.ClearChargingProfileConfirmation;
@@ -545,9 +551,6 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                 break;
             case "FirmwareStatusNotification":
                 handleFirmwareStatusNotification(session, webSocketSession, requestPayload, messageId);
-                break;
-            case "GetDiagnostics":
-                handleGetDiagnostics(session, webSocketSession, requestPayload, messageId);
                 break;
             default:
                 logger.warn("Acción no soportada_: {}", action);
@@ -2417,6 +2420,210 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         return future;
     }
 
+    public CompletableFuture<DataTransferConfirmation> sendDataTransferRequestAsync(Session session, WebSocketSession webSocketSession, DataTransferRequest request) throws IOException {
+
+        // Generar un messageId único para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+
+        // Crear un CompletableFuture para esperar la confirmación
+        CompletableFuture<DataTransferConfirmation> future = new CompletableFuture<>();
+
+        //Registrar el CompletableFuture para esperar la confirmación
+        session.registerPendingPromise(messageId, "DataTransfer", (CompletableFuture) future);
+
+        //Serializar el payload a JSON
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2,messageId,"DataTransfer",request});
+
+        //Enviar la solicitud a traves de la sesion OCPP
+        session.sendTextMessage(requestJson,webSocketSession);
+        logger.info("DataTransferRequest enviado para la sesión: {}", session.getSessionId());
+
+        return future;
+    }
+
+    public CompletableFuture<SendLocalListConfirmation> sendSendLocalListRequestAsync(Session session, WebSocketSession webSocketSession, SendLocalListRequest request) throws IOException {
+        // Generar un messageId único para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando SendLocalListRequest con messageId: {}", messageId);
+
+        // Crear un CompletableFuture para manejar la confirmación
+        CompletableFuture<SendLocalListConfirmation> future = new CompletableFuture<>();
+
+        // Registrar la promesa pendiente en el mapa de la sesión
+        session.registerPendingPromise(messageId, "SendLocalList", (CompletableFuture) future);
+        logger.debug("Stored CompletableFuture for messageId: {}", messageId);
+
+        // Validar la solicitud antes de enviarla
+        if (!request.validate()) {
+            logger.error("SendLocalListRequest inválido: listVersion y UpdateType son requeridos.");
+            sendError(session, webSocketSession, messageId, "SendLocalListRequest inválido: listVersion y UpdateType son requeridos.");
+            future.completeExceptionally(new IllegalArgumentException("SendLocalListRequest inválido"));
+            return future;
+        }
+
+        // Serializar la solicitud a JSON con la estructura OCPP correcta
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "SendLocalList", request});
+        logger.info("Enviando SendLocalListRequest: {}", requestJson);
+
+        // Enviar la solicitud a través de la sesión OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("SendLocalListRequest enviado para messageId: {}", messageId);
+
+        return future;
+    }
+
+    public CompletableFuture<GetCompositeScheduleConfirmation> sendGetCompositeScheduleRequestAsync(Session session, WebSocketSession webSocketSession, GetCompositeScheduleRequest request) throws IOException {
+        // Generar un messageId único para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando GetCompositeScheduleRequest con messageId: {}", messageId);
+
+        // Crear un CompletableFuture para manejar la confirmación
+        CompletableFuture<GetCompositeScheduleConfirmation> future = new CompletableFuture<>();
+
+        // Registrar la promesa pendiente en el mapa de la sesión
+        session.registerPendingPromise(messageId, "GetCompositeSchedule", (CompletableFuture) future);
+        logger.debug("Stored CompletableFuture for messageId: {}", messageId);
+
+        // Validar la solicitud antes de enviarla
+        if (!request.validate()) {
+            logger.error("GetCompositeScheduleRequest inválido: connectorId y duration son requeridos.");
+            sendError(session, webSocketSession, messageId, "GetCompositeScheduleRequest inválido: connectorId y duration son requeridos.");
+            future.completeExceptionally(new IllegalArgumentException("GetCompositeScheduleRequest inválido"));
+            return future;
+        }
+
+        // Serializar la solicitud a JSON con la estructura OCPP correcta
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "GetCompositeSchedule", request});
+        logger.info("Enviando GetCompositeScheduleRequest: {}", requestJson);
+
+        // Enviar la solicitud a través de la sesión OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("GetCompositeScheduleRequest enviado para messageId: {}", messageId);
+
+        return future;
+    }
+
+    public CompletableFuture<ClearChargingProfileConfirmation> sendClearChargingProfileRequestAsync(Session session, WebSocketSession webSocketSession, ClearChargingProfileRequest request) throws IOException {
+        // Generar un messageId único para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando ClearChargingProfileRequest con messageId: {}", messageId);
+
+        // Crear un CompletableFuture para manejar la confirmación
+        CompletableFuture<ClearChargingProfileConfirmation> future = new CompletableFuture<>();
+
+        // Registrar la promesa pendiente en el mapa de la sesión
+        session.registerPendingPromise(messageId, "ClearChargingProfile", (CompletableFuture) future);
+        logger.debug("Stored CompletableFuture for messageId: {}", messageId);
+
+        // Validar la solicitud antes de enviarla
+        if (!request.validate()) {
+            logger.error("ClearChargingProfileRequest inválido: connectorId y chargingProfilePurpose son requeridos.");
+            future.completeExceptionally(new IllegalArgumentException("ClearChargingProfileRequest inválido"));
+            return future;
+        }
+
+        // Serializar la solicitud a JSON con la estructura OCPP correcta
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "ClearChargingProfile", request});
+        logger.info("Enviando ClearChargingProfileRequest: {}", requestJson);
+
+        // Enviar la solicitud a través de la sesión OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("ClearChargingProfileRequest enviado para messageId: {}", messageId);
+
+        return future;
+    }
+
+    public CompletableFuture<SetChargingProfileConfirmation> sendSetChargingProfileRequestAsync(Session session, WebSocketSession webSocketSession, SetChargingProfileRequest request) throws IOException {
+        // Generar un messageId único para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando SetChargingProfileRequest con messageId: {}", messageId);
+
+        // Crear un CompletableFuture para manejar la confirmación
+        CompletableFuture<SetChargingProfileConfirmation> future = new CompletableFuture<>();
+
+        // Registrar la promesa pendiente en el mapa de la sesión
+        session.registerPendingPromise(messageId, "SetChargingProfile", (CompletableFuture) future);
+        logger.debug("Stored CompletableFuture for messageId: {}", messageId);
+
+        // Validar la solicitud antes de enviarla
+        if (!request.validate()) {
+            logger.error("SetChargingProfileRequest inválido: connectorId, chargingProfile y stackLevel son requeridos.");
+            future.completeExceptionally(new IllegalArgumentException("SetChargingProfileRequest inválido"));
+            return future;
+        }
+
+        // Serializar la solicitud a JSON con la estructura OCPP correcta
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2,messageId,"SetChargingProfile",request});
+        logger.debug("SetChargingProfileRequest serializado a JSON: {}", requestJson);
+
+        // Enviar la solicitud a través de la sesión OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("SetChargingProfileRequest enviado a través de la sesión: {}", session.getSessionId());
+
+        return future;
+
+    }
+
+    public CompletableFuture<CancelReservationConfirmation> sendCancelReservationRequestAsync(Session session, WebSocketSession webSocketSession, CancelReservationRequest request) throws IOException {
+
+        // Generar un messageId único para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando CancelReservationRequest con messageId: {}", messageId);
+
+        // Crear un CompletableFuture para esperar la confirmación
+        CompletableFuture<CancelReservationConfirmation> future = new CompletableFuture<>();
+
+        // Registrar la promesa pendiente en el mapa de la sesión
+        session.registerPendingPromise(messageId, "CancelReservation", (CompletableFuture) future);
+        logger.debug("Registrando promesa pendiente para messageId: {}", messageId);
+
+        // Validar la solicitud antes de enviarla
+        if (!request.validate()) {
+            future.completeExceptionally(new IllegalArgumentException("CancelReservationRequest inválido."));
+            return future;
+        }
+
+        // Serializar la solicitud a JSON con la estructura OCPP correcta
+        String requestJson = objectMapper.writeValueAsString(new Object[] {2, messageId, "CancelReservation" , request});
+        logger.debug("CancelReservationRequest serializado a JSON: {}", requestJson);
+
+        // Enviar la solicitud a través de la sesión OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("CancelReservationRequest enviado a través de la sesión OCPP.");
+
+        return future;
+    }
+
+    public CompletableFuture<ReserveNowConfirmation> sendReserveNowRequestAsync(Session session, WebSocketSession webSocketSession, ReserveNowRequest request) throws IOException {
+        // Generar un messageId único para esta solicitud
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando ReserveNowRequest con messageId: {}", messageId);
+
+        // Crear un CompletableFuture para manejar la confirmación
+        CompletableFuture<ReserveNowConfirmation> future = new CompletableFuture<>();
+
+        // Registrar la promesa pendiente en el mapa de la sesión
+        session.registerPendingPromise(messageId, "ReserveNow", (CompletableFuture) future);
+        logger.debug("Stored CompletableFuture for messageId: {}", messageId);
+
+        // Validar la solicitud antes de enviarla
+        if (!request.validate()) {
+            logger.error("ReserveNowRequest inválido: connectorId, expiryDate y idTag son requeridos.");
+            future.completeExceptionally(new IllegalArgumentException("ReserveNowRequest inválido"));
+            return future;
+        }
+
+        // Serializar la solicitud a JSON con la estructura OCPP correcta
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "ReserveNow", request});
+        logger.info("Enviando ReserveNowRequest: {}", requestJson);
+
+        // Enviar la solicitud a través de la sesión OCPP
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("ReserveNowRequest enviado para messageId: {}", messageId);
+
+        return future;
+    }
+
     /**
      * Maneja la recepción de CallResult y completa el CompletableFuture correspondiente.
      *
@@ -2482,6 +2689,27 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                 case "UpdateFirmware":
                     confirmation = objectMapper.convertValue(responsePayload, UpdateFirmwareConfirmation.class);
                     break;
+                case "DataTransfer":
+                    confirmation = objectMapper.convertValue(responsePayload, DataTransferConfirmation.class);
+                    break;
+                case "SendLocalList":
+                    confirmation = objectMapper.convertValue(responsePayload, SendLocalListConfirmation.class);
+                    break;
+                case "GetCompositeSchedule":
+                    confirmation = objectMapper.convertValue(responsePayload, GetCompositeScheduleConfirmation.class);
+                    break;
+                case "ClearChargingProfile":
+                    confirmation = objectMapper.convertValue(responsePayload, ClearChargingProfileConfirmation.class);
+                    break;
+                case "SetChargingProfile":
+                    confirmation = objectMapper.convertValue(responsePayload, SetChargingProfileConfirmation.class);
+                    break;
+                case "CancelReservation":
+                    confirmation = objectMapper.convertValue(responsePayload, CancelReservationConfirmation.class);
+                    break;
+                case "ReserveNow":
+                    confirmation = objectMapper.convertValue(responsePayload, ReserveNowConfirmation.class);
+                    break;
                 default:
                     logger.warn("Acción no soportada o no mapeada: {}", action);
                     future.completeExceptionally(new IllegalStateException("Acción no soportada: " + action));
@@ -2502,10 +2730,6 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             future.completeExceptionally(e);
         }
     }
-
-
-
-
 
     private void handleCallError(Session session, String messageId, String errorCode, String errorDescription, Object errorDetails) {
         CompletableFuture<GetConfigurationConfirmation> future = getConfigFutures.remove(messageId);
@@ -2549,8 +2773,6 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         }
     }
 
-
-
     private void handleFirmwareStatusNotification(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
 
         try {
@@ -2583,40 +2805,7 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         }
     }
 
-    private void handleGetDiagnostics(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
-        try {
-            // 1. Convertir el payload en un objeto GetDiagnosticsRequest
-            GetDiagnosticsRequest getDiagnosticsRequest = objectMapper.convertValue(requestPayload, GetDiagnosticsRequest.class);
-            logger.info("Solicitud GetDiagnostics recibida: {}", getDiagnosticsRequest);
 
-            // 2. Validar la solicitud si deseas
-            if (!getDiagnosticsRequest.validate()) {
-                throw new IllegalArgumentException("GetDiagnosticsRequest inválido (location es requerido).");
-            }
-
-            // 3. (Opcional) Enviar log a Amazon MQ o lo que necesites
-            jsonServer.sendMessageToMQ("GetDiagnostics request received: " + getDiagnosticsRequest);
-
-            // 4. Opcional: Si la estación manda la request, aquí generas la confirmación...
-            //    Sin embargo, OCPP 1.6 define GetDiagnosticsRequest usualmente inicia del CS -> Charger,
-            //    no al revés, así que a menudo no se maneja este "caso" en el handler de la Estación.
-            //    => Pero supongamos envías una confirmación "vacía" localmente:
-            GetDiagnosticsConfirmation confirmation = new GetDiagnosticsConfirmation();
-            // si hay un "fileName" o algo, se setea acá. Por ejemplo:
-            // confirmation.setFileName("diagnostic_log.txt");
-
-            // 5. Enviar la respuesta
-            sendResponse(session, webSocketSession, messageId, "GetDiagnostics", confirmation);
-            logger.info("GetDiagnostics completado exitosamente para la sesión: {}", session.getSessionId());
-
-        } catch (IllegalArgumentException e) {
-            logger.error("Error en los argumentos de GetDiagnostics: {}", e.getMessage());
-            sendError(session, webSocketSession, messageId, "Error en GetDiagnostics: " + e.getMessage());
-        } catch (Exception e) {
-            logger.error("Error procesando GetDiagnostics para la sesión: {}", session.getSessionId(), e);
-            sendError(session, webSocketSession, messageId, "Error en GetDiagnostics: " + e.getMessage());
-        }
-    }
 
 
 //    private void sendMeterValuesToClient(WebSocketSession webSocketSession, String meterValuesJson) throws IOException {
