@@ -3,6 +3,7 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.RequestWithId;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.ChargingProfile;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
  *     }
  * </pre>
  */
+@JsonIgnoreProperties({"action", "sessionIndex"})
 @XmlRootElement
 @XmlType(propOrder = {"connectorId", "idTag", "chargingProfile"})
 public class RemoteStartTransactionRequest extends RequestWithId {
