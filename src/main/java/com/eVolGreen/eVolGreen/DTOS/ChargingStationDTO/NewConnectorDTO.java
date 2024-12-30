@@ -20,7 +20,7 @@ public class NewConnectorDTO {
     private TypeConnector tipoConector;
 
     @NotNull(message = "El N° de Conector es obligatorio")
-    private String nConector;
+    private Integer nConector;
 
     @NotNull(message = "El Voltaje Maximo es obligatorio")
     private BigDecimal voltajeMaximo;
@@ -69,7 +69,7 @@ public class NewConnectorDTO {
         return tipoConector;
     }
 
-    public @NotNull(message = "El N° de Conector es obligatorio") String getnConector() {
+    public @NotNull(message = "El N° de Conector es obligatorio") Integer getnConector() {
         return nConector;
     }
 

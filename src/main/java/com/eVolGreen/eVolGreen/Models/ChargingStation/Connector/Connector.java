@@ -32,7 +32,7 @@ public class Connector {
     private TypeConnector tipoConector;
 
     @NotNull(message = "El N° de Conector es obligatorio")
-    private String NConector;
+    private Integer NConector;
 
     @NotNull(message = "El Voltaje Maximo es obligatorio")
     @Column(name = "Voltaje_Maximo")
@@ -72,7 +72,7 @@ public class Connector {
 
     public Connector() { }
 
-    public Connector(String Alias, TypeConnector TipoConector, String NConector, BigDecimal VoltajeMaximo, BigDecimal PotenciaMaxima, BigDecimal CorrienteMaxima, Charger cargador, ChargingStation terminal, Fee tarifa, ConnectorStatus EstadoConector, boolean Activo) {
+    public Connector(String Alias, TypeConnector TipoConector, Integer NConector, BigDecimal VoltajeMaximo, BigDecimal PotenciaMaxima, BigDecimal CorrienteMaxima, Charger cargador, ChargingStation terminal, Fee tarifa, ConnectorStatus EstadoConector, boolean Activo) {
         this.Alias = Alias;
         this.tipoConector = TipoConector;
         this.NConector = NConector;
@@ -110,11 +110,11 @@ public class Connector {
         this.tipoConector = tipoConector;
     }
 
-    public @NotNull(message = "El N° de Conector es obligatorio") String getNConector() {
+    public @NotNull(message = "El N° de Conector es obligatorio") Integer getNConector() {
         return NConector;
     }
 
-    public void setNConector(@NotNull(message = "El N° de Conector es obligatorio") String NConector) {
+    public void setNConector(@NotNull(message = "El N° de Conector es obligatorio") Integer NConector) {
         this.NConector = NConector;
     }
 
