@@ -1,5 +1,7 @@
 package com.eVolGreen.eVolGreen.Configurations.MQ;
 
+import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
+import com.eVolGreen.eVolGreen.Models.Ocpp.CargasOcpp;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.UnsupportedFeatureException;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
@@ -51,6 +53,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirma
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.ClearChargingProfileRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.GetCompositeScheduleRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.SetChargingProfileRequest;
+import com.eVolGreen.eVolGreen.Repositories.CargasOcppRepository;
+import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -70,6 +74,7 @@ import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -116,6 +121,11 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
     private static final Map<String, UUID> chargePointIdToSessionIdMap = new ConcurrentHashMap<>();
     private final Map<String, Long> sessionLastPingTime = new ConcurrentHashMap<>();
     private final Map<String, CompletableFuture<GetConfigurationConfirmation>> getConfigFutures = new ConcurrentHashMap<>();
+
+    private static final Map<String, String> authorizedIdTags = new ConcurrentHashMap<>();
+
+    private CargasOcppRepository cargasOcppRepository;
+    private DeviceIdentifierRepository deviceIdentifierRepository;
 
 
 
@@ -999,19 +1009,38 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         try {
             // Convierte el payload en una instancia de AuthorizeRequest
             AuthorizeRequest authorizeRequest = objectMapper.convertValue(requestPayload, AuthorizeRequest.class);
+            String idTag = authorizeRequest.getIdTag();
 
             // Enviar mensaje de log a Amazon MQ
-            jsonServer.sendMessageToMQ("Authorize request received for idTag: " + authorizeRequest.getIdTag());
+            jsonServer.sendMessageToMQ("Authorize request received for idTag: " + idTag);
+
+            DeviceIdentifier deviceIdentifier = deviceIdentifierRepository.findByRFID(idTag);
+
 
             // Configurar la respuesta de confirmación con la lógica de negocio
             IdTagInfo idTagInfo = new IdTagInfo();
-            idTagInfo.setStatus(AuthorizationStatus.Accepted);  // Estado aceptado por defecto
-            idTagInfo.setExpiryDate(ZonedDateTime.now().plusDays(30)); // Expira en 30 días
+
+            if (deviceIdentifier == null) {
+                // Si no existe el idTag, marcar como Invalid
+                idTagInfo.setStatus(AuthorizationStatus.Invalid);
+            } else {
+                // Verificar si es usable
+                if (!deviceIdentifier.getUsable()) {
+                    idTagInfo.setStatus(AuthorizationStatus.Blocked);
+                } else if (deviceIdentifier.getFechaExpiracion().isBefore(LocalDate.now())) {
+                    // Verificar si la fecha de expiración ha pasado
+                    idTagInfo.setStatus(AuthorizationStatus.Expired);
+                } else {
+                    // Si todo es válido, aceptamos
+                    idTagInfo.setStatus(AuthorizationStatus.Accepted);
+                    authorizedIdTags.put(session.getChargePointId(), idTag);
+                    logger.info("idTag autorizada asociada al chargePointId: {}", session.getChargePointId());
+                }
+            }
 
             // Crear y configurar el objeto de confirmación
             AuthorizeConfirmation confirmation = new AuthorizeConfirmation();
             confirmation.setIdTagInfo(idTagInfo);
-
             // Enviar la respuesta a través de la sesión OCPP
             sendResponse(session, webSocketSession, messageId, "Authorize", confirmation);
             logger.info("Authorize completado exitosamente para la sesión: {}", session.getSessionId());
@@ -1021,6 +1050,9 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             logger.error("Error procesando Authorize para la sesión: {}", session.getSessionId(), e);
             sendError(session,webSocketSession,messageId, "Internal server error");
         }
+    }
+    public String getAuthorizedIdTag(String chargePointId) {
+        return authorizedIdTags.get(chargePointId);
     }
 
 //10
@@ -1182,6 +1214,7 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             jsonServer.sendMessageToMQ("Start Transaction request received for Connector ID: " + startTransactionRequest.getConnectorId());
             logger.info("Mensaje enviado a Amazon MQ para StartTransaction: Connector ID {}", startTransactionRequest.getConnectorId());
 
+            int transactionId = new Random().nextInt(99999);
             // Configurar la respuesta
             IdTagInfo idTagInfo = new IdTagInfo();
             idTagInfo.setStatus(AuthorizationStatus.Accepted);
@@ -1189,7 +1222,20 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
 
             StartTransactionConfirmation confirmation = new StartTransactionConfirmation();
             confirmation.setIdTagInfo(idTagInfo);
-            confirmation.setTransactionId(new Random().nextInt(99999));
+            confirmation.setTransactionId(transactionId);
+
+            CargasOcpp carga = cargasOcppRepository.findByOcppIdAndNumeroConectorAndActivo(
+                    session.getChargePointId(),
+                    startTransactionRequest.getConnectorId(),
+                    true
+            );
+            if (carga != null) {
+                carga.setTransaccionId(transactionId);
+                cargasOcppRepository.save(carga);
+                logger.info("TransactionId actualizado en la base de datos para ocppId: {}, connectorId: {}", session.getChargePointId(), startTransactionRequest.getConnectorId());
+            } else {
+                logger.warn("No se encontró un registro para actualizar el TransactionId");
+            }
 
             // Enviar la respuesta al cliente
             sendResponse(session, webSocketSession, messageId, "StartTransaction", confirmation);

@@ -87,4 +87,13 @@ public class ChargerServiceImplement implements ChargerService {
         }
         return Collections.emptyList();
     }
+
+    @Override
+    public Charger findByOCPPid(String oCPPid) {
+        return chargerRepository.findAll()
+                .stream()
+                .filter(charger -> charger.getoCPPid().equals(oCPPid))
+                .findFirst()
+                .orElse(null);
+    }
 }

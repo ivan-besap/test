@@ -41,7 +41,7 @@ public class Charger {
     @NotNull(message = "El estado del cargador no puede ser nulo.")
     @Enumerated(EnumType.STRING)
     @Column(name = "estado_cargador")
-    private ChargerStatus estadoCargador = ChargerStatus.ACTIVE;
+    private ChargerStatus estadoCargador = ChargerStatus.CONSTRUCTION;
 
     @NotNull(message = "El Terminal es obligatorio")
     @ManyToOne(fetch = FetchType.LAZY)

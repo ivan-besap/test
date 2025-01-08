@@ -22,4 +22,6 @@ public interface DeviceIdentifierRepository extends JpaRepository<DeviceIdentifi
 
     List<DeviceIdentifier> findByAuto(Car auto);
 
+    DeviceIdentifier findByRFID(String rfid);
+
 }

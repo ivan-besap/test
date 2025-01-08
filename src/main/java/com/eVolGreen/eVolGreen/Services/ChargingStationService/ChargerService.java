@@ -22,4 +22,6 @@ public interface ChargerService {
     List<ChargerDTO> getActiveChargersDTO();
 
     List<ChargerDTO> getChargersForCurrentUser(String email);
+
+    Charger findByOCPPid(String oCPPid);
 }

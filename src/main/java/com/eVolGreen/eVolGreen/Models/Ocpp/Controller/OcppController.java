@@ -1,6 +1,9 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Controller;
 
 import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.CargasOcpp;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Confirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Session;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.DiagnosticsFile;
@@ -40,7 +43,10 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.SetChargingProfileRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp2_0.Models.Core.Requests.Utils.AuthorizationData;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp2_0.Models.Transactions.Requests.Utils.IdToken;
+import com.eVolGreen.eVolGreen.Repositories.CargasOcppRepository;
+import com.eVolGreen.eVolGreen.Repositories.ChargerRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
+import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -72,6 +78,12 @@ public class OcppController {
 
     @Autowired
     private UtilService utilService;
+
+    @Autowired
+    private CargasOcppRepository cargasOcppRepository;
+
+    @Autowired
+    private ChargerService chargerService;
 
     @Autowired
     private DiagnosticsFileRepository diagnosticsFileRepository;
@@ -111,6 +123,23 @@ public class OcppController {
                 return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
             }
 
+            List<CargasOcpp> registrosAnteriores = cargasOcppRepository.findByOcppIdAndNumeroConector(chargePointId, request.getConnectorId());
+            if (!registrosAnteriores.isEmpty()) {
+                registrosAnteriores.forEach(registro -> {
+                    registro.setActivo(false);
+                    cargasOcppRepository.save(registro);
+                });
+                logger.info("Registros anteriores desactivados para ocppId: {}, conector: {}", chargePointId, request.getConnectorId());
+            }
+
+            CargasOcpp nuevaCarga = new CargasOcpp();
+            nuevaCarga.setOcppId(chargePointId);
+            nuevaCarga.setNumeroConector(request.getConnectorId());
+            nuevaCarga.setFechaCreacion(LocalDateTime.now());
+            nuevaCarga.setActivo(true);
+
+            cargasOcppRepository.save(nuevaCarga);
+
             // Enviar la solicitud y obtener el CompletableFuture
             CompletableFuture<RemoteStartTransactionConfirmation> future = webSocketHandler.sendRemoteStartTransactionRequestAsync(session, webSocketSession, request);
 
@@ -124,6 +153,17 @@ public class OcppController {
             logger.error("Error al enviar RemoteStartTransaction", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno: " + e.getMessage());
         }
+    }
+
+    @GetMapping("/obtener-idTag")
+    public ResponseEntity<?> obtenerIdTag(@RequestParam String chargePointId) {
+        String idTag = webSocketHandler.getAuthorizedIdTag(chargePointId);
+
+        if (idTag == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró una idTag autorizada para el chargePointId proporcionado.");
+        }
+
+        return ResponseEntity.ok(idTag);
     }
 
     @PostMapping("/detener-carga-remota")
@@ -345,19 +385,34 @@ public class OcppController {
             TriggerMessageConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
 
             logger.debug("TriggerMessageConfirmation recibido: {}", confirmation);
+            actualizarEstadoCargador(chargePointId, ChargerStatus.ACTIVE);
             return ResponseEntity.ok(confirmation);
 
         } catch (TimeoutException e) {
+            actualizarEstadoCargador(chargePointId, ChargerStatus.INACTIVE);
             return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT)
                     .body("Timeout esperando TriggerMessageConfirmation.");
         } catch (InterruptedException e) {
+            actualizarEstadoCargador(chargePointId, ChargerStatus.INACTIVE);
             Thread.currentThread().interrupt();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("El hilo fue interrumpido.");
         } catch (Exception e) {
+            actualizarEstadoCargador(chargePointId, ChargerStatus.INACTIVE);
             logger.error("Error procesando la solicitud TriggerMessage (Heartbeat): {}", e.getMessage(), e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error al procesar la solicitud: " + e.getMessage());
+        }
+    }
+
+    private void actualizarEstadoCargador(String chargePointId, ChargerStatus status) {
+        Charger charger = chargerService.findByOCPPid(chargePointId);
+        if (charger != null) {
+            charger.setEstadoCargador(status);
+            chargerService.saveCharger(charger);
+            logger.info("Estado del cargador {} actualizado a {}", chargePointId, status);
+        } else {
+            logger.warn("No se encontró el cargador con chargePointId: {}", chargePointId);
         }
     }
 
@@ -1239,6 +1294,24 @@ public class OcppController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error al reservar ahora: " + e.getMessage());
+        }
+    }
+
+    @GetMapping("/obtener-transaccion")
+    public ResponseEntity<?> obtenerTransaccion(
+            @RequestParam String ocppId,
+            @RequestParam Integer numeroConector) {
+        try {
+            // Buscar el registro activo
+            CargasOcpp cargaActiva = cargasOcppRepository.findByOcppIdAndNumeroConectorAndActivo(ocppId, numeroConector, true);
+            if (cargaActiva == null) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró una transacción activa para el ocppId y número de conector proporcionados.");
+            }
+
+            // Devolver el transactionId
+            return ResponseEntity.ok(cargaActiva.getTransaccionId());
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al obtener la transacción: " + e.getMessage());
         }
     }
 
