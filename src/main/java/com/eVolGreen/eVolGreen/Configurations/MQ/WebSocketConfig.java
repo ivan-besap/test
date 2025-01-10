@@ -3,6 +3,8 @@ package com.eVolGreen.eVolGreen.Configurations.MQ;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Profile.ServerCoreProfile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.JSONServer;
+import com.eVolGreen.eVolGreen.Repositories.CargasOcppRepository;
+import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,19 +35,22 @@ public class WebSocketConfig implements WebSocketConfigurer {
     private final Queue queue;
     private final PromiseFulfiller fulfiller;
     private final UtilService utilService;
+    private final DeviceIdentifierRepository deviceIdentifierRepository;
+    private final CargasOcppRepository cargasOcppRepository;
+
 
     private WebSocketMetricsConfig webSocketMetricsConfig;
 
     @Autowired
     public WebSocketConfig(
-                           ISessionFactory sessionFactory,
-                           Communicator communicator,
-                           JSONServer jsonServer,
-                           ServerCoreProfile coreProfile,
-                           IFeatureRepository featureRepository,
-                           Queue queue,
-                           PromiseFulfiller fulfiller, UtilService utilService,
-                           WebSocketMetricsConfig webSocketMetricsConfig) {
+            ISessionFactory sessionFactory,
+            Communicator communicator,
+            JSONServer jsonServer,
+            ServerCoreProfile coreProfile,
+            IFeatureRepository featureRepository,
+            Queue queue,
+            PromiseFulfiller fulfiller, UtilService utilService, DeviceIdentifierRepository deviceIdentifierRepository, CargasOcppRepository cargasOcppRepository,
+            WebSocketMetricsConfig webSocketMetricsConfig) {
         this.sessionFactory = sessionFactory;
         this.communicator = communicator;
         this.jsonServer = jsonServer;
@@ -55,6 +60,8 @@ public class WebSocketConfig implements WebSocketConfigurer {
         this.fulfiller = fulfiller;
         this.utilService = utilService;
         this.webSocketMetricsConfig = webSocketMetricsConfig;
+        this.deviceIdentifierRepository = deviceIdentifierRepository;
+        this.cargasOcppRepository = cargasOcppRepository;
     }
 
     @Override
@@ -66,7 +73,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     }
 
     private WebSocketHandler createWebSocketHandler() {
-        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository, webSocketMetricsConfig);
+        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository, webSocketMetricsConfig, deviceIdentifierRepository, cargasOcppRepository);
     }
 
     private DefaultHandshakeHandler createHandshakeHandler() {

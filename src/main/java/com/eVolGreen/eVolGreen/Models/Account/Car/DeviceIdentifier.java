@@ -33,7 +33,7 @@ public class DeviceIdentifier {
     private Car auto;
 
     @NotNull(message = "La empresa no puede estar en nulo.")
-    @ManyToOne(fetch = FetchType.LAZY)
+    @ManyToOne(fetch = FetchType.EAGER)
     @JoinColumn(name = "empresa_id", nullable = false)
     @JsonBackReference("Empresa-RFID")
     private Empresa empresa;

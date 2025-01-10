@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.Configurations.MQ;
 
 import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
+//import com.eVolGreen.eVolGreen.Models.Account.Transaction.TransactionInfo;
 import com.eVolGreen.eVolGreen.Models.Ocpp.CargasOcpp;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.UnsupportedFeatureException;
@@ -22,6 +23,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Uti
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Utils.KeyValueType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.ChargePointStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.MeterValue;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Confirmations.DiagnosticsStatusNotificationConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Confirmations.FirmwareStatusNotificationConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Confirmations.GetDiagnosticsConfirmation;
@@ -75,6 +77,7 @@ import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 import java.io.EOFException;
 import java.io.IOException;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.*;
@@ -125,7 +128,12 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
     private static final Map<String, String> authorizedIdTags = new ConcurrentHashMap<>();
 
     private CargasOcppRepository cargasOcppRepository;
+
+    @Autowired
     private DeviceIdentifierRepository deviceIdentifierRepository;
+    //private final Map<String, TransactionInfo> activeTransactions = new ConcurrentHashMap<>();
+
+
 
 
 
@@ -147,7 +155,8 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
     public WebSocketHandler(UtilService utilService, ISessionFactory sessionFactory, Communicator communicator,
                             JSONServer jsonServer, ServerCoreProfile coreProfile,
                             Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository,
-                            WebSocketMetricsConfig webSocketMetricsConfig) {
+                            WebSocketMetricsConfig webSocketMetricsConfig, DeviceIdentifierRepository deviceIdentifierRepository,
+                            CargasOcppRepository cargasOcppRepository) {
 
         this.sessionFactory = sessionFactory;
         this.utilService = utilService;
@@ -176,6 +185,10 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         this.clientCoreEventHandler = new DefaultClientCoreEventHandler();
 
         this.webSocketMetricsConfig = webSocketMetricsConfig;
+
+        this.cargasOcppRepository = cargasOcppRepository;
+
+        this.deviceIdentifierRepository = deviceIdentifierRepository;
     }
 
 //1
@@ -1010,11 +1023,13 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             // Convierte el payload en una instancia de AuthorizeRequest
             AuthorizeRequest authorizeRequest = objectMapper.convertValue(requestPayload, AuthorizeRequest.class);
             String idTag = authorizeRequest.getIdTag();
+            System.out.println("idTag: " + idTag);
 
             // Enviar mensaje de log a Amazon MQ
             jsonServer.sendMessageToMQ("Authorize request received for idTag: " + idTag);
 
             DeviceIdentifier deviceIdentifier = deviceIdentifierRepository.findByRFID(idTag);
+            System.out.println("deviceIdentifier: " + deviceIdentifier);
 
 
             // Configurar la respuesta de confirmación con la lógica de negocio
@@ -1044,7 +1059,11 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             // Enviar la respuesta a través de la sesión OCPP
             sendResponse(session, webSocketSession, messageId, "Authorize", confirmation);
             logger.info("Authorize completado exitosamente para la sesión: {}", session.getSessionId());
+            logger.info("Respuesta del Servidor para Authorize : {} con RFID : {}", confirmation, idTag);
 
+        } catch (NullPointerException e) {
+            logger.error("Error procesando Authorize para la sesión: {}", session.getSessionId(), e);
+            sendError(session,webSocketSession,messageId, "Internal server error");
         } catch (Exception e) {
             // Manejo de cualquier error que ocurra al procesar la solicitud
             logger.error("Error procesando Authorize para la sesión: {}", session.getSessionId(), e);
@@ -1170,6 +1189,32 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             if (!meterValuesRequest.validate()) {
                 throw new IllegalArgumentException("MeterValuesRequest inválido");
             }
+//
+//            String chargePointId = session.getChargePointId();
+//            TransactionInfo transactionInfo = activeTransactions.get(chargePointId);
+//
+//            if (transactionInfo == null) {
+//                logger.warn("Received MeterValues for unknown ChargePoint: {}", chargePointId);
+//                sendError(session, webSocketSession, messageId, "Transaction not found for ChargePoint");
+//                return;
+//            }
+//
+//            // Actualizar los valores del medidor
+//            transactionInfo.getMeterValues().addAll(meterValuesRequest.getMeterValue());
+//            logger.info("MeterValues updated for ChargePoint: {}, TransactionId: {}",
+//                    chargePointId, transactionInfo.getTransactionId());
+//
+//            // Persistir los valores en la base de datos
+//            meterValuesRequest.getMeterValue().forEach(meterValue -> {
+//                CargasOcpp carga = cargasOcppRepository.findByOcppIdAndTransaccionId(
+//                        chargePointId, transactionInfo.getTransactionId()
+//                );
+//                if (carga != null) {
+//                    carga.addMeterValue(meterValue);
+//                    cargasOcppRepository.save(carga);
+//                    logger.debug("Meter value persistido: {}", meterValue);
+//                }
+//            });
 
             // Serializar a JSON para enviar a Amazon MQ y loggear
             String meterValuesJson = objectMapper.writeValueAsString(meterValuesRequest);
@@ -1210,15 +1255,37 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             StartTransactionRequest startTransactionRequest = objectMapper.convertValue(requestPayload, StartTransactionRequest.class);
             logger.debug("Payload deserializado: {}", startTransactionRequest);
 
+            // Validar idTag (RFID)
+            String idTag = startTransactionRequest.getIdTag();
+            DeviceIdentifier usuario = deviceIdentifierRepository.findByRFID(idTag);
+            if (usuario == null) {
+                logger.warn("RFID no autorizado: {}", idTag);
+
+                IdTagInfo idTagInfo = new IdTagInfo();
+                idTagInfo.setStatus(AuthorizationStatus.Invalid);
+
+                StartTransactionConfirmation confirmation = new StartTransactionConfirmation();
+                confirmation.setIdTagInfo(idTagInfo);
+
+                sendResponse(session, webSocketSession, messageId, "StartTransaction", confirmation);
+                return;
+            }
+            logger.info("RFID autorizado: {}", idTag);
+
+            int transactionId = Math.abs(UUID.randomUUID().hashCode());
+
+//            TransactionInfo transactionInfo = new TransactionInfo();
+//            transactionInfo.setChargePointId(session.getChargePointId());
+//            transactionInfo.setTransactionId(transactionId);
+//            transactionInfo.setStartTime(LocalDateTime.now());
+
             // Enviar el mensaje a Amazon MQ
             jsonServer.sendMessageToMQ("Start Transaction request received for Connector ID: " + startTransactionRequest.getConnectorId());
             logger.info("Mensaje enviado a Amazon MQ para StartTransaction: Connector ID {}", startTransactionRequest.getConnectorId());
 
-            int transactionId = new Random().nextInt(99999);
             // Configurar la respuesta
             IdTagInfo idTagInfo = new IdTagInfo();
             idTagInfo.setStatus(AuthorizationStatus.Accepted);
-            idTagInfo.setExpiryDate(ZonedDateTime.now().plusDays(30));
 
             StartTransactionConfirmation confirmation = new StartTransactionConfirmation();
             confirmation.setIdTagInfo(idTagInfo);
@@ -1269,6 +1336,22 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             // Log de la solicitud para referencia
             String stopTransactionJson = objectMapper.writeValueAsString(stopTransactionRequest);
             logger.info("StopTransaction request recibido: {}", stopTransactionJson);
+
+//            TransactionInfo transactionInfo = activeTransactions.remove(stopTransactionRequest.getChargePointId());
+//
+//            if (transactionInfo != null) {
+//                // Obtener el último MeterValue
+//                MeterValue[] meterValues = transactionInfo.getMeterValues();
+//                MeterValue finalMeterValue = meterValues.isEmpty() ? null : meterValues.get(meterValues.size() - 1);
+//
+//                if (finalMeterValue != null) {
+//                    logger.info("Transaction ended for ChargePoint: {}, TransactionId: {}, Final MeterValue: {}",
+//                            stopTransactionRequest.getChargePointId(), transactionInfo.getTransactionId(), finalMeterValue);
+//                    // Lógica adicional para almacenar en la base de datos
+//                }
+//            } else {
+//                logger.warn("StopTransaction received for unknown ChargePoint: {}", stopTransactionRequest.getChargePointId());
+//            }
 
             // Enviar el mensaje a Amazon MQ
             jsonServer.sendMessageToMQ("Stop Transaction request received: " + stopTransactionJson);

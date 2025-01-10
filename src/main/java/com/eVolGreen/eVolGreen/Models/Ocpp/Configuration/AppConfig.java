@@ -23,6 +23,8 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.JSONServer;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.JSONConfiguration;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Confirmations.TriggerMessageConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.TriggerMessageRequest;
+import com.eVolGreen.eVolGreen.Repositories.CargasOcppRepository;
+import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
@@ -129,9 +131,10 @@ public class AppConfig {
     @Bean
     public WebSocketHandler webSocketHandler(UtilService utilService, ISessionFactory sessionFactory, Communicator communicator,
                                              JSONServer jsonServer, ServerCoreProfile coreProfile, Queue queue,
-                                             PromiseFulfiller fulfiller, FeatureRepository featureRepository,WebSocketMetricsConfig webSocketMetricsConfig) {
+                                             PromiseFulfiller fulfiller, FeatureRepository featureRepository, WebSocketMetricsConfig webSocketMetricsConfig,
+                                             DeviceIdentifierRepository  deviceIdentifierRepository, CargasOcppRepository cargasOcppRepository) {
 
-        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository,webSocketMetricsConfig);
+        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository,webSocketMetricsConfig,deviceIdentifierRepository,cargasOcppRepository);
     }
 
     /**

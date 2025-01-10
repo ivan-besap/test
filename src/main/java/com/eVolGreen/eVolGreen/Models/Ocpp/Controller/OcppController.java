@@ -1,6 +1,8 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Controller;
 
 import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.AccountDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.DeviceIdentifierDTO;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.CargasOcpp;
@@ -45,6 +47,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp2_0.Models.Core.Requests.Utils.Au
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp2_0.Models.Transactions.Requests.Utils.IdToken;
 import com.eVolGreen.eVolGreen.Repositories.CargasOcppRepository;
 import com.eVolGreen.eVolGreen.Repositories.ChargerRepository;
+import com.eVolGreen.eVolGreen.Services.AccountService.DeviceIdentifierService;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import org.slf4j.Logger;
@@ -93,6 +96,9 @@ public class OcppController {
     private static final Logger logger = LoggerFactory.getLogger(OcppController.class);
 
     private final Map<Long, MeterValuesRequest> latestMeterValuesByConnector = new ConcurrentHashMap<>();
+
+    @Autowired
+    private DeviceIdentifierService deviceIdentifierService;
 
     @PostMapping("/iniciar-carga-remota")
     public ResponseEntity<?> iniciarCargaRemotaEnSimulador(
@@ -1313,6 +1319,12 @@ public class OcppController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error al obtener la transacción: " + e.getMessage());
         }
+    }
+
+
+    @GetMapping("/device-identifiers")
+    public List<DeviceIdentifierDTO> getDeviceIdentifiers() {
+        return deviceIdentifierService.getDeviceIdentifiersDTO();
     }
 
 
