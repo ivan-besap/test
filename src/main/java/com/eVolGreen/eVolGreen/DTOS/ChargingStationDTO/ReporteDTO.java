@@ -6,7 +6,7 @@ import java.time.LocalDateTime;
 public class ReporteDTO {
     private Long id;
     private Long chargingStationId;
-    private Long chargerId;
+    private String chargerId;
     private Long connectorId;
     private Long empresaId;
     private BigDecimal energia;
@@ -20,7 +20,7 @@ public class ReporteDTO {
     private Long deviceIdentifierId;
 
     // Constructor
-    public ReporteDTO(Long id, Long chargingStationId, Long chargerId, Long connectorId, Long empresaId,
+    public ReporteDTO(Long id, Long chargingStationId, String chargerId, Long connectorId, Long empresaId,
                       BigDecimal energia, String tiempo, LocalDateTime fechaCreacion,
                       LocalDateTime inicioCarga, LocalDateTime finCarga, Integer costo,
                       String descripcion, Long accountId, Long deviceIdentifierId) {
@@ -55,11 +55,11 @@ public class ReporteDTO {
         this.chargingStationId = chargingStationId;
     }
 
-    public Long getChargerId() {
+    public String getChargerId() {
         return chargerId;
     }
 
-    public void setChargerId(Long chargerId) {
+    public void setChargerId(String chargerId) {
         this.chargerId = chargerId;
     }
 

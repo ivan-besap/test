@@ -1,13 +1,23 @@
 package com.eVolGreen.eVolGreen.Services.ImplementService.ChargingStationServiceImplement;
 
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ReporteDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Reporte;
 import com.eVolGreen.eVolGreen.Repositories.ReporteRepository;
+import com.eVolGreen.eVolGreen.Services.AccountService.EmpresaService;
+import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
+import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargingStationsService;
+import com.eVolGreen.eVolGreen.Services.ChargingStationService.ConnectorService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ReporteService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
@@ -16,13 +26,26 @@ public class ReporteServiceImplement implements ReporteService {
     @Autowired
     private ReporteRepository reporteRepository;
 
+    @Autowired
+    private ChargingStationsService chargingStationsService;
+
+    @Autowired
+    private ChargerService chargerService;
+
+    @Autowired
+    private ConnectorService connectorService;
+
+    @Autowired
+    private EmpresaService empresaService;
+
+
     @Override
     public List<ReporteDTO> getAllReportes() {
         return reporteRepository.findAll().stream()
                 .map(reporte -> new ReporteDTO(
                         reporte.getId(),
                         reporte.getChargingStation().getId(),
-                        reporte.getCharger().getId(),
+                        reporte.getCharger().getoCPPid(),
                         reporte.getConnector().getId(),
                         reporte.getEmpresa().getId(),
                         reporte.getEnergia(),
@@ -45,7 +68,7 @@ public class ReporteServiceImplement implements ReporteService {
             return new ReporteDTO(
                     reporte.getId(),
                     reporte.getChargingStation().getId(),
-                    reporte.getCharger().getId(),
+                    reporte.getCharger().getoCPPid(),
                     reporte.getConnector().getId(),
                     reporte.getEmpresa().getId(),
                     reporte.getEnergia(),
@@ -60,6 +83,40 @@ public class ReporteServiceImplement implements ReporteService {
             );
         }
         return null;
+    }
+
+    public Long createReporte(ReporteDTO reporteDTO) {
+        Reporte reporte = new Reporte();
+        ChargingStation chargingStation = chargingStationsService.findById(reporteDTO.getChargingStationId());
+        Charger charger = chargerService.findByOCPPid(reporteDTO.getChargerId());
+        Connector connector = connectorService.findById(reporteDTO.getConnectorId());
+        Empresa empresa = empresaService.findById(reporteDTO.getEmpresaId());
+
+        reporte.setChargingStation(chargingStation);
+        reporte.setCharger(charger);
+        reporte.setConnector(connector);
+        reporte.setEmpresa(empresa);
+
+        reporte.setFechaCreacion(LocalDateTime.now());
+        reporte.setInicioCarga(LocalDateTime.now());
+        // Otros campos iniciales si es necesario
+
+        reporte = reporteRepository.save(reporte);
+        return reporte.getId();
+    }
+
+    public boolean updateReporte(Long id, ReporteDTO reporteDTO) {
+        Optional<Reporte> optionalReporte = reporteRepository.findById(id);
+        if (optionalReporte.isPresent()) {
+            Reporte reporte = optionalReporte.get();
+            reporte.setFinCarga(LocalDateTime.now());
+            reporte.setTiempo(reporteDTO.getTiempo());
+            reporte.setCosto(reporteDTO.getCosto());
+            reporte.setEnergia(reporteDTO.getEnergia());
+            reporteRepository.save(reporte);
+            return true;
+        }
+        return false;
     }
 
     @Override

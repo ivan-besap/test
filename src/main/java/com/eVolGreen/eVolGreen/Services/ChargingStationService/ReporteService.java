@@ -10,4 +10,8 @@ public interface ReporteService {
     ReporteDTO getReporteById(Long id);
     void saveReporte(Reporte reporte);
     void deleteReporte(Long id);
+
+    Long createReporte(ReporteDTO reporteDTO); // Crear reporte
+    boolean updateReporte(Long id, ReporteDTO reporteDTO); // Actualizar reporte
+
 }

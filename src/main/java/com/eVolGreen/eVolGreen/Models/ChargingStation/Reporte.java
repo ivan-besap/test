@@ -136,6 +136,10 @@ public class Reporte {
         return finCarga;
     }
 
+    public void setFinCarga(LocalDateTime finCarga) {
+        this.finCarga = finCarga;
+    }
+
     public void setCosto(Integer costo) {
         this.costo = costo;
     }

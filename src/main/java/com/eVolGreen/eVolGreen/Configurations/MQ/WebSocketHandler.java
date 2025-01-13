@@ -1033,6 +1033,10 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             String idTag = authorizeRequest.getIdTag();
             System.out.println("idTag: " + idTag);
 
+            if (idTag == null || idTag.trim().isEmpty()) {
+                idTag = "default";
+            }
+
             // Enviar mensaje de log a Amazon MQ
             jsonServer.sendMessageToMQ("Authorize request received for idTag: " + idTag);
 
