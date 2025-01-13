@@ -25,6 +25,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Confirma
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.TriggerMessageRequest;
 import com.eVolGreen.eVolGreen.Repositories.CargasOcppRepository;
 import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
+import com.eVolGreen.eVolGreen.Repositories.TransactionInfoRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
@@ -132,9 +133,10 @@ public class AppConfig {
     public WebSocketHandler webSocketHandler(UtilService utilService, ISessionFactory sessionFactory, Communicator communicator,
                                              JSONServer jsonServer, ServerCoreProfile coreProfile, Queue queue,
                                              PromiseFulfiller fulfiller, FeatureRepository featureRepository, WebSocketMetricsConfig webSocketMetricsConfig,
-                                             DeviceIdentifierRepository  deviceIdentifierRepository, CargasOcppRepository cargasOcppRepository) {
+                                             DeviceIdentifierRepository  deviceIdentifierRepository, CargasOcppRepository cargasOcppRepository,
+                                             TransactionInfoRepository transactionInfoRepository) {
 
-        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository,webSocketMetricsConfig,deviceIdentifierRepository,cargasOcppRepository);
+        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository,webSocketMetricsConfig,deviceIdentifierRepository,cargasOcppRepository,transactionInfoRepository);
     }
 
     /**

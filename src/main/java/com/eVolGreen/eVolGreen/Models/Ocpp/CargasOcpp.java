@@ -6,6 +6,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Entity
 public class CargasOcpp {
@@ -17,7 +18,7 @@ public class CargasOcpp {
     private String ocppId;
     private Integer numeroConector;
     private Integer transaccionId;
-    private LocalDateTime fechaCreacion;
+    private ZonedDateTime fechaCreacion;
     private Boolean activo;
     // Getters y Setters
     public Long getId() {
@@ -52,11 +53,11 @@ public class CargasOcpp {
         this.transaccionId = transaccionId;
     }
 
-    public LocalDateTime getFechaCreacion() {
+    public ZonedDateTime getFechaCreacion() {
         return fechaCreacion;
     }
 
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+    public void setFechaCreacion(ZonedDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
     }
 

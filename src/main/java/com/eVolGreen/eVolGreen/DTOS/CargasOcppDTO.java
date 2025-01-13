@@ -1,17 +1,18 @@
 package com.eVolGreen.eVolGreen.DTOS;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 public class CargasOcppDTO {
 
     private String ocppId;
     private Integer numeroConector;
     private Integer transaccionId;
-    private LocalDateTime fechaCreacion;
+    private ZonedDateTime fechaCreacion;
     private Boolean activo;
 
     // Constructor
-    public CargasOcppDTO(String ocppId, Integer numeroConector, Integer transaccionId, LocalDateTime fechaCreacion, Boolean activo) {
+    public CargasOcppDTO(String ocppId, Integer numeroConector, Integer transaccionId, ZonedDateTime fechaCreacion, Boolean activo) {
         this.ocppId = ocppId;
         this.numeroConector = numeroConector;
         this.transaccionId = transaccionId;
@@ -44,11 +45,11 @@ public class CargasOcppDTO {
         this.transaccionId = transaccionId;
     }
 
-    public LocalDateTime getFechaCreacion() {
+    public ZonedDateTime getFechaCreacion() {
         return fechaCreacion;
     }
 
-    public void setFechaCreacion(LocalDateTime fechaCreacion) {
+    public void setFechaCreacion(ZonedDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
     }
 

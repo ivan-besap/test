@@ -6,6 +6,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Validatable;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import jakarta.persistence.*;
 
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -42,6 +43,7 @@ import java.util.Objects;
  */
 @XmlRootElement
 @XmlType(propOrder = {"timestamp", "sampledValue"})
+@Embeddable
 public class MeterValue implements Validatable {
 
     @JsonDeserialize(using = CustomZonedDateTimeDeserializer.class)
