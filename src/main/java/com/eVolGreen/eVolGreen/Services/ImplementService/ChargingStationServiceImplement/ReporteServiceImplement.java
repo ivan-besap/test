@@ -1,12 +1,15 @@
 package com.eVolGreen.eVolGreen.Services.ImplementService.ChargingStationServiceImplement;
 
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ReporteDTO;
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ReporteResponseDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Reporte;
 import com.eVolGreen.eVolGreen.Repositories.ReporteRepository;
+import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.EmpresaService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargingStationsService;
@@ -37,6 +40,9 @@ public class ReporteServiceImplement implements ReporteService {
 
     @Autowired
     private EmpresaService empresaService;
+
+    @Autowired
+    private AccountService accountService;
 
 
     @Override
@@ -97,6 +103,11 @@ public class ReporteServiceImplement implements ReporteService {
         reporte.setConnector(connector);
         reporte.setEmpresa(empresa);
 
+        if (reporteDTO.getAccountId() != null) {
+            Account account = accountService.findById(reporteDTO.getAccountId());
+            reporte.setAccount(account);
+        }
+
         reporte.setFechaCreacion(LocalDateTime.now());
         reporte.setInicioCarga(LocalDateTime.now());
         // Otros campos iniciales si es necesario
@@ -117,6 +128,22 @@ public class ReporteServiceImplement implements ReporteService {
             return true;
         }
         return false;
+    }
+
+    public List<ReporteResponseDTO> getReportesByEmpresa(Long empresaId) {
+        List<Reporte> reportes = reporteRepository.findByEmpresaId(empresaId);
+        return reportes.stream().map(reporte -> {
+            ReporteResponseDTO dto = new ReporteResponseDTO();
+            dto.setEstacionDeCarga(reporte.getChargingStation().getNombreTerminal());
+            dto.setIdCargador(reporte.getCharger().getoCPPid());
+            dto.setConector(reporte.getConnector().getNConector().toString());
+            dto.setInicioCarga(reporte.getInicioCarga());
+            dto.setFinCarga(reporte.getFinCarga());
+            dto.setUsuario(reporte.getAccount().getNombre() + " " + reporte.getAccount().getApellidoPaterno());
+            dto.setEnergia(reporte.getEnergia().toString());
+            dto.setTiempo(reporte.getTiempo());
+            return dto;
+        }).collect(Collectors.toList());
     }
 
     @Override
