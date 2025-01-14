@@ -1063,10 +1063,6 @@ public class OcppController {
                 return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
             }
 
-            AuthorizationData[] authList = new AuthorizationData[]{
-            new AuthorizationData((IdToken) Arrays.stream(request.getLocalAuthorizationList()).toList())
-            };
-
             // Enviar la solicitud y obtener el CompletableFuture
             CompletableFuture<SendLocalListConfirmation> future =
                     webSocketHandler.sendSendLocalListRequestAsync(session, webSocketSession, request);

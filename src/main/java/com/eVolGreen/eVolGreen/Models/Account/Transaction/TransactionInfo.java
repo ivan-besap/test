@@ -1,7 +1,9 @@
 package com.eVolGreen.eVolGreen.Models.Account.Transaction;
 
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.MeterValue;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.SampledValue;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import lombok.Setter;
 import org.hibernate.annotations.GenericGenerator;
@@ -38,10 +40,15 @@ public class TransactionInfo {
     @Column(name = "sample_value")
     private SampledValue[] transactionData;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "empresa_id")
+    @JsonBackReference("Empresa-TransactionInfo")
+    private Empresa empresa;
+
     public TransactionInfo() {
     }
 
-    public TransactionInfo(String chargePointId, int transactionId, ZonedDateTime startTime, ZonedDateTime endTime, Integer meterStart, Integer meterStop, Integer energyConsumed, SampledValue[] transactionData) {
+    public TransactionInfo(String chargePointId, int transactionId, ZonedDateTime startTime, ZonedDateTime endTime, Integer meterStart, Integer meterStop, Integer energyConsumed, SampledValue[] transactionData, Empresa  empresa) {
         this.chargePointId = chargePointId;
         this.transactionId = transactionId;
         this.startTime = startTime;
@@ -50,6 +57,15 @@ public class TransactionInfo {
         this.meterStop = meterStop;
         this.energyConsumed = energyConsumed;
         this.transactionData = transactionData;
+        this.empresa = empresa;
+    }
+
+    public Empresa getEmpresa() {
+        return empresa;
+    }
+
+    public void setEmpresa(Empresa empresa) {
+        this.empresa = empresa;
     }
 
     public SampledValue[] getTransactionData() {

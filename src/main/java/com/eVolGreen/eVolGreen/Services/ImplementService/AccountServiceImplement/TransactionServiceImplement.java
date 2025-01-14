@@ -1,10 +1,21 @@
 package com.eVolGreen.eVolGreen.Services.ImplementService.AccountServiceImplement;
 
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.TransactionInfoDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
+import com.eVolGreen.eVolGreen.Models.Account.Transaction.TransactionInfo;
 import com.eVolGreen.eVolGreen.Repositories.ChargingStationRepository;
+import com.eVolGreen.eVolGreen.Repositories.TransactionInfoRepository;
 import com.eVolGreen.eVolGreen.Repositories.TransactionRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.web.bind.annotation.GetMapping;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class TransactionServiceImplement implements TransactionService {
@@ -12,6 +23,27 @@ public class TransactionServiceImplement implements TransactionService {
     private TransactionRepository transactionRepository;
     @Autowired
     private ChargingStationRepository chargingStationRepository;
+    @Autowired
+    private TransactionInfoRepository transactionInfoRepository;
+    @Autowired
+    private AccountServiceImplement accountService;
+
+    @GetMapping("/transactionsInfo")
+    public List<TransactionInfoDTO> getTransactionsInfoDTO(String email) {
+        Optional<Account> account = accountService.findByEmail(email);
+        if (account.isPresent()) {
+            Empresa empresa = account.get().getEmpresa();
+            if (empresa != null) {
+                // Mapea directamente utilizando el constructor del DTO
+                return transactionInfoRepository.findByEmpresa(empresa)
+                        .stream()
+                        .map(TransactionInfoDTO::new) // Usa el constructor directamente
+                        .collect(Collectors.toList());
+            }
+        }
+        return Collections.emptyList();
+    }
+
 //
 //    @Autowired
 //    private CompanyUserService companyUserService;

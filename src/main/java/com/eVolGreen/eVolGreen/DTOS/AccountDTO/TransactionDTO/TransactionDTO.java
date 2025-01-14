@@ -1,4 +1,4 @@
-package com.eVolGreen.eVolGreen.DTOS.AccountDTO;
+package com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO;
 
 import com.eVolGreen.eVolGreen.Models.Account.Transaction.Transaction;
 import com.eVolGreen.eVolGreen.Models.Account.Transaction.TransactionType;

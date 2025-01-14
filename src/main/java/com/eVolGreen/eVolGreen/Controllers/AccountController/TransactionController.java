@@ -1,10 +1,14 @@
 package com.eVolGreen.eVolGreen.Controllers.AccountController;
 
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.TransactionInfoDTO;
 import com.eVolGreen.eVolGreen.Repositories.TransactionRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.TransactionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api")
@@ -17,6 +21,12 @@ public class TransactionController {
 //    private ClientUserService clientUserService;
     @Autowired
     private AccountService accountService;
+
+    @GetMapping("/transactionsInfo")
+    public List<TransactionInfoDTO> getTransactionsInfo(Authentication authentication) {
+        String email = authentication.getName();
+        return transactionService.getTransactionsInfoDTO(email);
+    }
 
 //    @GetMapping("/transactions")
 //    public List<TransactionDTO> getTransactions() {

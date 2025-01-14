@@ -1202,6 +1202,28 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                 throw new IllegalArgumentException("MeterValuesRequest inválido");
             }
 
+            // Obtener la transacción activa vinculada al transactionId
+            TransactionInfo transactionInfo = activeTransactions.values().stream()
+                    .filter(t -> t.getTransactionId() == meterValuesRequest.getTransactionId())
+                    .findFirst()
+                    .orElse(null);
+
+            if (transactionInfo != null) {
+                // Actualizar el último MeterValue en la transacción
+                List<MeterValue> meterValues = List.of(meterValuesRequest.getMeterValue());
+                if (meterValues != null && !meterValues.isEmpty()) {
+                    MeterValue lastMeterValue = meterValues.get(meterValues.size() - 1);
+                    SampledValue[] sampledValues = lastMeterValue.getSampledValue();
+                    transactionInfo.setTransactionData(sampledValues);
+                    transactionInfoRepository.save(transactionInfo);
+                    logger.info("Último MeterValue actualizado para TransactionId: {}",
+                            transactionInfo.getTransactionId());
+                }
+            } else {
+                logger.warn("No se encontró una transacción activa para ChargePoint: {}",
+                        meterValuesRequest.getTransactionId());
+            }
+
             // Serializar a JSON para enviar a Amazon MQ y loggear
             String meterValuesJson = objectMapper.writeValueAsString(meterValuesRequest);
             logger.info("Meter values recibidos: {}", meterValuesJson);
@@ -1266,6 +1288,7 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             transactionInfo.setTransactionId(transactionId);
             transactionInfo.setStartTime(startTransactionRequest.getTimestamp());
             transactionInfo.setMeterStart(startTransactionRequest.getMeterStart());
+            transactionInfo.setEmpresa(usuario.getEmpresa());
             logger.info("Valor MeterStart inicio: {}", transactionInfo.getMeterStart());
             transactionInfoRepository.save(transactionInfo);
 
@@ -1338,20 +1361,10 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                 int meterStop = stopTransactionRequest.getMeterStop();
                 int energySupplied = meterStop - meterStart;
 
-                MeterValue[] meterValues = stopTransactionRequest.getTransactionData();
-                SampledValue[] sampledValues = Arrays.stream(meterValues)
-                        .filter(Objects::nonNull)
-                        .flatMap(mv -> Arrays.stream(mv.getSampledValue()))
-                        .toArray(SampledValue[]::new);
-
-                logger.info("Sampled Value: {}", sampledValues[0].getValue());
-                logger.info("Sampled : {}", sampledValues);
-
                 // Actualizar los valores finales de la transacción
                 transactionInfo.setMeterStop(stopTransactionRequest.getMeterStop());
                 transactionInfo.setEndTime(stopTransactionRequest.getTimestamp());
                 transactionInfo.setEnergyConsumed(energySupplied);
-                transactionInfo.setTransactionData(sampledValues);
                 transactionInfoRepository.save(transactionInfo);
 
                 LocalDateTime stopTime = LocalDateTime.now();
@@ -1363,6 +1376,20 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                 activeTransactions.remove(transactionInfo.getChargePointId());
             } else {
                 logger.warn("StopTransaction received for unknown transactionId: {}", stopTransactionRequest.getTransactionId());
+            }
+
+            if (stopTransactionRequest.getTransactionData() == null){
+                MeterValue[] meterValues = stopTransactionRequest.getTransactionData();
+                SampledValue[] sampledValues = Arrays.stream(meterValues)
+                        .filter(Objects::nonNull)
+                        .flatMap(mv -> Arrays.stream(mv.getSampledValue()))
+                        .toArray(SampledValue[]::new);
+
+                logger.info("Sampled Value: {}", sampledValues[0].getValue());
+                logger.info("Sampled : {}", sampledValues);
+
+                transactionInfo.setTransactionData(sampledValues);
+                transactionInfoRepository.save(transactionInfo);
             }
 
             // Enviar el mensaje a Amazon MQ
