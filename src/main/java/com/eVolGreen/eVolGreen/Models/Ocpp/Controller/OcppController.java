@@ -166,9 +166,9 @@ public class OcppController {
         String idTag = webSocketHandler.getAuthorizedIdTag(chargePointId);
 
         if (idTag == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró una idTag autorizada para el chargePointId proporcionado.");
+            idTag = "default";
+//            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("No se encontró una idTag autorizada para el chargePointId proporcionado.");
         }
-
         return ResponseEntity.ok(idTag);
     }
 
