@@ -132,18 +132,23 @@ public class ReporteServiceImplement implements ReporteService {
 
     public List<ReporteResponseDTO> getReportesByEmpresa(Long empresaId) {
         List<Reporte> reportes = reporteRepository.findByEmpresaId(empresaId);
-        return reportes.stream().map(reporte -> {
-            ReporteResponseDTO dto = new ReporteResponseDTO();
-            dto.setEstacionDeCarga(reporte.getChargingStation().getNombreTerminal());
-            dto.setIdCargador(reporte.getCharger().getoCPPid());
-            dto.setConector(reporte.getConnector().getNConector().toString());
-            dto.setInicioCarga(reporte.getInicioCarga());
-            dto.setFinCarga(reporte.getFinCarga());
-            dto.setUsuario(reporte.getAccount().getNombre() + " " + reporte.getAccount().getApellidoPaterno());
-            dto.setEnergia(reporte.getEnergia().toString());
-            dto.setTiempo(reporte.getTiempo());
-            return dto;
-        }).collect(Collectors.toList());
+
+        return reportes.stream()
+                .sorted((r1, r2) -> r2.getInicioCarga().compareTo(r1.getInicioCarga())) // Ordenar por inicioCarga (descendente)
+                .map(reporte -> {
+                    ReporteResponseDTO dto = new ReporteResponseDTO();
+                    dto.setEstacionDeCarga(reporte.getChargingStation().getNombreTerminal());
+                    dto.setIdCargador(reporte.getCharger().getoCPPid());
+                    dto.setConector(reporte.getConnector().getNConector().toString());
+                    dto.setInicioCarga(reporte.getInicioCarga());
+                    dto.setFinCarga(reporte.getFinCarga());
+                    dto.setUsuario(reporte.getAccount().getNombre() + " " + reporte.getAccount().getApellidoPaterno());
+                    dto.setEnergia(reporte.getEnergia().toString());
+                    dto.setTiempo(reporte.getTiempo());
+                    dto.setCosto(reporte.getCosto());
+                    return dto;
+                })
+                .collect(Collectors.toList());
     }
 
     @Override

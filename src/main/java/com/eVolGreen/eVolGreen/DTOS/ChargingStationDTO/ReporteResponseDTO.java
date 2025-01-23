@@ -11,6 +11,7 @@ public class ReporteResponseDTO {
     private String usuario;
     private String energia;
     private String tiempo;
+    private Integer costo;
 
     // Constructor vacío
     public ReporteResponseDTO() {
@@ -19,7 +20,7 @@ public class ReporteResponseDTO {
     // Constructor con parámetros
     public ReporteResponseDTO(String estacionDeCarga, String idCargador, String conector,
                               LocalDateTime inicioCarga, LocalDateTime finCarga, String usuario,
-                              String energia, String tiempo) {
+                              String energia, String tiempo, Integer costo) {
         this.estacionDeCarga = estacionDeCarga;
         this.idCargador = idCargador;
         this.conector = conector;
@@ -28,6 +29,7 @@ public class ReporteResponseDTO {
         this.usuario = usuario;
         this.energia = energia;
         this.tiempo = tiempo;
+        this.costo = costo;
     }
 
     // Getters y Setters
@@ -94,5 +96,13 @@ public class ReporteResponseDTO {
 
     public void setTiempo(String tiempo) {
         this.tiempo = tiempo;
+    }
+
+    public Integer getCosto() {
+        return costo;
+    }
+
+    public void setCosto(Integer costo) {
+        this.costo = costo;
     }
 }
