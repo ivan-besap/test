@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 @XmlRootElement
 @XmlType(propOrder = {"connectorId", "idTag", "chargingProfile"})
 public class RemoteStartTransactionRequest extends RequestWithId {
+
     private static final Logger log = LoggerFactory.getLogger(RemoteStartTransactionRequest.class);
 
     @Min(value = 1, message = "connectorId debe ser mayor que 0")

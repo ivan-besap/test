@@ -3,6 +3,9 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Controller;
 import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.AccountDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.DeviceIdentifierDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.ChargePointsSummaryResponseDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.TotalEnergyResponseDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Transaction.TransactionInfo;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.CargasOcpp;
@@ -47,6 +50,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp2_0.Models.Core.Requests.Utils.Au
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp2_0.Models.Transactions.Requests.Utils.IdToken;
 import com.eVolGreen.eVolGreen.Repositories.CargasOcppRepository;
 import com.eVolGreen.eVolGreen.Repositories.ChargerRepository;
+import com.eVolGreen.eVolGreen.Repositories.TransactionInfoRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.DeviceIdentifierService;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
@@ -65,6 +69,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 import static com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler.sessionStore;
 
@@ -99,6 +104,9 @@ public class OcppController {
 
     @Autowired
     private DeviceIdentifierService deviceIdentifierService;
+
+    @Autowired
+    private TransactionInfoRepository transactionInfoRepository;
 
     @PostMapping("/iniciar-carga-remota")
     public ResponseEntity<?> iniciarCargaRemotaEnSimulador(
@@ -1322,6 +1330,67 @@ public class OcppController {
     public List<DeviceIdentifierDTO> getDeviceIdentifiers() {
         return deviceIdentifierService.getDeviceIdentifiersDTO();
     }
+
+    /**
+     * Obtiene el consumo total de energía por empresa y punto de carga.
+     *
+     * @param empresaId ID de la empresa
+     * @return Lista con el consumo total por empresa y punto de carga
+     */
+    @GetMapping("/transactionInfo/totalEnergy")
+    public List<TotalEnergyResponseDTO> getTotalEnergyConsumedByEmpresa(
+            @RequestParam(value = "empresaId", required = false) Long empresaId) {
+
+        // Obtener todas las transacciones de la empresa especificada
+        List<TransactionInfo> transactions = transactionInfoRepository.findByEmpresaId(empresaId);
+
+        // Agrupar por chargePointId y calcular el consumo total de energía
+        Map<String, Integer> totalEnergyByChargePoint = transactions.stream()
+                .filter(transaction -> transaction.getEnergyConsumed() != null)
+                .collect(Collectors.groupingBy(
+                        TransactionInfo::getChargePointId,
+                        Collectors.summingInt(TransactionInfo::getEnergyConsumed)
+                ));
+
+        // Construir la respuesta con los datos agrupados
+        return totalEnergyByChargePoint.entrySet().stream()
+                .map(entry -> new TotalEnergyResponseDTO(
+                        empresaId,
+                        entry.getKey(), // chargePointId
+                        entry.getValue() // totalEnergyConsumed
+                ))
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Obtiene la lista de chargePointId asociados a una empresa y el consumo total de energía combinado.
+     *
+     * @param empresaId ID de la empresa
+     * @return Detalles de los puntos de carga y el consumo total combinado
+     */
+    @GetMapping("/transactionInfo/chargePoints")
+    public ChargePointsSummaryResponseDTO getChargePointsAndTotalEnergy(
+            @RequestParam(value = "empresaId", required = true) Long empresaId) {
+
+        // Obtener todas las transacciones de la empresa especificada
+        List<TransactionInfo> transactions = transactionInfoRepository.findByEmpresaId(empresaId);
+
+        // Obtener la lista de chargePointId únicos
+        List<String> chargePointIds = transactions.stream()
+                .map(TransactionInfo::getChargePointId)
+                .distinct()
+                .collect(Collectors.toList());
+
+        // Calcular el consumo total de energía combinado
+        int totalEnergyConsumed = transactions.stream()
+                .filter(transaction -> transaction.getEnergyConsumed() != null)
+                .mapToInt(TransactionInfo::getEnergyConsumed)
+                .sum();
+
+        // Construir la respuesta
+        return new ChargePointsSummaryResponseDTO(empresaId, chargePointIds, totalEnergyConsumed);
+    }
+
 
 
 }

@@ -136,6 +136,7 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
     @Autowired
     private DeviceIdentifierRepository deviceIdentifierRepository;
     private final Map<String, TransactionInfo> activeTransactions = new ConcurrentHashMap<>();
+    private final Map<Integer, CargasOcpp> cargasOcppMap = new ConcurrentHashMap<>();
     @Autowired
     private TransactionInfoRepository transactionInfoRepository;
 
@@ -1302,6 +1303,8 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             cargasOcpp.setActivo(true);
             cargasOcppRepository.save(cargasOcpp);
 
+            cargasOcppMap.put(transactionId, cargasOcpp);
+
             // Enviar el mensaje a Amazon MQ
             jsonServer.sendMessageToMQ("Start Transaction request received for Connector ID: " + startTransactionRequest.getConnectorId());
             logger.info("Mensaje enviado a Amazon MQ para StartTransaction: Connector ID {}", startTransactionRequest.getConnectorId());
@@ -1400,6 +1403,19 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             idTagInfo.setStatus(AuthorizationStatus.Accepted);
             idTagInfo.setExpiryDate(ZonedDateTime.now().plusDays(30));
 
+            CargasOcpp cargasOcpp = cargasOcppMap.get(stopTransactionRequest.getTransactionId());
+            if (cargasOcpp != null) {
+                cargasOcpp.setActivo(false);  // Desactivar la carga
+                cargasOcppRepository.save(cargasOcpp);  // Guardar el cambio en la base de datos
+                logger.info("Estado de CargasOcpp actualizado a inactivo para el transactionId: {}", stopTransactionRequest.getTransactionId());
+            } else {
+                logger.warn("CargasOcpp no encontrado para el transactionId: {}", stopTransactionRequest.getTransactionId());
+            }
+
+            cargasOcppMap.remove(stopTransactionRequest.getTransactionId());
+
+
+            
             // Crear la confirmación de StopTransaction y asignar los detalles
             StopTransactionConfirmation confirmation = new StopTransactionConfirmation();
             confirmation.setIdTagInfo(idTagInfo);

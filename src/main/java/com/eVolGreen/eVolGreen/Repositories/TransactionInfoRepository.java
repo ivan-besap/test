@@ -11,5 +11,9 @@ import java.util.Optional;
 
 @RepositoryRestResource
 public interface TransactionInfoRepository extends JpaRepository<TransactionInfo, Long>{
+
     List<TransactionInfo> findByEmpresa(Empresa empresa);
+
+    List<TransactionInfo> findByEmpresaId(Long empresaId);
+
 }
