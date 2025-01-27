@@ -8,11 +8,11 @@ public class CargasOcppDTO {
     private String ocppId;
     private Integer numeroConector;
     private Integer transaccionId;
-    private ZonedDateTime fechaCreacion;
+    private LocalDateTime fechaCreacion;
     private Boolean activo;
 
     // Constructor
-    public CargasOcppDTO(String ocppId, Integer numeroConector, Integer transaccionId, ZonedDateTime fechaCreacion, Boolean activo) {
+    public CargasOcppDTO(String ocppId, Integer numeroConector, Integer transaccionId, LocalDateTime fechaCreacion, Boolean activo) {
         this.ocppId = ocppId;
         this.numeroConector = numeroConector;
         this.transaccionId = transaccionId;
@@ -45,11 +45,11 @@ public class CargasOcppDTO {
         this.transaccionId = transaccionId;
     }
 
-    public ZonedDateTime getFechaCreacion() {
+    public LocalDateTime getFechaCreacion() {
         return fechaCreacion;
     }
 
-    public void setFechaCreacion(ZonedDateTime fechaCreacion) {
+    public void setFechaCreacion(LocalDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
     }
 

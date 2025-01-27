@@ -149,7 +149,7 @@ public class OcppController {
             CargasOcpp nuevaCarga = new CargasOcpp();
             nuevaCarga.setOcppId(chargePointId);
             nuevaCarga.setNumeroConector(request.getConnectorId());
-            nuevaCarga.setFechaCreacion(ZonedDateTime.now());
+            nuevaCarga.setFechaCreacion(LocalDateTime.now());
             nuevaCarga.setActivo(true);
 
             cargasOcppRepository.save(nuevaCarga);

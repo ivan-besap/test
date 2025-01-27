@@ -49,7 +49,7 @@ public class CargasOcppServiceImplement implements CargasOcppService {
         carga.setOcppId(cargaDTO.getOcppId());
         carga.setNumeroConector(cargaDTO.getNumeroConector());
         carga.setTransaccionId(cargaDTO.getTransaccionId());
-        carga.setFechaCreacion(ZonedDateTime.now()); // Fecha de creación establecida automáticamente
+        carga.setFechaCreacion(LocalDateTime.now()); // Fecha de creación establecida automáticamente
         carga.setActivo(cargaDTO.getActivo());
 
         CargasOcpp savedCarga = repository.save(carga);

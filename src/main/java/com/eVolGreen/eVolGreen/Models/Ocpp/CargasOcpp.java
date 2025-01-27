@@ -18,7 +18,7 @@ public class CargasOcpp {
     private String ocppId;
     private Integer numeroConector;
     private Integer transaccionId;
-    private ZonedDateTime fechaCreacion;
+    private LocalDateTime fechaCreacion;
     private Boolean activo;
     // Getters y Setters
     public Long getId() {
@@ -53,11 +53,11 @@ public class CargasOcpp {
         this.transaccionId = transaccionId;
     }
 
-    public ZonedDateTime getFechaCreacion() {
+    public LocalDateTime getFechaCreacion() {
         return fechaCreacion;
     }
 
-    public void setFechaCreacion(ZonedDateTime fechaCreacion) {
+    public void setFechaCreacion(LocalDateTime fechaCreacion) {
         this.fechaCreacion = fechaCreacion;
     }
 
