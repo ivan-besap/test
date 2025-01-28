@@ -85,6 +85,7 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.stream.Stream;
 
 /**
  * {@code WebSocketHandler} maneja las conexiones WebSocket, gestionando el ciclo de vida de las sesiones
@@ -1381,12 +1382,25 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                 logger.warn("StopTransaction received for unknown transactionId: {}", stopTransactionRequest.getTransactionId());
             }
 
-            if (stopTransactionRequest.getTransactionData() == null){
-                MeterValue[] meterValues = stopTransactionRequest.getTransactionData();
+            // Obtener MeterValue del request
+            MeterValue[] meterValues = stopTransactionRequest.getTransactionData();
+
+            if (meterValues == null || meterValues.length == 0) {
+                logger.warn("MeterValues está vacío o es nulo para TransactionId: {}", stopTransactionRequest.getTransactionId());
+            } else {
+
+                // Procesar MeterValues y SampledValues
                 SampledValue[] sampledValues = Arrays.stream(meterValues)
-                        .filter(Objects::nonNull)
-                        .flatMap(mv -> Arrays.stream(mv.getSampledValue()))
-                        .toArray(SampledValue[]::new);
+                        .flatMap(meterValue -> meterValue.getSampledValue() != null
+                                ? Arrays.stream(meterValue.getSampledValue())
+                                : Stream.empty()) // Si sampledValue es null, evitar el error
+                        .toArray(SampledValue[]::new); // Convertir el Stream a un arreglo de SampledValue
+
+                // Log de los valores procesados
+                if (sampledValues.length > 0) {
+                    logger.info("Sampled Value: {}", sampledValues[0].getValue());
+                    logger.info("Sampled: {}", Arrays.toString(sampledValues));
+                }
 
                 logger.info("Sampled Value: {}", sampledValues[0].getValue());
                 logger.info("Sampled : {}", sampledValues);

@@ -21,6 +21,7 @@ public class DeviceIdentifier {
     @NotNull(message = "El Nombre de Identificador es obligatorio")
     private String NombreDeIdentificador;
 
+    @Column(unique = true)
     @NotNull(message = "El RFID es obligatorio")
     private String RFID;
 
