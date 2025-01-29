@@ -1301,7 +1301,11 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             cargasOcpp.setNumeroConector(startTransactionRequest.getConnectorId());
             cargasOcpp.setTransaccionId(transactionId);
             cargasOcpp.setFechaCreacion(startTransactionRequest.getTimestamp().toLocalDateTime());
-            cargasOcpp.setActivo(true);
+            if (transactionId != 0) {
+                cargasOcpp.setActivo(true);
+            } else {
+                cargasOcpp.setActivo(false);
+            }
             cargasOcppRepository.save(cargasOcpp);
 
             cargasOcppMap.put(transactionId, cargasOcpp);
