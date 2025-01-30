@@ -4,6 +4,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Profile.ServerCoreProfile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.JSONServer;
 import com.eVolGreen.eVolGreen.Repositories.CargasOcppRepository;
+import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
 import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import com.eVolGreen.eVolGreen.Repositories.TransactionInfoRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
@@ -39,6 +40,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     private final DeviceIdentifierRepository deviceIdentifierRepository;
     private final CargasOcppRepository cargasOcppRepository;
     private final TransactionInfoRepository  transactionInfoRepository;
+    private final ConnectorRepository connectorRepository;
 
 
     private WebSocketMetricsConfig webSocketMetricsConfig;
@@ -51,7 +53,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
             ServerCoreProfile coreProfile,
             IFeatureRepository featureRepository,
             Queue queue,
-            PromiseFulfiller fulfiller, UtilService utilService, DeviceIdentifierRepository deviceIdentifierRepository, CargasOcppRepository cargasOcppRepository, TransactionInfoRepository transactionInfoRepository,
+            PromiseFulfiller fulfiller, UtilService utilService, DeviceIdentifierRepository deviceIdentifierRepository, CargasOcppRepository cargasOcppRepository, TransactionInfoRepository transactionInfoRepository, ConnectorRepository connectorRepository,
             WebSocketMetricsConfig webSocketMetricsConfig) {
         this.sessionFactory = sessionFactory;
         this.communicator = communicator;
@@ -65,6 +67,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
         this.webSocketMetricsConfig = webSocketMetricsConfig;
         this.deviceIdentifierRepository = deviceIdentifierRepository;
         this.cargasOcppRepository = cargasOcppRepository;
+        this.connectorRepository = connectorRepository;
     }
 
     @Override
@@ -76,7 +79,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     }
 
     private WebSocketHandler createWebSocketHandler() {
-        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository, webSocketMetricsConfig, deviceIdentifierRepository, cargasOcppRepository, transactionInfoRepository);
+        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository, webSocketMetricsConfig, deviceIdentifierRepository, cargasOcppRepository, transactionInfoRepository, connectorRepository);
     }
 
     private DefaultHandshakeHandler createHandshakeHandler() {

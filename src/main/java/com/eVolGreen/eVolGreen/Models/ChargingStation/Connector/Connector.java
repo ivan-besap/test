@@ -47,7 +47,7 @@ public class Connector {
     private BigDecimal CorrienteMaxima;
 
     @Enumerated(EnumType.STRING)
-    private ConnectorStatus EstadoConector = ConnectorStatus.DISCONNECTED;
+    private ConnectorStatus EstadoConector = ConnectorStatus.CONNECTED;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "Cargador_id")
