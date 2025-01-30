@@ -23,6 +23,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Uti
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Utils.KeyValueType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.ChargePointStatus;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.SampledValueMeasurand;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.MeterValue;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.SampledValue;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Confirmations.DiagnosticsStatusNotificationConfirmation;
@@ -61,6 +62,7 @@ import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import com.eVolGreen.eVolGreen.Repositories.TransactionInfoRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -862,9 +864,17 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
      * @throws IOException Si ocurre un error al enviar el mensaje.
      */
     public void sendResponse(Session session, WebSocketSession webSocketSession, String messageId, String action, Object confirmation) throws IOException {
+        // Configura el ObjectMapper para ignorar campos nulos
+        objectMapper.configure(SerializationFeature.WRITE_NULL_MAP_VALUES, false);
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+
+        // Serializa el objeto confirmation ignorando campos nulos
         String response = objectMapper.writeValueAsString(new Object[]{3, messageId, confirmation});
+
+        // Envía la respuesta a través del WebSocket
         webSocketSession.sendMessage(new TextMessage(response));
 
+        // Log de la respuesta enviada
         logger.info("Respuesta '{}' enviada para la sesión {}: messageId {}", action, session.getSessionId(), messageId);
     }
 
@@ -1220,6 +1230,18 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                     transactionInfoRepository.save(transactionInfo);
                     logger.info("Último MeterValue actualizado para TransactionId: {}",
                             transactionInfo.getTransactionId());
+
+                    // Extraer la energía suministrada
+                    logger.info("+++++++++SampledValues: {}", Arrays.toString(sampledValues));
+                    Arrays.stream(sampledValues)
+                            .filter(sampledValue -> sampledValue.getMeasurand() == SampledValueMeasurand.Energy_Active_Import_Register)
+                            .forEach(sampledValue -> {
+                                    // Intentar parsear el valor a un Double
+                                    double energySupplied = Double.parseDouble(sampledValue.getValue());
+                                    // Actualizar totalEnergy
+                                    utilService.updateEnergySuppliedFront(energySupplied);
+                                    logger.info("++++++++++ Energía suministrada actualizada: {}", energySupplied);
+                            });
                 }
             } else {
                 logger.warn("No se encontró una transacción activa para ChargePoint: {}",
@@ -1361,7 +1383,7 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
 
             if (transactionInfo != null) {
                 // Calcular la energía suministrada
-                int meterStart = transactionInfo.getMeterStart(); 
+                int meterStart = transactionInfo.getMeterStart();
                 int meterStop = stopTransactionRequest.getMeterStop();
                 int energySupplied = meterStop - meterStart;
 
@@ -2371,6 +2393,9 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             future.completeExceptionally(new IllegalArgumentException("RemoteStartTransactionRequest inválido"));
             return future;
         }
+
+        // Configurar ObjectMapper para ignorar valores nulos
+        objectMapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
 
         // Serializar la solicitud
         String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "RemoteStartTransaction", request});

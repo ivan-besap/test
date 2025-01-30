@@ -19,6 +19,8 @@ public class UtilService {
 
     private String meterValuesFront;
 
+    private double totalEnergy = 0.0;
+
     private static final Logger logger = LoggerFactory.getLogger(UtilService.class);
 
     private final RestTemplate restTemplate;  // Ahora inyectará el bean de RestTemplate automáticamente
@@ -116,6 +118,10 @@ public class UtilService {
         this.meterValuesFront = meterValuesJson;
     }
 
+    public synchronized void updateEnergySuppliedFront(Double energySupplied) {
+        totalEnergy += energySupplied;
+    }
+
     public synchronized String getMeterValuesFront() {
         return this.meterValuesFront;
     }
@@ -166,4 +172,7 @@ public class UtilService {
         log.info("Éxito al resetear el cargador: {}", ocppid);
     }
 
+    public double getTotalEnergy() {
+        return totalEnergy;
+    }
 }

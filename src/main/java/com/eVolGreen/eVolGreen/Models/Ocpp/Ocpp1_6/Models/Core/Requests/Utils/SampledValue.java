@@ -4,6 +4,7 @@ import javax.validation.constraints.NotNull;
 
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.*;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import jakarta.persistence.Column;
 import jakarta.persistence.Embeddable;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -27,6 +28,7 @@ public class SampledValue {
     private SampledValueContext context = SampledValueContext.Sample_Periodic; // Valor por defecto
 
     @JsonProperty("format")
+    @Column(name = "format")
     @Enumerated(EnumType.STRING)
     private SampledValueFormat format = SampledValueFormat.Raw; // Valor por defecto
 

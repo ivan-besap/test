@@ -1,8 +1,8 @@
 package com.eVolGreen.eVolGreen.Models.Ocpp.Controller;
 
 import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
-import com.eVolGreen.eVolGreen.DTOS.AccountDTO.AccountDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.DeviceIdentifierDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.ChargePointEnergyForMonthsProjection;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.ChargePointsSummaryResponseDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.TotalEnergyResponseDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Transaction.TransactionInfo;
@@ -15,20 +15,11 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.DiagnosticsFile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.DiagnosticsFileRepository;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.*;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Utils.IdTagInfo;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.*;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.ChargingProfileKindType;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.ChargingProfilePurposeType;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.ResetType;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.ChargingProfile;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.ChargingSchedule;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.MeterValue;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Confirmations.DiagnosticsStatusNotificationConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Confirmations.GetDiagnosticsConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Confirmations.UpdateFirmwareConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Request.GetDiagnosticsRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Firmware.Request.UpdateFirmwareRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.IniciarCargaRemotaRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.LocalAuthList.Confirmations.GetLocalListVersionConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.LocalAuthList.Confirmations.SendLocalListConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.LocalAuthList.Request.GetLocalListVersionRequest;
@@ -46,10 +37,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirma
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.ClearChargingProfileRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.GetCompositeScheduleRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.SetChargingProfileRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp2_0.Models.Core.Requests.Utils.AuthorizationData;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp2_0.Models.Transactions.Requests.Utils.IdToken;
 import com.eVolGreen.eVolGreen.Repositories.CargasOcppRepository;
-import com.eVolGreen.eVolGreen.Repositories.ChargerRepository;
 import com.eVolGreen.eVolGreen.Repositories.TransactionInfoRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.DeviceIdentifierService;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
@@ -57,24 +45,20 @@ import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
-import static com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler.sessionStore;
-
-import static com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler.webSocketSessionStorage;
-import static org.apache.activemq.plugin.ForcePersistencyModeBroker.log;
 
 
 @RestController
@@ -100,8 +84,6 @@ public class OcppController {
 
     private static final Logger logger = LoggerFactory.getLogger(OcppController.class);
 
-    private final Map<Long, MeterValuesRequest> latestMeterValuesByConnector = new ConcurrentHashMap<>();
-
     @Autowired
     private DeviceIdentifierService deviceIdentifierService;
 
@@ -118,6 +100,14 @@ public class OcppController {
             }
 
             logger.info("Solicitud para iniciar carga remota recibida. Carcador: {}, idTag: {}", chargePointId, request.getIdTag());
+
+            // Verifica si el chargingProfile está presente y si no tiene transactionId
+            if (request.getChargingProfile() != null && request.getChargingProfile().getTransactionId() == null) {
+                // Genera el transactionId si no está presente
+                Integer transactionId = generarTransactionId();
+                request.getChargingProfile().setTransactionId(transactionId);
+                logger.info("Se generó un nuevo transactionId: {}", transactionId);
+            }
 
             // Obtener el UUID de la sesión asociada al chargePointId
             UUID sessionUUID = webSocketHandler.getSessionIdByChargePointId(chargePointId);
@@ -167,6 +157,11 @@ public class OcppController {
             logger.error("Error al enviar RemoteStartTransaction", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error interno: " + e.getMessage());
         }
+    }
+
+    // Método para generar un transactionId único
+    private Integer generarTransactionId() {
+        return Math.abs(UUID.randomUUID().hashCode());  // Genera un ID aleatorio único
     }
 
     @GetMapping("/obtener-idTag")
@@ -1339,7 +1334,7 @@ public class OcppController {
      */
     @GetMapping("/transactionInfo/totalEnergy")
     public List<TotalEnergyResponseDTO> getTotalEnergyConsumedByEmpresa(
-            @RequestParam(value = "empresaId", required = false) Long empresaId) {
+            @RequestParam(value = "empresaId", required = true) Long empresaId) {
 
         // Obtener todas las transacciones de la empresa especificada
         List<TransactionInfo> transactions = transactionInfoRepository.findByEmpresaId(empresaId);
@@ -1392,5 +1387,16 @@ public class OcppController {
     }
 
 
+    @Cacheable("energyConsumedByMonth")
+    @GetMapping("/transactionInfo/EnergyForMonths")
+    public List<ChargePointEnergyForMonthsProjection> getEnergyForMonths(
+            @RequestParam(value = "empresaId", required = true) Long empresaId) {
+        return transactionInfoRepository.findEnergyConsumedByMonth(empresaId);
+    }
 
+
+    @GetMapping("/energyConsumed")
+    public ResponseEntity<Double> getEnergyConsumed() {
+        return ResponseEntity.ok(utilService.getTotalEnergy());
+    }
 }

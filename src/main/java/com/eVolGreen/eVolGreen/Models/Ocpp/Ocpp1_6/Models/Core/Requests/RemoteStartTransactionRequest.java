@@ -4,6 +4,7 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.RequestWithId;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.ChargingProfile;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import javax.validation.constraints.NotNull;
 import javax.validation.constraints.Size;
@@ -60,6 +61,7 @@ public class RemoteStartTransactionRequest extends RequestWithId {
     private String idTag;
 
     @JsonProperty("chargingProfile")
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private ChargingProfile chargingProfile;
 
     /**
