@@ -1229,7 +1229,7 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             CargasOcpp cargasOcpp = cargasOcppMap.values().stream()
                     .filter(c -> c.getActivo() == cargasOcppMap.get(session.getChargePointId()).getActivo())
                     .findFirst()
-                    .orElseGet(() -> cargasOcppRepository.findByChargePointIdAndActive(session.getChargePointId())
+                    .orElseGet(() -> cargasOcppRepository.findByOcppIdAndActivo(session.getChargePointId(), true)
                             .orElse(null));
 
             if (transactionInfo == null) {

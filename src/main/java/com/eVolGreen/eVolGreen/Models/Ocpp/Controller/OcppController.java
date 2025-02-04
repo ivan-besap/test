@@ -1409,11 +1409,6 @@ public class OcppController {
             @RequestParam Integer connectorId, // Obligatorio
             @RequestParam(required = false) Boolean active // Permitir null para buscar ambas
     ) {
-        System.out.println("Buscando transacción con los siguientes parámetros:");
-        System.out.println("empresaId: " + empresaId);
-        System.out.println("chargePointId: " + chargePointId);
-        System.out.println("connectorId: " + connectorId);
-        System.out.println("active: " + active);
 
         Optional<ActiveTransactionProjection> transaction = Optional.empty();
 

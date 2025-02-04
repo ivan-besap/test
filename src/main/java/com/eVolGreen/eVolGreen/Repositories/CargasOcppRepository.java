@@ -12,5 +12,5 @@ public interface CargasOcppRepository extends JpaRepository<CargasOcpp, Long> {
 
     CargasOcpp findByOcppIdAndNumeroConectorAndActivo(String ocppId, Integer numeroConector, Boolean activo);
 
-    Optional<CargasOcpp> findByChargePointIdAndActive(String chargePointId);
+    Optional<CargasOcpp> findByOcppIdAndActivo(String ocppId, Boolean activo);
 }
