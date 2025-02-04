@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.Configurations.MQ;
 
 import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
 import com.eVolGreen.eVolGreen.Models.Account.Transaction.TransactionInfo;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.ConnectorStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.CargasOcpp;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.UnsupportedFeatureException;
@@ -10,7 +11,6 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.ConfirmationC
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.Request;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Models.SessionInformation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Queue;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Feature;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Handler.DefaultClientCoreEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Handler.ServerCoreEventHandler;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Profile.ClientRemoteTriggerProfile;
@@ -20,7 +20,6 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.JSONServer;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Enums.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Utils.IdTagInfo;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Confirmations.Utils.KeyValueType;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.ChargePointStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Enums.SampledValueMeasurand;
@@ -58,6 +57,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.GetCompositeScheduleRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.SetChargingProfileRequest;
 import com.eVolGreen.eVolGreen.Repositories.CargasOcppRepository;
+import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
 import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
 import com.eVolGreen.eVolGreen.Repositories.TransactionInfoRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
@@ -80,7 +80,6 @@ import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
@@ -137,6 +136,9 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
     private CargasOcppRepository cargasOcppRepository;
 
     @Autowired
+    private ConnectorRepository connectorRepository;
+
+    @Autowired
     private DeviceIdentifierRepository deviceIdentifierRepository;
     private final Map<String, TransactionInfo> activeTransactions = new ConcurrentHashMap<>();
     private final Map<Integer, CargasOcpp> cargasOcppMap = new ConcurrentHashMap<>();
@@ -166,7 +168,7 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                             JSONServer jsonServer, ServerCoreProfile coreProfile,
                             Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository,
                             WebSocketMetricsConfig webSocketMetricsConfig, DeviceIdentifierRepository deviceIdentifierRepository,
-                            CargasOcppRepository cargasOcppRepository, TransactionInfoRepository  transactionInfoRepository) {
+                            CargasOcppRepository cargasOcppRepository, TransactionInfoRepository  transactionInfoRepository, ConnectorRepository connectorRepository) {
 
         this.sessionFactory = sessionFactory;
         this.utilService = utilService;
@@ -201,6 +203,8 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         this.deviceIdentifierRepository = deviceIdentifierRepository;
 
         this.transactionInfoRepository = transactionInfoRepository;
+
+        this.connectorRepository = connectorRepository;
     }
 
 //1
@@ -1514,6 +1518,36 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             // Deserialización del payload en StatusNotificationRequest
             StatusNotificationRequest statusNotificationRequest = objectMapper.convertValue(requestPayload, StatusNotificationRequest.class);
             logger.debug("Payload de StatusNotification deserializado: {}", statusNotificationRequest);
+
+            String ocppId = session.getChargePointId();
+            Integer connectorId = statusNotificationRequest.getConnectorId();
+            String status = statusNotificationRequest.getStatus().toString();
+            logger.info("status obtenido status={}",status);
+
+            // **Aquí se llama al método del service en lugar de usar directamente la implementación**
+            ChargePointStatus chargePointStatus;
+            try {
+                chargePointStatus = ChargePointStatus.valueOf(status);
+                logger.info("chargePointStatus asociado chargePointStatus={}",chargePointStatus);
+            } catch (IllegalArgumentException e) {
+                logger.error("Estado no reconocido: {}. No se puede mapear a ConnectorStatus.", status);
+                return;
+            }
+
+            // 2️⃣ Mapear ChargePointStatus a ConnectorStatus
+            ConnectorStatus newStatus = mapChargePointStatusToConnectorStatus(chargePointStatus);
+
+            if (newStatus == null) {
+                logger.error("Error: El estado mapeado es NULL. No se puede actualizar el conector. OCPP_ID={}, Connector_ID={}", ocppId, connectorId);
+            } else {
+                int updatedRows = connectorRepository.updateConnectorStatus(ocppId, connectorId, newStatus);
+
+                if (updatedRows > 0) {
+                    logger.info("Estado del conector actualizado correctamente en la BD: OCPP_ID={}, Connector_ID={}, Status={}", ocppId, connectorId, newStatus);
+                } else {
+                    logger.warn("No se encontró ningún conector con OCPP_ID={} y Connector_ID={}. No se realizó actualización.", ocppId, connectorId);
+                }
+            }
 
             // Enviar el mensaje a Amazon MQ
             String messageToMQ = "Status Notification received: " + statusNotificationRequest;
@@ -3051,6 +3085,17 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                     session != null ? session.getSessionId() : "Sesión no disponible", e);
             sendError(session, webSocketSession, messageId, "Error en FirmawareNotificationRequest: " + e.getMessage());
         }
+    }
+
+    private ConnectorStatus mapChargePointStatusToConnectorStatus(ChargePointStatus status) {
+        return switch (status) {
+            case Charging -> ConnectorStatus.OCCUPIED;
+            case Available -> ConnectorStatus.CONNECTED;
+            case Unavailable -> ConnectorStatus.DISCONNECTED;
+            case SuspendedEV -> ConnectorStatus.SUSPENDED;
+            case Finishing -> ConnectorStatus.FINISHING;
+            default -> ConnectorStatus.DISCONNECTED;
+        };
     }
 
 
