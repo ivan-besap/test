@@ -8,7 +8,7 @@ public class TotalEnergyResponseDTO {
 
     private String chargePointId;
 
-    private int totalEnergyConsumed;
+    private Integer totalEnergyConsumed;
 
     public TotalEnergyResponseDTO() {
     }
@@ -33,7 +33,7 @@ public class TotalEnergyResponseDTO {
         return chargePointId;
     }
 
-    public int getTotalEnergyConsumed() {
+    public Integer getTotalEnergyConsumed() {
         return totalEnergyConsumed;
     }
 }

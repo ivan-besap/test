@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.Models.Ocpp.Controller;
 
 import com.eVolGreen.eVolGreen.Configurations.MQ.WebSocketHandler;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.CarDTO.DeviceIdentifierDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.ActiveTransactionProjection;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.ChargePointEnergyForMonthsProjection;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.ChargePointsSummaryResponseDTO;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.TotalEnergyResponseDTO;
@@ -42,23 +43,26 @@ import com.eVolGreen.eVolGreen.Repositories.TransactionInfoRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.DeviceIdentifierService;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
+import com.eVolGreen.eVolGreen.Services.ImplementService.AccountServiceImplement.TransactionServiceImplement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+import org.springframework.web.server.ResponseStatusException;
 import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 
 @RestController
@@ -89,6 +93,9 @@ public class OcppController {
 
     @Autowired
     private TransactionInfoRepository transactionInfoRepository;
+
+    @Autowired
+    private TransactionServiceImplement  transactionServiceImplement;
 
     @PostMapping("/iniciar-carga-remota")
     public ResponseEntity<?> iniciarCargaRemotaEnSimulador(
@@ -1377,7 +1384,7 @@ public class OcppController {
                 .collect(Collectors.toList());
 
         // Calcular el consumo total de energía combinado
-        int totalEnergyConsumed = transactions.stream()
+        Integer totalEnergyConsumed = transactions.stream()
                 .filter(transaction -> transaction.getEnergyConsumed() != null)
                 .mapToInt(TransactionInfo::getEnergyConsumed)
                 .sum();
@@ -1395,8 +1402,76 @@ public class OcppController {
     }
 
 
-    @GetMapping("/energyConsumed")
-    public ResponseEntity<Double> getEnergyConsumed() {
-        return ResponseEntity.ok(utilService.getTotalEnergy());
+    @GetMapping("/energy/{empresaId}/{chargePointId}")
+    public ResponseEntity<?> getEnergyConsumed(
+            @PathVariable Long empresaId,
+            @PathVariable String chargePointId,
+            @RequestParam Integer connectorId, // Obligatorio
+            @RequestParam(required = false) Boolean active // Permitir null para buscar ambas
+    ) {
+        System.out.println("Buscando transacción con los siguientes parámetros:");
+        System.out.println("empresaId: " + empresaId);
+        System.out.println("chargePointId: " + chargePointId);
+        System.out.println("connectorId: " + connectorId);
+        System.out.println("active: " + active);
+
+        Optional<ActiveTransactionProjection> transaction = Optional.empty();
+
+        try {
+            // Caso 1: Buscar transacciones activas si active es true o null
+            if (active == null || Boolean.TRUE.equals(active)) {
+                transaction = transactionInfoRepository.findActiveTransactionByEmpresaIdAndChargePointIdAndConnectorId(
+                        empresaId, chargePointId, connectorId);
+            }
+
+            // Caso 2: Si no hay transacciones activas o se solicitan explícitamente inactivas
+            if ((active == null && transaction.isEmpty()) || Boolean.FALSE.equals(active)) {
+                List<ActiveTransactionProjection> inactiveTransactions = transactionInfoRepository
+                        .findInactiveTransactionByEmpresaIdAndChargePointIdAndConnectorId(empresaId, chargePointId, connectorId);
+
+                if (!inactiveTransactions.isEmpty()) {
+                    // Tomar la primera transacción inactiva (la más reciente)
+                    transaction = Optional.of(inactiveTransactions.get(0));
+                }
+            }
+
+            // Validar si se encontró alguna transacción
+            if (transaction.isEmpty()) {
+                System.out.println("No se encontró transacción con los parámetros proporcionados.");
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(Map.of("message", "No se encontró ninguna transacción para la empresaId "
+                                + empresaId + ", chargePointId " + chargePointId
+                                + " y connectorId " + connectorId));
+            }
+
+            System.out.println("Transacción encontrada: " + transaction.get());
+            return ResponseEntity.ok(transaction.get());
+
+        } catch (Exception e) {
+            // Manejo de errores generales
+            System.err.println("Error al procesar la solicitud: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "Ocurrió un error al procesar la solicitud"));
+        }
     }
+
+
+    @GetMapping("/transactions/inactive")
+    public ResponseEntity<List<ActiveTransactionProjection>> getInactiveTransactions(
+            @RequestParam Long empresaId,
+            @RequestParam String chargePointId,
+            @RequestParam Integer connectorId) {
+
+        List<ActiveTransactionProjection> result = transactionInfoRepository.findInactiveTransactionByEmpresaIdAndChargePointIdAndConnectorId(empresaId, chargePointId, connectorId);
+
+        if (result.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(Collections.emptyList());
+        }
+
+        return ResponseEntity.ok(result);
+    }
+
+
+
+
 }

@@ -1,9 +1,9 @@
 package com.eVolGreen.eVolGreen.Services.ImplementService.AccountServiceImplement;
 
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.ActiveTransactionProjection;
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.TransactionInfoDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
-import com.eVolGreen.eVolGreen.Models.Account.Transaction.TransactionInfo;
 import com.eVolGreen.eVolGreen.Repositories.ChargingStationRepository;
 import com.eVolGreen.eVolGreen.Repositories.TransactionInfoRepository;
 import com.eVolGreen.eVolGreen.Repositories.TransactionRepository;

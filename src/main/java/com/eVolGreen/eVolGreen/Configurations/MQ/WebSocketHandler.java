@@ -1214,11 +1214,24 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                 throw new IllegalArgumentException("MeterValuesRequest inválido");
             }
 
-            // Obtener la transacción activa vinculada al transactionId
+            // Obtener la transacción activa desde el mapa o la base de datos
             TransactionInfo transactionInfo = activeTransactions.values().stream()
                     .filter(t -> t.getTransactionId() == meterValuesRequest.getTransactionId())
                     .findFirst()
-                    .orElse(null);
+                    .orElseGet(() -> transactionInfoRepository.findByTransactionIdAndActive(meterValuesRequest.getTransactionId())
+                            .orElse(null));
+
+            // Obtener CargasOcpp activa desde el mapa o la base de datos
+            CargasOcpp cargasOcpp = cargasOcppMap.values().stream()
+                    .filter(c -> c.getActivo() == cargasOcppMap.get(session.getChargePointId()).getActivo())
+                    .findFirst()
+                    .orElseGet(() -> cargasOcppRepository.findByChargePointIdAndActive(session.getChargePointId())
+                            .orElse(null));
+
+            if (transactionInfo == null) {
+                logger.warn("No se encontró una transacción activa para TransactionId: {}", meterValuesRequest.getTransactionId());
+                return;
+            }
 
             if (transactionInfo != null) {
                 // Actualizar el último MeterValue en la transacción
@@ -1231,16 +1244,20 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                     logger.info("Último MeterValue actualizado para TransactionId: {}",
                             transactionInfo.getTransactionId());
 
-                    // Extraer la energía suministrada
+                    // Extraer la energía suministrada por transactionID y cargador
                     logger.info("+++++++++SampledValues: {}", Arrays.toString(sampledValues));
                     Arrays.stream(sampledValues)
                             .filter(sampledValue -> sampledValue.getMeasurand() == SampledValueMeasurand.Energy_Active_Import_Register)
                             .forEach(sampledValue -> {
-                                    // Intentar parsear el valor a un Double
-                                    double energySupplied = Double.parseDouble(sampledValue.getValue());
-                                    // Actualizar totalEnergy
-                                    utilService.updateEnergySuppliedFront(energySupplied);
-                                    logger.info("++++++++++ Energía suministrada actualizada: {}", energySupplied);
+                                try {
+                                    Integer energySupplied = Integer.parseInt(sampledValue.getValue());
+                                    transactionInfo.setEnergyConsumed((energySupplied - transactionInfo.getMeterStart()));
+                                    transactionInfoRepository.save(transactionInfo);
+                                    logger.info("++++++++++Energía suministrada actualizada para TransactionId {}: {}",
+                                            transactionInfo.getTransactionId(), transactionInfo.getEnergyConsumed());
+                                } catch (NumberFormatException e) {
+                                    logger.warn("Valor inválido para Energy.Active.Import.Register: {}", sampledValue.getValue());
+                                }
                             });
                 }
             } else {
@@ -1252,6 +1269,8 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             String meterValuesJson = objectMapper.writeValueAsString(meterValuesRequest);
             logger.info("Meter values recibidos: {}", meterValuesJson);
             jsonServer.sendMessageToMQ("Meter values recibidos: " + meterValuesJson);
+
+            cargasOcppRepository.save(cargasOcpp);
 
             // Crear y enviar la confirmación de MeterValues
             MeterValuesConfirmation confirmation = new MeterValuesConfirmation();
@@ -1309,10 +1328,13 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             // Crear y guardar TransactionInfo con MeterStart
             TransactionInfo transactionInfo = new TransactionInfo();
             transactionInfo.setChargePointId(session.getChargePointId());
+            transactionInfo.setConnectorId(startTransactionRequest.getConnectorId());
             transactionInfo.setTransactionId(transactionId);
             transactionInfo.setStartTime(startTransactionRequest.getTimestamp());
             transactionInfo.setMeterStart(startTransactionRequest.getMeterStart());
             transactionInfo.setEmpresa(usuario.getEmpresa());
+            transactionInfo.setEnergyConsumed(0);
+            transactionInfo.setActive(true);
             logger.info("Valor MeterStart inicio: {}", transactionInfo.getMeterStart());
             transactionInfoRepository.save(transactionInfo);
 
@@ -1383,14 +1405,15 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
 
             if (transactionInfo != null) {
                 // Calcular la energía suministrada
-                int meterStart = transactionInfo.getMeterStart();
-                int meterStop = stopTransactionRequest.getMeterStop();
-                int energySupplied = meterStop - meterStart;
+                Integer meterStart = transactionInfo.getMeterStart();
+                Integer meterStop = stopTransactionRequest.getMeterStop();
+                Integer energySupplied = meterStop - meterStart;
 
                 // Actualizar los valores finales de la transacción
                 transactionInfo.setMeterStop(stopTransactionRequest.getMeterStop());
                 transactionInfo.setEndTime(stopTransactionRequest.getTimestamp());
                 transactionInfo.setEnergyConsumed(energySupplied);
+                transactionInfo.setActive(false);
                 transactionInfoRepository.save(transactionInfo);
 
                 LocalDateTime stopTime = LocalDateTime.now();

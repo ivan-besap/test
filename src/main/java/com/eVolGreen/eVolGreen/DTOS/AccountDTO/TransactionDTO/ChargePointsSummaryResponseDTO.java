@@ -10,12 +10,12 @@ public class ChargePointsSummaryResponseDTO {
 
     private List<String> chargePointId;
 
-    private int totalEnergyConsumed;
+    private Integer totalEnergyConsumed;
 
     public ChargePointsSummaryResponseDTO() {
     }
 
-    public ChargePointsSummaryResponseDTO(Long empresaId, List<String> chargePointIds, int totalEnergyConsumed) {
+    public ChargePointsSummaryResponseDTO(Long empresaId, List<String> chargePointIds, Integer totalEnergyConsumed) {
         this.empresaId = empresaId;
         this.chargePointId = chargePointIds;
         this.totalEnergyConsumed = totalEnergyConsumed;
@@ -29,7 +29,7 @@ public class ChargePointsSummaryResponseDTO {
         return chargePointId;
     }
 
-    public int getTotalEnergyConsumed() {
+    public Integer getTotalEnergyConsumed() {
         return totalEnergyConsumed;
     }
 }

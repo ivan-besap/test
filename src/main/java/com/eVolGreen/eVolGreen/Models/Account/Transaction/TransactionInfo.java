@@ -23,6 +23,8 @@ public class TransactionInfo {
 
     private String chargePointId;
 
+    private int connectorId;
+
     private int transactionId;
 
     private ZonedDateTime startTime;
@@ -34,6 +36,8 @@ public class TransactionInfo {
     private Integer meterStop;
 
     private Integer energyConsumed;
+
+    private Boolean active;
 
     @ElementCollection
     @CollectionTable(name = "transaction_data", joinColumns = @JoinColumn(name = "transaction_id"))
@@ -48,8 +52,9 @@ public class TransactionInfo {
     public TransactionInfo() {
     }
 
-    public TransactionInfo(String chargePointId, int transactionId, ZonedDateTime startTime, ZonedDateTime endTime, Integer meterStart, Integer meterStop, Integer energyConsumed, SampledValue[] transactionData, Empresa  empresa) {
+    public TransactionInfo(String chargePointId, int connectorId, int transactionId, ZonedDateTime startTime, ZonedDateTime endTime, Integer meterStart, Integer meterStop, Integer energyConsumed, SampledValue[] transactionData, Empresa empresa) {
         this.chargePointId = chargePointId;
+        this.connectorId = connectorId;
         this.transactionId = transactionId;
         this.startTime = startTime;
         this.endTime = endTime;
@@ -58,6 +63,22 @@ public class TransactionInfo {
         this.energyConsumed = energyConsumed;
         this.transactionData = transactionData;
         this.empresa = empresa;
+    }
+
+    public int getConnectorId() {
+        return connectorId;
+    }
+
+    public void setConnectorId(int connectorId) {
+        this.connectorId = connectorId;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
     }
 
     public Empresa getEmpresa() {
