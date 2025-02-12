@@ -7,6 +7,7 @@ import com.eVolGreen.eVolGreen.Models.Account.Transaction.TransactionType;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 public class TransactionDTO {
 
@@ -22,13 +23,13 @@ public class TransactionDTO {
     private LocalDateTime FechaCreacion;
 
     @NotNull(message = "La hora de inicio es obligatoria")
-    private LocalDateTime HoraInicio;
+    private ZonedDateTime HoraInicio;
 
     @NotNull(message = "La hora de fin es obligatoria")
-    private LocalDateTime HoraFin;
+    private ZonedDateTime HoraFin;
 
     @NotNull(message = "La energía entregada es obligatoria")
-    private BigDecimal EnergiaEntregada;
+    private Integer EnergiaEntregada;
 
     @NotNull(message = "El costo es obligatorio")
     private Integer Costo;
@@ -38,6 +39,12 @@ public class TransactionDTO {
 
     @NotNull(message = "El terminal es obligatorio")
     private long TerminalId;
+
+    private long deviceIdentifierId;
+
+    private Boolean activo;
+
+    private Integer transactionId;
 
     public TransactionDTO(Transaction Transaccion) {
         this.id = Transaccion.getId();
@@ -50,6 +57,9 @@ public class TransactionDTO {
         this.Costo = Transaccion.getCosto();
         this.CuentaId = Transaccion.getAccount().getId();
         this.TerminalId = Transaccion.getTerminal().getId();
+        this.deviceIdentifierId = Transaccion.getDeviceIdentifier().getId();
+        this.activo = Transaccion.getActivo();
+        this.transactionId = Transaccion.getTransactionId();
     }
 
     public long getId() {
@@ -68,15 +78,15 @@ public class TransactionDTO {
         return FechaCreacion;
     }
 
-    public @NotNull(message = "La hora de inicio es obligatoria") LocalDateTime getHoraInicio() {
+    public @NotNull(message = "La hora de inicio es obligatoria") ZonedDateTime getHoraInicio() {
         return HoraInicio;
     }
 
-    public @NotNull(message = "La hora de fin es obligatoria") LocalDateTime getHoraFin() {
+    public @NotNull(message = "La hora de fin es obligatoria") ZonedDateTime getHoraFin() {
         return HoraFin;
     }
 
-    public @NotNull(message = "La energía entregada es obligatoria") BigDecimal getEnergiaEntregada() {
+    public @NotNull(message = "La energía entregada es obligatoria") Integer getEnergiaEntregada() {
         return EnergiaEntregada;
     }
 
@@ -90,6 +100,18 @@ public class TransactionDTO {
 
     public long getTerminalId() {
         return TerminalId;
+    }
+
+    public long getDeviceIdentifierId() {
+        return deviceIdentifierId;
+    }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public Integer getTransactionId() {
+        return transactionId;
     }
 
     @Override

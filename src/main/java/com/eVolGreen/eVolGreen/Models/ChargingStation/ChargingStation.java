@@ -1,6 +1,6 @@
 package com.eVolGreen.eVolGreen.Models.ChargingStation;
 
-import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.TransactionDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.Account.Location;

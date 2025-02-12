@@ -3,11 +3,9 @@ package com.eVolGreen.eVolGreen.Configurations.MQ;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Feature.Profile.ServerCoreProfile;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.JSONServer;
-import com.eVolGreen.eVolGreen.Repositories.CargasOcppRepository;
-import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
-import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
-import com.eVolGreen.eVolGreen.Repositories.TransactionInfoRepository;
+import com.eVolGreen.eVolGreen.Repositories.*;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
+import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -41,6 +39,9 @@ public class WebSocketConfig implements WebSocketConfigurer {
     private final CargasOcppRepository cargasOcppRepository;
     private final TransactionInfoRepository  transactionInfoRepository;
     private final ConnectorRepository connectorRepository;
+    private final ReporteRepository reporteRepository;
+    private final ChargerService chargerService;
+    private final TransactionRepository transactionRepository;
 
 
     private WebSocketMetricsConfig webSocketMetricsConfig;
@@ -53,7 +54,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
             ServerCoreProfile coreProfile,
             IFeatureRepository featureRepository,
             Queue queue,
-            PromiseFulfiller fulfiller, UtilService utilService, DeviceIdentifierRepository deviceIdentifierRepository, CargasOcppRepository cargasOcppRepository, TransactionInfoRepository transactionInfoRepository, ConnectorRepository connectorRepository,
+            PromiseFulfiller fulfiller, UtilService utilService, DeviceIdentifierRepository deviceIdentifierRepository, CargasOcppRepository cargasOcppRepository, TransactionInfoRepository transactionInfoRepository, ConnectorRepository connectorRepository, ReporteRepository reporteRepository, ChargerService chargerService, TransactionRepository transactionRepository,
             WebSocketMetricsConfig webSocketMetricsConfig) {
         this.sessionFactory = sessionFactory;
         this.communicator = communicator;
@@ -64,6 +65,9 @@ public class WebSocketConfig implements WebSocketConfigurer {
         this.fulfiller = fulfiller;
         this.utilService = utilService;
         this.transactionInfoRepository = transactionInfoRepository;
+        this.reporteRepository = reporteRepository;
+        this.chargerService = chargerService;
+        this.transactionRepository = transactionRepository;
         this.webSocketMetricsConfig = webSocketMetricsConfig;
         this.deviceIdentifierRepository = deviceIdentifierRepository;
         this.cargasOcppRepository = cargasOcppRepository;
@@ -79,7 +83,7 @@ public class WebSocketConfig implements WebSocketConfigurer {
     }
 
     private WebSocketHandler createWebSocketHandler() {
-        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository, webSocketMetricsConfig, deviceIdentifierRepository, cargasOcppRepository, transactionInfoRepository, connectorRepository);
+        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository, webSocketMetricsConfig, deviceIdentifierRepository, cargasOcppRepository, transactionInfoRepository, connectorRepository, chargerService, reporteRepository,transactionRepository);
     }
 
     private DefaultHandshakeHandler createHandshakeHandler() {

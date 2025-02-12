@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.LocationDTO.LocationChargingStationDTO;
+import com.eVolGreen.eVolGreen.DTOS.AccountDTO.TransactionDTO.TransactionDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Location;
 import com.eVolGreen.eVolGreen.Models.Account.Reservation;
@@ -34,7 +35,7 @@ public class ChargingStationsDTO {
 
     private Set<Reservation> Reservaciones;
 
-    private Set<Transaction> Transacciones;
+    private Set<TransactionDTO> Transacciones;
 
     private List<ChargerDTO> Cargadores;
 
@@ -53,7 +54,7 @@ public class ChargingStationsDTO {
         this.FechaDeCreacion = Terminal.getFechaDeCreacion();
         this.EstadoTerminal = Terminal.getEstadoTerminal();
         this.Reservaciones = Terminal.getReservaciones();
-        this.Transacciones = Terminal.getTransacciones();
+        this.Transacciones = Terminal.getTransacciones().stream().map(TransactionDTO::new).collect(Collectors.toSet());
         this.Cargadores = Terminal.getCargadores().stream()
                 .map(ChargerDTO::new)
                 .collect(Collectors.toList());
@@ -86,7 +87,7 @@ public class ChargingStationsDTO {
         return Reservaciones;
     }
 
-    public Set<Transaction> getTransacciones() {
+    public Set<TransactionDTO> getTransacciones() {
         return Transacciones;
     }
 

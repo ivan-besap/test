@@ -53,7 +53,7 @@ public class Charger {
     @JsonManagedReference("Cargador-UnidadCarga")
     private Set<ChargingUnit> UnidadCarga = new HashSet<>();
 
-    @OneToMany(mappedBy = "cargador", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "cargador", fetch = FetchType.EAGER)
     @JsonManagedReference("Cargador-Conector")
     private Set<Connector> Conectores = new HashSet<>();
 

@@ -1,8 +1,10 @@
 package com.eVolGreen.eVolGreen.Models.Account.Transaction;
 
 import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import org.hibernate.annotations.GenericGenerator;
@@ -10,6 +12,7 @@ import org.hibernate.annotations.GenericGenerator;
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Entity
 public class Transaction {
@@ -29,13 +32,13 @@ public class Transaction {
     private LocalDateTime fechaCreacion;
 
     @NotNull(message = "La hora de inicio es obligatoria")
-    private LocalDateTime horaInicio;
+    private ZonedDateTime horaInicio;
 
     @NotNull(message = "La hora de fin es obligatoria")
-    private LocalDateTime horaFin;
+    private ZonedDateTime horaFin;
 
     @NotNull(message = "La energía entregada es obligatoria")
-    private BigDecimal energiaEntregada;
+    private Integer energiaEntregada;
 
     @NotNull(message = "El costo es obligatorio")
     private Integer costo;
@@ -52,10 +55,19 @@ public class Transaction {
     @JsonBackReference("Terminal-Transaction")
     private ChargingStation terminal;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "device_identifier_id")
+    private DeviceIdentifier deviceIdentifier;
+
+    private Boolean activo = false;
+
+    @JsonProperty("transactionId")
+    private Integer transactionId;
+
     public Transaction() {
     }
 
-    public Transaction(long id, TransactionType tipoTransaction, String descripcion, LocalDateTime fechaCreacion, LocalDateTime horaInicio, LocalDateTime horaFin, BigDecimal energiaEntregada, Integer costo, Account account, ChargingStation terminal) {
+    public Transaction(long id, TransactionType tipoTransaction, String descripcion, LocalDateTime fechaCreacion, ZonedDateTime horaInicio, ZonedDateTime horaFin, Integer energiaEntregada, Integer costo, Account account, ChargingStation terminal, Boolean activo, Integer transactionId) {
         this.id = id;
         this.tipoTransaction = tipoTransaction;
         this.descripcion = descripcion;
@@ -66,6 +78,8 @@ public class Transaction {
         this.costo = costo;
         this.account = account;
         this.terminal = terminal;
+        this.activo = activo;
+        this.transactionId = transactionId;
     }
 
     public long getId() {
@@ -100,27 +114,27 @@ public class Transaction {
         this.fechaCreacion = fechaCreacion;
     }
 
-    public LocalDateTime getHoraInicio() {
+    public ZonedDateTime getHoraInicio() {
         return horaInicio;
     }
 
-    public void setHoraInicio(LocalDateTime horaInicio) {
+    public void setHoraInicio(ZonedDateTime horaInicio) {
         this.horaInicio = horaInicio;
     }
 
-    public LocalDateTime getHoraFin() {
+    public ZonedDateTime getHoraFin() {
         return horaFin;
     }
 
-    public void setHoraFin(LocalDateTime horaFin) {
+    public void setHoraFin(ZonedDateTime horaFin) {
         this.horaFin = horaFin;
     }
 
-    public BigDecimal getEnergiaEntregada() {
+    public Integer getEnergiaEntregada() {
         return energiaEntregada;
     }
 
-    public void setEnergiaEntregada(BigDecimal energiaEntregada) {
+    public void setEnergiaEntregada(Integer energiaEntregada) {
         this.energiaEntregada = energiaEntregada;
     }
 
@@ -148,6 +162,30 @@ public class Transaction {
         this.terminal = terminal;
     }
 
+    public DeviceIdentifier getDeviceIdentifier() {
+        return deviceIdentifier;
+    }
+
+    public void setDeviceIdentifier(DeviceIdentifier deviceIdentifier) {
+        this.deviceIdentifier = deviceIdentifier;
+    }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
+    }
+
+    public Integer getTransactionId() {
+        return transactionId;
+    }
+
+    public void setTransactionId(Integer transactionId) {
+        this.transactionId = transactionId;
+    }
+
     @Override
     public String toString() {
         return "Transaction{" +
@@ -161,6 +199,9 @@ public class Transaction {
                 ", costo=" + costo +
                 ", account=" + account +
                 ", terminal=" + terminal +
+                ", deviceIdentifier=" + deviceIdentifier +
+                ", activo=" + activo +
+                ", transactionId=" + transactionId +
                 '}';
     }
 }

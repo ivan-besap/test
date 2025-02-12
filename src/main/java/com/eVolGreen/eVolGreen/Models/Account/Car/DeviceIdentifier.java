@@ -39,6 +39,11 @@ public class DeviceIdentifier {
     @JsonBackReference("Empresa-RFID")
     private Empresa empresa;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "account_id")
+    @JsonBackReference("Account-DeviceIdentifier")
+    private Account account;
+
     private Boolean activo = false;
 
     private Boolean usable = false;
@@ -115,6 +120,14 @@ public class DeviceIdentifier {
 
     public void setUsable(Boolean usable) {
         this.usable = usable;
+    }
+
+    public Account getAccount() {
+        return account;
+    }
+
+    public void setAccount(Account account) {
+        this.account = account;
     }
 
     @Override

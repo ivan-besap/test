@@ -1,8 +1,14 @@
 package com.eVolGreen.eVolGreen.Configurations.MQ;
 
 import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
+import com.eVolGreen.eVolGreen.Models.Account.Transaction.Transaction;
 import com.eVolGreen.eVolGreen.Models.Account.Transaction.TransactionInfo;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.ConnectorStatus;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Reporte;
 import com.eVolGreen.eVolGreen.Models.Ocpp.CargasOcpp;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Exceptions.UnsupportedFeatureException;
@@ -56,11 +62,9 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirma
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.ClearChargingProfileRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.GetCompositeScheduleRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.SetChargingProfileRequest;
-import com.eVolGreen.eVolGreen.Repositories.CargasOcppRepository;
-import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
-import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
-import com.eVolGreen.eVolGreen.Repositories.TransactionInfoRepository;
+import com.eVolGreen.eVolGreen.Repositories.*;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
+import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -80,12 +84,14 @@ import org.springframework.web.socket.handler.AbstractWebSocketHandler;
 
 import java.io.EOFException;
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.*;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 
 /**
@@ -142,8 +148,16 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
     private DeviceIdentifierRepository deviceIdentifierRepository;
     private final Map<String, TransactionInfo> activeTransactions = new ConcurrentHashMap<>();
     private final Map<Integer, CargasOcpp> cargasOcppMap = new ConcurrentHashMap<>();
-    @Autowired
+    private final Map<Integer, Reporte> reporteMap = new ConcurrentHashMap<>();
+    private final Map<Integer, Transaction> transactionMap = new ConcurrentHashMap<>();
+
     private TransactionInfoRepository transactionInfoRepository;
+    @Autowired
+    private ChargerService chargerService;
+    @Autowired
+    private ReporteRepository reporteRepository;
+    @Autowired
+    private TransactionRepository transactionRepository;
 
 
 
@@ -168,7 +182,9 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                             JSONServer jsonServer, ServerCoreProfile coreProfile,
                             Queue queue, PromiseFulfiller fulfiller, IFeatureRepository featureRepository,
                             WebSocketMetricsConfig webSocketMetricsConfig, DeviceIdentifierRepository deviceIdentifierRepository,
-                            CargasOcppRepository cargasOcppRepository, TransactionInfoRepository  transactionInfoRepository, ConnectorRepository connectorRepository) {
+                            CargasOcppRepository cargasOcppRepository, TransactionInfoRepository  transactionInfoRepository,
+                            ConnectorRepository connectorRepository, ChargerService chargerService, ReporteRepository reporteRepository,
+                            TransactionRepository transactionRepository) {
 
         this.sessionFactory = sessionFactory;
         this.utilService = utilService;
@@ -205,6 +221,12 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         this.transactionInfoRepository = transactionInfoRepository;
 
         this.connectorRepository = connectorRepository;
+
+        this.chargerService = chargerService;
+
+        this.reporteRepository = reporteRepository;
+
+        this.transactionRepository = transactionRepository;
     }
 
 //1
@@ -1218,6 +1240,9 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                 throw new IllegalArgumentException("MeterValuesRequest inválido");
             }
 
+            logger.info("Transacciones activas en el mapa: {}", activeTransactions);
+            logger.info("CargasOcpp activas en el mapa: {}", cargasOcppMap);
+
             // Obtener la transacción activa desde el mapa o la base de datos
             TransactionInfo transactionInfo = activeTransactions.values().stream()
                     .filter(t -> t.getTransactionId() == meterValuesRequest.getTransactionId())
@@ -1227,9 +1252,23 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
 
             // Obtener CargasOcpp activa desde el mapa o la base de datos
             CargasOcpp cargasOcpp = cargasOcppMap.values().stream()
-                    .filter(c -> c.getActivo() == cargasOcppMap.get(session.getChargePointId()).getActivo())
+                    .filter(c -> c.getActivo() == cargasOcppMap.get(meterValuesRequest.getTransactionId()).getActivo())
                     .findFirst()
                     .orElseGet(() -> cargasOcppRepository.findByOcppIdAndActivo(session.getChargePointId(), true)
+                            .orElse(null));
+
+            // Obtener Reporte asociado a TransactionId
+            Reporte reporte = reporteMap.values().stream()
+                    .filter(r -> r.getTransactionId() == reporteMap.get(meterValuesRequest.getTransactionId()).getTransactionId())
+                    .findFirst()
+                    .orElseGet(() -> (Reporte) reporteRepository.findByTransactionIdAndActive(meterValuesRequest.getTransactionId())
+                            .orElse(null));
+
+            // Obtener Transaction asociada a TransactionId
+            Transaction transaction = transactionMap.values().stream()
+                    .filter(t -> t.getTransactionId() == transactionMap.get(meterValuesRequest.getTransactionId()).getTransactionId())
+                    .findFirst()
+                    .orElseGet(() -> (Transaction) transactionRepository.findByTransactionId(meterValuesRequest.getTransactionId())
                             .orElse(null));
 
             if (transactionInfo == null) {
@@ -1255,6 +1294,10 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                             .forEach(sampledValue -> {
                                 try {
                                     Integer energySupplied = Integer.parseInt(sampledValue.getValue());
+                                    reporte.setEnergiaEntregada((energySupplied - transactionInfo.getMeterStart()));
+                                    reporteRepository.save(reporte);
+                                    transaction.setEnergiaEntregada((energySupplied - transactionInfo.getMeterStart()));
+                                    transactionRepository.save(transaction);
                                     transactionInfo.setEnergyConsumed((energySupplied - transactionInfo.getMeterStart()));
                                     transactionInfoRepository.save(transactionInfo);
                                     logger.info("++++++++++Energía suministrada actualizada para TransactionId {}: {}",
@@ -1344,6 +1387,7 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
 
             activeTransactions.put(session.getChargePointId(), transactionInfo);
 
+            // Crear y guardar CargasOcpp con MeterStart
             CargasOcpp cargasOcpp = new CargasOcpp();
             cargasOcpp.setOcppId(session.getChargePointId());
             cargasOcpp.setNumeroConector(startTransactionRequest.getConnectorId());
@@ -1353,6 +1397,71 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             cargasOcppRepository.save(cargasOcpp);
 
             cargasOcppMap.put(transactionId, cargasOcpp);
+
+            logger.info("Buscando cargador con ocppId: {}", session.getChargePointId());
+            // Crear y guardar Reporte con MetaStart
+            Reporte reporte = new Reporte();
+
+            // Buscar la estación de carga y el cargador asociados al chargePointId
+            Charger charger = chargerService.findByOCPPid(session.getChargePointId());
+            if (charger == null) {
+                logger.error("No se encontró un cargador asociado al chargePointId: {}", session.getChargePointId());
+                throw new NullPointerException("Cargador no encontrado");
+            }
+
+            ChargingStation chargingStation = charger.getTerminal();
+            if (chargingStation == null) {
+                logger.error("No se encontró una estación de carga asociada al cargador: {}", charger.getId());
+                throw new IllegalArgumentException("Estación de carga no encontrada");
+            }
+
+            // Asociar el conector correspondiente al connectorId
+            Connector connector = charger.getConectores().stream()
+                    .filter(conn -> conn.getNConector() == startTransactionRequest.getConnectorId())
+                    .findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Conector no encontrado"));
+
+            // Asociar la empresa del usuario autorizado
+            Empresa empresa = usuario.getEmpresa();
+
+            // Configurar los datos del reporte
+            reporte.setChargingStation(chargingStation);
+            reporte.setCharger(charger);
+            reporte.setConnector(connector);
+            reporte.setEmpresa(empresa);
+            reporte.setEnergia(0);
+            reporte.setTiempo("00:00:00");
+            reporte.setFechaCreacion(LocalDateTime.now());
+            reporte.setInicioCarga(startTransactionRequest.getTimestamp());
+            reporte.setFinCarga(null);
+            reporte.setCosto(0);
+            reporte.setDescripcion("Inicio de transacción");
+            reporte.setAccount(usuario.getAccount());
+            reporte.setDeviceIdentifier(usuario);
+            reporte.setActivo(true);
+            reporte.setTransactionId(transactionId);
+
+            reporteMap.put(transactionId, reporte);
+
+            // Guardar el reporte en la base de datos
+            reporteRepository.save(reporte);
+
+            // Configurar los datos de la transacción
+            Transaction transaction = new Transaction();
+            transaction.setDescripcion("Carga");
+            transaction.setCosto(0);
+            transaction.setFechaCreacion(LocalDateTime.now());
+            transaction.setHoraInicio(startTransactionRequest.getTimestamp());
+            transaction.setHoraFin(null);
+            transaction.setAccount(usuario.getAccount());
+            transaction.setTerminal(chargingStation);
+            transaction.setDeviceIdentifier(usuario);
+            transaction.setTransactionId(transactionId);
+
+            transactionMap.put(transactionId,transaction);
+
+            // Guardar la transacción en la base de datos
+            transactionRepository.save(transaction);
 
             // Enviar el mensaje a Amazon MQ
             jsonServer.sendMessageToMQ("Start Transaction request received for Connector ID: " + startTransactionRequest.getConnectorId());
@@ -1407,11 +1516,12 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
 
             logger.info("Transaction Data : {}",stopTransactionRequest.getTransactionData());
 
+            // Calcular la energía suministrada
+            Integer meterStart = transactionInfo.getMeterStart();
+            Integer meterStop = stopTransactionRequest.getMeterStop();
+            Integer energySupplied = meterStop - meterStart;
+
             if (transactionInfo != null) {
-                // Calcular la energía suministrada
-                Integer meterStart = transactionInfo.getMeterStart();
-                Integer meterStop = stopTransactionRequest.getMeterStop();
-                Integer energySupplied = meterStop - meterStart;
 
                 // Actualizar los valores finales de la transacción
                 transactionInfo.setMeterStop(stopTransactionRequest.getMeterStop());
@@ -1477,8 +1587,34 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
 
             cargasOcppMap.remove(stopTransactionRequest.getTransactionId());
 
+            // Obtener Reporte asociado a ChargePointId
+            Reporte reporte = reporteMap.get(stopTransactionRequest.getTransactionId());
+            if (reporte != null) {
+                reporte.setFinCarga(stopTransactionRequest.getTimestamp());
+                reporte.setTiempo(utilService.calculateTimeDifference(reporte.getInicioCarga(), stopTransactionRequest.getTimestamp()));
+                reporte.setEnergiaEntregada(energySupplied);
+                reporte.setActivo(false);
+                reporteRepository.save(reporte);
+                logger.info("Reporte actualizado para el transactionId: {}", stopTransactionRequest.getTransactionId());
+            } else {
+                logger.warn("Reporte no encontrado para el transactionId: {}", stopTransactionRequest.getTransactionId());
+            }
 
-            
+            reporteMap.remove(stopTransactionRequest.getTransactionId());
+
+            // Obtener Transaction asociada a TransactionId
+            Transaction transaction = transactionMap.get(stopTransactionRequest.getTransactionId());
+            if (transaction != null) {
+                transaction.setHoraFin(stopTransactionRequest.getTimestamp());
+                transaction.setEnergiaEntregada(energySupplied);
+                transactionRepository.save(transaction);
+                logger.info("Transacción finalizada para el transactionId: {}", stopTransactionRequest.getTransactionId());
+            } else {
+                logger.warn("Transacción no encontrada para el transactionId: {}", stopTransactionRequest.getTransactionId());
+            }
+
+            transactionMap.remove(stopTransactionRequest.getTransactionId());
+
             // Crear la confirmación de StopTransaction y asignar los detalles
             StopTransactionConfirmation confirmation = new StopTransactionConfirmation();
             confirmation.setIdTagInfo(idTagInfo);

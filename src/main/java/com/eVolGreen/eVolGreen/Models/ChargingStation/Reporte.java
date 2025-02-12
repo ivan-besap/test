@@ -7,11 +7,13 @@ import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.persistence.*;
 
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Entity
 public class Reporte {
@@ -36,16 +38,15 @@ public class Reporte {
     @JoinColumn(name = "empresa_id")
     private Empresa empresa;
 
-    private BigDecimal energiaEntregada;
+    private Integer energiaEntregada;
 
     private String tiempo;
 
     private LocalDateTime fechaCreacion;
 
+    private ZonedDateTime inicioCarga;
 
-    private LocalDateTime inicioCarga;
-
-    private LocalDateTime finCarga;
+    private ZonedDateTime finCarga;
 
     private Integer costo;
 
@@ -58,6 +59,11 @@ public class Reporte {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "device_identifier_id")
     private DeviceIdentifier deviceIdentifier;
+
+    private Boolean activo;
+
+    @JsonProperty("transactionId")
+    private Integer transactionId;
 
     // Getters y Setters
     public Long getId() {
@@ -100,11 +106,11 @@ public class Reporte {
         this.empresa = empresa;
     }
 
-    public BigDecimal getEnergia() {
+    public Integer getEnergia() {
         return energiaEntregada;
     }
 
-    public void setEnergia(BigDecimal energiaEntregada) {
+    public void setEnergia(Integer energiaEntregada) {
         this.energiaEntregada = energiaEntregada;
     }
 
@@ -124,19 +130,28 @@ public class Reporte {
         this.fechaCreacion = fechaCreacion;
     }
 
-    public LocalDateTime getInicioCarga() {
+    public ZonedDateTime getInicioCarga() {
         return inicioCarga;
     }
 
-    public void setInicioCarga(LocalDateTime inicioCarga) {
+    public void setInicioCarga(ZonedDateTime inicioCarga) {
         this.inicioCarga = inicioCarga;
     }
 
-    public LocalDateTime getFinCarga() {
+    public Integer getEnergiaEntregada() {
+        return energiaEntregada;
+    }
+
+    public void setEnergiaEntregada(
+            Integer energiaEntregada) {
+        this.energiaEntregada = energiaEntregada;
+    }
+
+    public ZonedDateTime getFinCarga() {
         return finCarga;
     }
 
-    public void setFinCarga(LocalDateTime finCarga) {
+    public void setFinCarga(ZonedDateTime finCarga) {
         this.finCarga = finCarga;
     }
 
@@ -172,5 +187,19 @@ public class Reporte {
         this.deviceIdentifier = deviceIdentifier;
     }
 
+    public Boolean getActivo() {
+        return activo;
+    }
 
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
+    }
+
+    public Integer getTransactionId() {
+        return transactionId;
+    }
+
+    public void setTransactionId(Integer transactionId) {
+        this.transactionId = transactionId;
+    }
 }

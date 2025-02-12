@@ -1,13 +1,14 @@
 package com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 public class ReporteResponseDTO {
     private String estacionDeCarga;
     private String idCargador;
     private String conector;
-    private LocalDateTime inicioCarga;
-    private LocalDateTime finCarga;
+    private ZonedDateTime inicioCarga;
+    private ZonedDateTime finCarga;
     private String usuario;
     private String energia;
     private String tiempo;
@@ -19,7 +20,7 @@ public class ReporteResponseDTO {
 
     // Constructor con parámetros
     public ReporteResponseDTO(String estacionDeCarga, String idCargador, String conector,
-                              LocalDateTime inicioCarga, LocalDateTime finCarga, String usuario,
+                              ZonedDateTime inicioCarga, ZonedDateTime finCarga, String usuario,
                               String energia, String tiempo, Integer costo) {
         this.estacionDeCarga = estacionDeCarga;
         this.idCargador = idCargador;
@@ -58,19 +59,19 @@ public class ReporteResponseDTO {
         this.conector = conector;
     }
 
-    public LocalDateTime getInicioCarga() {
+    public ZonedDateTime getInicioCarga() {
         return inicioCarga;
     }
 
-    public void setInicioCarga(LocalDateTime inicioCarga) {
+    public void setInicioCarga(ZonedDateTime inicioCarga) {
         this.inicioCarga = inicioCarga;
     }
 
-    public LocalDateTime getFinCarga() {
+    public ZonedDateTime getFinCarga() {
         return finCarga;
     }
 
-    public void setFinCarga(LocalDateTime finCarga) {
+    public void setFinCarga(ZonedDateTime finCarga) {
         this.finCarga = finCarga;
     }
 

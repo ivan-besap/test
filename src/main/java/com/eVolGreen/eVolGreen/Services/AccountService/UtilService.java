@@ -9,6 +9,8 @@ import org.springframework.http.*;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 
+import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -174,5 +176,18 @@ public class UtilService {
 
     public double getTotalEnergy() {
         return totalEnergy;
+    }
+
+    public String calculateTimeDifference(ZonedDateTime inicioCarga, ZonedDateTime timestamp) {
+        // Calcular la diferencia en segundos
+        long seconds = ChronoUnit.SECONDS.between(inicioCarga, timestamp);
+
+        // Calcular horas, minutos y segundos
+        long hours = seconds / 3600;
+        long minutes = (seconds % 3600) / 60;
+        long remainingSeconds = seconds % 60;
+
+        // Formatear la duración como "HH:mm:ss"
+        return String.format("%02d:%02d:%02d", hours, minutes, remainingSeconds);
     }
 }

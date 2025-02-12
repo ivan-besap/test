@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Services.ImplementService.ChargingStationServiceImplement;
 
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ReporteListDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ReporteDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ReporteResponseDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
@@ -19,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -109,7 +111,7 @@ public class ReporteServiceImplement implements ReporteService {
         }
 
         reporte.setFechaCreacion(LocalDateTime.now());
-        reporte.setInicioCarga(LocalDateTime.now());
+        reporte.setInicioCarga(ZonedDateTime.now());
         // Otros campos iniciales si es necesario
 
         reporte = reporteRepository.save(reporte);
@@ -120,7 +122,7 @@ public class ReporteServiceImplement implements ReporteService {
         Optional<Reporte> optionalReporte = reporteRepository.findById(id);
         if (optionalReporte.isPresent()) {
             Reporte reporte = optionalReporte.get();
-            reporte.setFinCarga(LocalDateTime.now());
+            reporte.setFinCarga(ZonedDateTime.now());
             reporte.setTiempo(reporteDTO.getTiempo());
             reporte.setCosto(reporteDTO.getCosto());
             reporte.setEnergia(reporteDTO.getEnergia());
@@ -159,6 +161,28 @@ public class ReporteServiceImplement implements ReporteService {
     @Override
     public void deleteReporte(Long id) {
         reporteRepository.deleteById(id);
+    }
+
+    @Override
+    public List<ReporteListDTO> getAllReportesGroupedByCharger() {
+        List<Reporte> reportes = reporteRepository.findAllGroupedByChargerAndSorted();
+
+        return reportes.stream().map(this::convertToDTO).collect(Collectors.toList());
+    }
+
+    private ReporteListDTO convertToDTO(Reporte reporte) {
+        ReporteListDTO dto = new ReporteListDTO();
+        dto.setId(reporte.getId());
+        dto.setFechaCreacion(reporte.getFechaCreacion());
+        dto.setEstacionDeCarga(reporte.getChargingStation().getNombreTerminal()); // Ajusta según tu entidad ChargingStation
+        dto.setCargador(reporte.getCharger().getNombre()); // Ajusta según tu entidad Charger
+        dto.setConector(reporte.getConnector().getTipoConector().getNombre()); // Ajusta según tu entidad Connector
+        dto.setChargePointId(reporte.getCharger().getoCPPid()); // Ajusta según tu entidad Charger
+        dto.setModelo(reporte.getCharger().getModel().getName()); // Ajusta según tu entidad Charger
+        dto.setTipo(reporte.getConnector().getTipoConector().getNombre()); // Ajusta según tu entidad Connector
+        dto.setEstado(reporte.getActivo() ? "Activo" : "Inactivo");
+
+        return dto;
     }
 }
 

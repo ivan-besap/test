@@ -23,11 +23,9 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.JSONServer;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.Ocpp_JSON.JSONConfiguration;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Confirmations.TriggerMessageConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.RemoteTrigger.Request.TriggerMessageRequest;
-import com.eVolGreen.eVolGreen.Repositories.CargasOcppRepository;
-import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
-import com.eVolGreen.eVolGreen.Repositories.DeviceIdentifierRepository;
-import com.eVolGreen.eVolGreen.Repositories.TransactionInfoRepository;
+import com.eVolGreen.eVolGreen.Repositories.*;
 import com.eVolGreen.eVolGreen.Services.AccountService.UtilService;
+import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ConnectorService;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonParser;
@@ -136,9 +134,10 @@ public class AppConfig {
                                              JSONServer jsonServer, ServerCoreProfile coreProfile, Queue queue,
                                              PromiseFulfiller fulfiller, FeatureRepository featureRepository, WebSocketMetricsConfig webSocketMetricsConfig,
                                              DeviceIdentifierRepository  deviceIdentifierRepository, CargasOcppRepository cargasOcppRepository,
-                                             TransactionInfoRepository transactionInfoRepository, ConnectorRepository connectorRepository) {
+                                             TransactionInfoRepository transactionInfoRepository, ConnectorRepository connectorRepository,
+                                             ReporteRepository reporteRepository, ChargerService chargerService, TransactionRepository transactionRepository) {
 
-        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository,webSocketMetricsConfig,deviceIdentifierRepository,cargasOcppRepository,transactionInfoRepository,connectorRepository);
+        return new WebSocketHandler(utilService, sessionFactory, communicator, jsonServer, coreProfile, queue,fulfiller,featureRepository,webSocketMetricsConfig,deviceIdentifierRepository,cargasOcppRepository,transactionInfoRepository,connectorRepository,chargerService,reporteRepository,transactionRepository);
     }
 
     /**

@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 public class ReporteDTO {
     private Long id;
@@ -9,11 +10,11 @@ public class ReporteDTO {
     private String chargerId;
     private Long connectorId;
     private Long empresaId;
-    private BigDecimal energia;
+    private Integer energia;
     private String tiempo;
     private LocalDateTime fechaCreacion;
-    private LocalDateTime inicioCarga;
-    private LocalDateTime finCarga;
+    private ZonedDateTime inicioCarga;
+    private ZonedDateTime finCarga;
     private Integer costo;
     private String descripcion;
     private Long accountId;
@@ -21,8 +22,8 @@ public class ReporteDTO {
 
     // Constructor
     public ReporteDTO(Long id, Long chargingStationId, String chargerId, Long connectorId, Long empresaId,
-                      BigDecimal energia, String tiempo, LocalDateTime fechaCreacion,
-                      LocalDateTime inicioCarga, LocalDateTime finCarga, Integer costo,
+                      Integer energia, String tiempo, LocalDateTime fechaCreacion,
+                      ZonedDateTime inicioCarga, ZonedDateTime finCarga, Integer costo,
                       String descripcion, Long accountId, Long deviceIdentifierId) {
         this.id = id;
         this.chargingStationId = chargingStationId;
@@ -79,11 +80,11 @@ public class ReporteDTO {
         this.empresaId = empresaId;
     }
 
-    public BigDecimal getEnergia() {
+    public Integer getEnergia() {
         return energia;
     }
 
-    public void setEnergia(BigDecimal energia) {
+    public void setEnergia(Integer energia) {
         this.energia = energia;
     }
 
@@ -103,19 +104,19 @@ public class ReporteDTO {
         this.fechaCreacion = fechaCreacion;
     }
 
-    public LocalDateTime getInicioCarga() {
+    public ZonedDateTime getInicioCarga() {
         return inicioCarga;
     }
 
-    public void setInicioCarga(LocalDateTime inicioCarga) {
+    public void setInicioCarga(ZonedDateTime inicioCarga) {
         this.inicioCarga = inicioCarga;
     }
 
-    public LocalDateTime getFinCarga() {
+    public ZonedDateTime getFinCarga() {
         return finCarga;
     }
 
-    public void setFinCarga(LocalDateTime finCarga) {
+    public void setFinCarga(ZonedDateTime finCarga) {
         this.finCarga = finCarga;
     }
 

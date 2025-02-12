@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.Controllers.ChargingStationController;
 
 
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ReporteListDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ReporteDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ReporteResponseDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
@@ -76,6 +77,11 @@ public class ReporteController {
             // Manejo de errores generales
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
         }
+    }
+
+    @GetMapping("/cargaCargador")
+    public List<ReporteListDTO> getReportesGroupedByCharger() {
+        return reporteService.getAllReportesGroupedByCharger();
     }
 
 }
