@@ -1272,8 +1272,7 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                             .orElse(null));
 
             if (transactionInfo == null) {
-                logger.warn("No se encontró una transacción activa para TransactionId: {}", meterValuesRequest.getTransactionId());
-                return;
+                logger.info("No se encontró una transacción activa para TransactionId: {}", meterValuesRequest.getTransactionId());
             }
 
             if (transactionInfo != null) {
@@ -1294,10 +1293,14 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                             .forEach(sampledValue -> {
                                 try {
                                     Integer energySupplied = Integer.parseInt(sampledValue.getValue());
-                                    reporte.setEnergiaEntregada((energySupplied - transactionInfo.getMeterStart()));
-                                    reporteRepository.save(reporte);
-                                    transaction.setEnergiaEntregada((energySupplied - transactionInfo.getMeterStart()));
-                                    transactionRepository.save(transaction);
+                                    if (reporte != null) {
+                                        reporte.setEnergiaEntregada((energySupplied - transactionInfo.getMeterStart()));
+                                        reporteRepository.save(reporte);
+                                    }
+                                    if (transaction != null) {
+                                        transaction.setEnergiaEntregada((energySupplied - transactionInfo.getMeterStart()));
+                                        transactionRepository.save(transaction);
+                                    }
                                     transactionInfo.setEnergyConsumed((energySupplied - transactionInfo.getMeterStart()));
                                     transactionInfoRepository.save(transactionInfo);
                                     logger.info("++++++++++Energía suministrada actualizada para TransactionId {}: {}",
@@ -1317,7 +1320,9 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             logger.info("Meter values recibidos: {}", meterValuesJson);
             jsonServer.sendMessageToMQ("Meter values recibidos: " + meterValuesJson);
 
-            cargasOcppRepository.save(cargasOcpp);
+            if (cargasOcpp != null) {
+                cargasOcppRepository.save(cargasOcpp);
+            }
 
             // Crear y enviar la confirmación de MeterValues
             MeterValuesConfirmation confirmation = new MeterValuesConfirmation();
