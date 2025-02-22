@@ -37,6 +37,7 @@ public class WebAuthorization {
                         .requestMatchers(HttpMethod.POST, "api/adminCompany/updateAdminCompany&CompanyUser").permitAll()
                         .requestMatchers(HttpMethod.PUT, "/api/fees/**").authenticated()
                         .requestMatchers(HttpMethod.GET, "/api/verify-account").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/upload-diagnostics/**").permitAll()
                         .requestMatchers("/ocpp/**").permitAll()
                         .requestMatchers("/error/**").permitAll()
                         .anyRequest().authenticated()

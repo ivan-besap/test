@@ -51,8 +51,9 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Reservation.Confirmati
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Reservation.Confirmations.ReserveNowConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Reservation.Request.CancelReservationRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Reservation.Request.ReserveNowRequest;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Confirmations.SecurityEventNotificationConfirmation;
-import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Request.SecurityEventNotificationRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Confirmations.*;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Confirmations.Types.GenericStatusEnumType;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Request.*;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirmations.ClearChargingProfileConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirmations.Enums.ChargingProfileStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirmations.Enums.ClearChargingProfileStatus;
@@ -612,6 +613,15 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                 break;
             case "FirmwareStatusNotification":
                 handleFirmwareStatusNotification(session, webSocketSession, requestPayload, messageId);
+                break;
+            case "SignedFirmwareStatusNotification":
+                handleSignedFirmwareStatusNotification(session, webSocketSession, requestPayload, messageId);
+                break;
+            case "SignCertificate":
+                handleSignCertificate(session, webSocketSession, requestPayload, messageId);
+                break;
+            case "LogStatusNotification":
+                handleLogStatusNotification(session, webSocketSession, requestPayload, messageId);
                 break;
             default:
                 logger.warn("Acción no soportada_: {}", action);
@@ -2340,7 +2350,163 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         }
     }
 
+//30
+    /**
+     * Maneja la recepción de SignedFirmwareStatusNotification desde el Charge Point.
+     *
+     * @param session           La instancia de la sesión OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param requestPayload    El contenido de la solicitud.
+     * @param messageId         El ID del mensaje.
+     * @throws IOException      Si ocurre un error al procesar o enviar la respuesta.
+     */
+    private void handleSignedFirmwareStatusNotification(Session session, WebSocketSession webSocketSession,
+                                                        Object requestPayload, String messageId) throws IOException {
+        try {
+            SignedFirmwareStatusNotificationRequest request = objectMapper.convertValue(requestPayload,
+                    SignedFirmwareStatusNotificationRequest.class);
+            logger.info("SignedFirmwareStatusNotificationRequest recibido: {}", request);
 
+            if (!request.validate()) {
+                throw new IllegalArgumentException("SignedFirmwareStatusNotificationRequest inválido.");
+            }
+
+            // Aquí podrías guardar el estado en la base de datos o enviarlo a Amazon MQ
+            jsonServer.sendMessageToMQ("SignedFirmwareStatusNotification recibido: " + request.toString());
+
+            SignedFirmwareStatusNotificationConfirmation confirmation = new SignedFirmwareStatusNotificationConfirmation();
+            sendResponse(session, webSocketSession, messageId, "SignedFirmwareStatusNotification", confirmation);
+            logger.info("SignedFirmwareStatusNotification procesado para la sesión: {}", session.getSessionId());
+
+        } catch (IllegalArgumentException e) {
+            logger.error("Error en SignedFirmwareStatusNotification: {}", e.getMessage());
+            sendError(session, webSocketSession, messageId, "Error en SignedFirmwareStatusNotification: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error procesando SignedFirmwareStatusNotification: {}", session.getSessionId(), e);
+            sendError(session, webSocketSession, messageId, "Error interno: " + e.getMessage());
+        }
+    }
+
+//31
+    /**
+     * Maneja la recepción de SignCertificate desde el Charge Point.
+     *
+     * @param session           La instancia de la sesión OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param requestPayload    El contenido de la solicitud.
+     * @param messageId         El ID del mensaje.
+     * @throws IOException      Si ocurre un error al procesar o enviar la respuesta.
+     */
+    private void handleSignCertificate(Session session, WebSocketSession webSocketSession,
+                                       Object requestPayload, String messageId) throws IOException {
+        try {
+            SignCertificateRequest request = objectMapper.convertValue(requestPayload, SignCertificateRequest.class);
+            logger.info("SignCertificateRequest recibido: {}", request);
+
+            if (!request.validate()) {
+                throw new IllegalArgumentException("SignCertificateRequest inválido.");
+            }
+
+            // Lógica para firmar el certificado (puedes integrarlo con un servicio externo)
+            jsonServer.sendMessageToMQ("SignCertificate solicitado: " + request.toString());
+
+            SignCertificateConfirmation confirmation = new SignCertificateConfirmation();
+            confirmation.setStatus(GenericStatusEnumType.Accepted);
+            sendResponse(session, webSocketSession, messageId, "SignCertificate", confirmation);
+            logger.info("SignCertificate procesado para la sesión: {}", session.getSessionId());
+
+        } catch (IllegalArgumentException e) {
+            logger.error("Error en SignCertificate: {}", e.getMessage());
+            sendError(session, webSocketSession, messageId, "Error en SignCertificate: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error procesando SignCertificate: {}", session.getSessionId(), e);
+            sendError(session, webSocketSession, messageId, "Error interno: " + e.getMessage());
+        }
+    }
+
+//32
+    /**
+     * Maneja la recepción de LogStatusNotification desde el Charge Point.
+     *
+     * @param session           La instancia de la sesión OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param requestPayload    El contenido de la solicitud.
+     * @param messageId         El ID del mensaje.
+     * @throws IOException      Si ocurre un error al procesar o enviar la respuesta.
+     */
+    private void handleLogStatusNotification(Session session, WebSocketSession webSocketSession,
+                                             Object requestPayload, String messageId) throws IOException {
+        try {
+            LogStatusNotificationRequest request = objectMapper.convertValue(requestPayload, LogStatusNotificationRequest.class);
+            logger.info("LogStatusNotificationRequest recibido: {}", request);
+
+            if (!request.validate()) {
+                throw new IllegalArgumentException("LogStatusNotificationRequest inválido.");
+            }
+
+            // Guardar estado o enviarlo a un sistema externo
+            jsonServer.sendMessageToMQ("LogStatusNotification recibido: " + request.toString());
+
+            LogStatusNotificationConfirmation confirmation = new LogStatusNotificationConfirmation();
+            sendResponse(session, webSocketSession, messageId, "LogStatusNotification", confirmation);
+            logger.info("LogStatusNotification procesado para la sesión: {}", session.getSessionId());
+
+        } catch (IllegalArgumentException e) {
+            logger.error("Error en LogStatusNotification: {}", e.getMessage());
+            sendError(session, webSocketSession, messageId, "Error en LogStatusNotification: " + e.getMessage());
+        } catch (Exception e) {
+            logger.error("Error procesando LogStatusNotification: {}", session.getSessionId(), e);
+            sendError(session, webSocketSession, messageId, "Error interno: " + e.getMessage());
+        }
+    }
+
+//33
+    /**
+     * Maneja la solicitud de notificación de eventos de seguridad y envía la confirmación correspondiente al cliente.
+     *
+     * <p>Esta solicitud es enviada por la estación de carga para notificar un evento de seguridad.</p>
+     *
+     * @param session           La instancia de la sesión OCPP.
+     * @param webSocketSession  La sesión WebSocket activa.
+     * @param requestPayload    El contenido de la solicitud SecurityEventNotification.
+     * @param messageId         El ID del mensaje que se está procesando.
+     * @throws IOException si ocurre un error al procesar o enviar la respuesta.
+     */
+    public void handleSecurityEventNotification(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
+        try {
+            // Deserializar el payload a SecurityEventNotificationRequest
+            SecurityEventNotificationRequest securityEventRequest = objectMapper.convertValue(requestPayload, SecurityEventNotificationRequest.class);
+
+            // Validar la solicitud si es necesario
+            if (!securityEventRequest.validate()) {
+                throw new IllegalArgumentException("SecurityEventNotificationRequest inválido.");
+            }
+
+            // Log detallado de la solicitud recibida
+            String requestJson = objectMapper.writeValueAsString(securityEventRequest);
+            logger.info("SecurityEventNotificationRequest recibido: {}", requestJson);
+
+            // Procesar la solicitud según la lógica de negocio
+            // Por ejemplo, enviar a Amazon MQ
+            jsonServer.sendMessageToMQ("SecurityEventNotification recibido: " + securityEventRequest.toString());
+
+            // Crear la confirmación de la respuesta
+            SecurityEventNotificationConfirmation confirmation = new SecurityEventNotificationConfirmation();
+
+            // Enviar la confirmación al cliente
+            sendResponse(session, webSocketSession, messageId, "SecurityEventNotification", confirmation);
+            logger.info("SecurityEventNotification completado exitosamente para la sesión: {}", session.getSessionId());
+
+        } catch (IllegalArgumentException e) {
+            // Manejar errores de validación
+            logger.error("Error en los argumentos de SecurityEventNotification: {}", e.getMessage());
+            sendError(session, webSocketSession, messageId, "Error en SecurityEventNotification: " + e.getMessage());
+        } catch (Exception e) {
+            // Manejar cualquier otro error inesperado
+            logger.error("Error procesando SecurityEventNotification para la sesión: {}", session != null ? session.getSessionId() : "Sesión no disponible", e);
+            sendError(session, webSocketSession, messageId, "Error en SecurityEventNotification: " + e.getMessage());
+        }
+    }
 
     public Session getSessionById(String sessionId) {
         try {
@@ -2424,50 +2590,99 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
     }
 
     /**
-     * Maneja la solicitud de notificación de eventos de seguridad y envía la confirmación correspondiente al cliente.
-     *
-     * <p>Esta solicitud es enviada por la estación de carga para notificar un evento de seguridad.</p>
+     * Envía una solicitud InstallCertificate al Charge Point de manera asíncrona.
      *
      * @param session           La instancia de la sesión OCPP.
-     * @param webSocketSession  La sesión WebSocket activa.
-     * @param requestPayload    El contenido de la solicitud SecurityEventNotification.
-     * @param messageId         El ID del mensaje que se está procesando.
-     * @throws IOException si ocurre un error al procesar o enviar la respuesta.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param request           El objeto InstallCertificateRequest con el certificado.
+     * @return                  Un CompletableFuture que se completará con la confirmación InstallCertificateConfirmation.
+     * @throws IOException      Si ocurre un error al enviar el mensaje.
      */
-    public void handleSecurityEventNotification(Session session, WebSocketSession webSocketSession, Object requestPayload, String messageId) throws IOException {
-        try {
-            // Deserializar el payload a SecurityEventNotificationRequest
-            SecurityEventNotificationRequest securityEventRequest = objectMapper.convertValue(requestPayload, SecurityEventNotificationRequest.class);
+    public CompletableFuture<InstallCertificateConfirmation> sendInstallCertificateRequestAsync(
+            Session session, WebSocketSession webSocketSession, InstallCertificateRequest request) throws IOException {
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando InstallCertificateRequest con messageId: {}", messageId);
 
-            // Validar la solicitud si es necesario
-            if (!securityEventRequest.validate()) {
-                throw new IllegalArgumentException("SecurityEventNotificationRequest inválido.");
-            }
+        CompletableFuture<InstallCertificateConfirmation> future = new CompletableFuture<>();
+        session.registerPendingPromise(messageId, "InstallCertificate", (CompletableFuture) future);
 
-            // Log detallado de la solicitud recibida
-            String requestJson = objectMapper.writeValueAsString(securityEventRequest);
-            logger.info("SecurityEventNotificationRequest recibido: {}", requestJson);
-
-            // Procesar la solicitud según la lógica de negocio
-            // Por ejemplo, enviar a Amazon MQ
-            jsonServer.sendMessageToMQ("SecurityEventNotification recibido: " + securityEventRequest.toString());
-
-            // Crear la confirmación de la respuesta
-            SecurityEventNotificationConfirmation confirmation = new SecurityEventNotificationConfirmation();
-
-            // Enviar la confirmación al cliente
-            sendResponse(session, webSocketSession, messageId, "SecurityEventNotification", confirmation);
-            logger.info("SecurityEventNotification completado exitosamente para la sesión: {}", session.getSessionId());
-
-        } catch (IllegalArgumentException e) {
-            // Manejar errores de validación
-            logger.error("Error en los argumentos de SecurityEventNotification: {}", e.getMessage());
-            sendError(session, webSocketSession, messageId, "Error en SecurityEventNotification: " + e.getMessage());
-        } catch (Exception e) {
-            // Manejar cualquier otro error inesperado
-            logger.error("Error procesando SecurityEventNotification para la sesión: {}", session != null ? session.getSessionId() : "Sesión no disponible", e);
-            sendError(session, webSocketSession, messageId, "Error en SecurityEventNotification: " + e.getMessage());
+        if (!request.validate()) {
+            logger.error("InstallCertificateRequest inválido: certificate es requerido.");
+            future.completeExceptionally(new IllegalArgumentException("InstallCertificateRequest inválido"));
+            return future;
         }
+
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "InstallCertificate", request});
+        logger.info("Enviando InstallCertificateRequest: {}", requestJson);
+
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("InstallCertificateRequest enviado para messageId: {}", messageId);
+
+        return future;
+    }
+
+    /**
+     * Envía una solicitud GetLog al Charge Point de manera asíncrona.
+     *
+     * @param session           La instancia de la sesión OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param request           El objeto GetLogRequest con los parámetros del log.
+     * @return                  Un CompletableFuture que se completará con la confirmación GetLogConfirmation.
+     * @throws IOException      Si ocurre un error al enviar el mensaje.
+     */
+    public CompletableFuture<GetLogConfirmation> sendGetLogRequestAsync(
+            Session session, WebSocketSession webSocketSession, GetLogRequest request) throws IOException {
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando GetLogRequest con messageId: {}", messageId);
+
+        CompletableFuture<GetLogConfirmation> future = new CompletableFuture<>();
+        session.registerPendingPromise(messageId, "GetLog", (CompletableFuture) future);
+
+        if (!request.validate()) {
+            logger.error("GetLogRequest inválido: logType y location son requeridos.");
+            future.completeExceptionally(new IllegalArgumentException("GetLogRequest inválido"));
+            return future;
+        }
+
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "GetLog", request});
+        logger.info("Enviando GetLogRequest: {}", requestJson);
+
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("GetLogRequest enviado para messageId: {}", messageId);
+
+        return future;
+    }
+
+    /**
+     * Envía una solicitud SignedUpdateFirmware al Charge Point de manera asíncrona.
+     *
+     * @param session           La instancia de la sesión OCPP.
+     * @param webSocketSession  La sesión WebSocket asociada.
+     * @param request           El objeto SignedUpdateFirmwareRequest con la información del firmware firmado.
+     * @return                  Un CompletableFuture que se completará con la confirmación SignedUpdateFirmwareConfirmation.
+     * @throws IOException      Si ocurre un error al enviar el mensaje.
+     */
+    public CompletableFuture<SignedUpdateFirmwareConfirmation> sendSignedUpdateFirmwareRequestAsync(
+            Session session, WebSocketSession webSocketSession, SignedUpdateFirmwareRequest request) throws IOException {
+        String messageId = UUID.randomUUID().toString();
+        logger.debug("Enviando SignedUpdateFirmwareRequest con messageId: {}", messageId);
+
+        CompletableFuture<SignedUpdateFirmwareConfirmation> future = new CompletableFuture<>();
+        session.registerPendingPromise(messageId, "SignedUpdateFirmware", (CompletableFuture) future);
+
+        if (!request.validate()) {
+            logger.error("SignedUpdateFirmwareRequest inválido: firmwareUrl y signature son requeridos.");
+            future.completeExceptionally(new IllegalArgumentException("SignedUpdateFirmwareRequest inválido"));
+            return future;
+        }
+
+        String requestJson = objectMapper.writeValueAsString(new Object[]{2, messageId, "SignedUpdateFirmware", request});
+        logger.info("Enviando SignedUpdateFirmwareRequest: {}", requestJson);
+
+        session.sendTextMessage(requestJson, webSocketSession);
+        logger.debug("SignedUpdateFirmwareRequest enviado para messageId: {}", messageId);
+
+        return future;
     }
 
     /**
@@ -2854,6 +3069,8 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         //Registrar el CompletableFuture para esperar la confirmación
         session.registerPendingPromise(messageId, "DataTransfer", (CompletableFuture) future);
 
+        request.setMessageId(messageId);
+        logger.info("DataTransferRequest: {}",request);
         //Serializar el payload a JSON
         String requestJson = objectMapper.writeValueAsString(new Object[]{2,messageId,"DataTransfer",request});
 
@@ -3047,6 +3264,8 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         return future;
     }
 
+
+
     /**
      * Maneja la recepción de CallResult y completa el CompletableFuture correspondiente.
      *
@@ -3073,6 +3292,15 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
         try {
             Confirmation confirmation;
             switch (action) {
+                case "SignedUpdateFirmware":
+                    confirmation = objectMapper.convertValue(responsePayload, SignedUpdateFirmwareConfirmation.class);
+                    break;
+                case "InstallCertificate":
+                    confirmation = objectMapper.convertValue(responsePayload, InstallCertificateConfirmation.class);
+                    break;
+                case "GetLog":
+                    confirmation = objectMapper.convertValue(responsePayload, GetLogConfirmation.class);
+                    break;
                 case "GetConfiguration":
                     confirmation = objectMapper.convertValue(responsePayload, GetConfigurationConfirmation.class);
                     break;

@@ -32,6 +32,12 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Reservation.Confirmati
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Reservation.Confirmations.ReserveNowConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Reservation.Request.CancelReservationRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Reservation.Request.ReserveNowRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Confirmations.GetLogConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Confirmations.InstallCertificateConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Confirmations.SignedUpdateFirmwareConfirmation;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Request.GetLogRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Request.InstallCertificateRequest;
+import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Securitext.Request.SignedUpdateFirmwareRequest;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirmations.ClearChargingProfileConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirmations.GetCompositeScheduleConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirmations.SetChargingProfileConfirmation;
@@ -806,7 +812,7 @@ public class OcppController {
      * @param fileData bytes del archivo subido (por la estación o algún cliente).
      * @return Mensaje indicando el resultado de la operación.
      */
-    @PostMapping(consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @PostMapping(value = "/upload-diagnostics", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     public ResponseEntity<String> handleDiagnosticsUpload(@RequestBody byte[] fileData) {
         try {
             if (fileData == null || fileData.length == 0) {
@@ -1306,6 +1312,168 @@ public class OcppController {
         } catch (Exception e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body("Error al reservar ahora: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/signed-update-firmware")
+    public ResponseEntity<?> signedUpdateFirmware(
+            @RequestParam String chargePointId,
+            @RequestBody SignedUpdateFirmwareRequest request) {
+        try {
+            // Validar el request
+            if (!request.validate()) {
+                return ResponseEntity.badRequest().body("SignedUpdateFirmwareRequest inválido: firmwareUrl y signature son requeridos.");
+            }
+
+            // Obtener el UUID de la sesión asociada al chargePointId
+            UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionId == null) {
+                logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+            }
+
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionId.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+            }
+
+            // Obtener la sesión OCPP
+            Session session = webSocketHandler.getSessionById(sessionId.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+            }
+
+            // Enviar la solicitud y obtener el CompletableFuture
+            CompletableFuture<SignedUpdateFirmwareConfirmation> future =
+                    webSocketHandler.sendSignedUpdateFirmwareRequestAsync(session, webSocketSession, request);
+
+            // Esperar la confirmación con un timeout de 10 segundos
+            SignedUpdateFirmwareConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            logger.info("SignedUpdateFirmwareConfirmation recibido: {}", confirmation);
+            return ResponseEntity.ok(confirmation);
+
+        } catch (TimeoutException e) {
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT)
+                    .body("Timeout esperando SignedUpdateFirmwareConfirmation.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("El hilo fue interrumpido.");
+        } catch (Exception e) {
+            logger.error("Error procesando la solicitud SignedUpdateFirmware: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al procesar la solicitud: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/install-certificate")
+    public ResponseEntity<?> installCertificate(
+            @RequestParam String chargePointId,
+            @RequestBody InstallCertificateRequest request) {
+        try {
+            // Validar el request
+            if (!request.validate()) {
+                return ResponseEntity.badRequest().body("InstallCertificateRequest inválido: certificate es requerido.");
+            }
+
+            // Obtener el UUID de la sesión asociada al chargePointId
+            UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionId == null) {
+                logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+            }
+
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionId.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+            }
+
+            // Obtener la sesión OCPP
+            Session session = webSocketHandler.getSessionById(sessionId.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+            }
+
+            // Enviar la solicitud y obtener el CompletableFuture
+            CompletableFuture<InstallCertificateConfirmation> future =
+                    webSocketHandler.sendInstallCertificateRequestAsync(session, webSocketSession, request);
+
+            // Esperar la confirmación con un timeout de 10 segundos
+            InstallCertificateConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            logger.info("InstallCertificateConfirmation recibido: {}", confirmation);
+            return ResponseEntity.ok(confirmation);
+
+        } catch (TimeoutException e) {
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT)
+                    .body("Timeout esperando InstallCertificateConfirmation.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("El hilo fue interrumpido.");
+        } catch (Exception e) {
+            logger.error("Error procesando la solicitud InstallCertificate: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al procesar la solicitud: " + e.getMessage());
+        }
+    }
+
+    @PostMapping("/get-log")
+    public ResponseEntity<?> getLog(
+            @RequestParam String chargePointId,
+            @RequestBody GetLogRequest request) {
+        try {
+            // Validar el request
+            if (!request.validate()) {
+                return ResponseEntity.badRequest().body("GetLogRequest inválido: logType y location son requeridos.");
+            }
+
+            // Obtener el UUID de la sesión asociada al chargePointId
+            UUID sessionId = webSocketHandler.getSessionIdByChargePointId(chargePointId);
+            if (sessionId == null) {
+                logger.error("No se encontró una sesión activa para chargePointId: {}", chargePointId);
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body("No se encontró una sesión activa para chargePointId: " + chargePointId);
+            }
+
+            // Obtener la WebSocketSession asociada
+            WebSocketSession webSocketSession = webSocketHandler.getWebSocketSessionById(sessionId.toString());
+            if (webSocketSession == null || !webSocketSession.isOpen()) {
+                return ResponseEntity.badRequest().body("WebSocketSession no está disponible o cerrada.");
+            }
+
+            // Obtener la sesión OCPP
+            Session session = webSocketHandler.getSessionById(sessionId.toString());
+            if (session == null) {
+                return ResponseEntity.badRequest().body("Sesión OCPP no encontrada.");
+            }
+
+            // Enviar la solicitud y obtener el CompletableFuture
+            CompletableFuture<GetLogConfirmation> future =
+                    webSocketHandler.sendGetLogRequestAsync(session, webSocketSession, request);
+
+            // Esperar la confirmación con un timeout de 10 segundos
+            GetLogConfirmation confirmation = future.get(10, TimeUnit.SECONDS);
+
+            logger.info("GetLogConfirmation recibido: {}", confirmation);
+            return ResponseEntity.ok(confirmation);
+
+        } catch (TimeoutException e) {
+            return ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT)
+                    .body("Timeout esperando GetLogConfirmation.");
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("El hilo fue interrumpido.");
+        } catch (Exception e) {
+            logger.error("Error procesando la solicitud GetLog: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error al procesar la solicitud: " + e.getMessage());
         }
     }
 

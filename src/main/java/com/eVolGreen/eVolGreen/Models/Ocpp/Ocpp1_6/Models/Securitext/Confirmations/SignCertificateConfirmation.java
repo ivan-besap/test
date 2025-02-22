@@ -29,7 +29,7 @@ public class SignCertificateConfirmation extends Confirmation {
     /**
      * Constructor privado por defecto, necesario para la serialización.
      */
-    private SignCertificateConfirmation() {
+    public SignCertificateConfirmation() {
     }
 
     /**
