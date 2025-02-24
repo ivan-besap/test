@@ -263,11 +263,16 @@ public class CarController {
         Sheet sheet = workbook.createSheet("Plantilla de Autos");
         Row headerRow = sheet.createRow(0);
 
-        // Agregar los headers
-        String[] headers = {"Patente", "VIN", "Modelo", "Alias"};
+        // Agregar los headers, incluyendo la nueva columna "Flota"
+        String[] headers = {"Patente", "VIN", "Modelo", "Alias", "Flota"}; // Se agregó "Flota"
         for (int i = 0; i < headers.length; i++) {
             Cell cell = headerRow.createCell(i);
             cell.setCellValue(headers[i]);
+        }
+
+        // Ajustar automáticamente el tamaño de las columnas
+        for (int i = 0; i < headers.length; i++) {
+            sheet.autoSizeColumn(i);
         }
 
         // Escribir los datos a un array de bytes
@@ -313,6 +318,16 @@ public class CarController {
             String vin = getCellAsString(row.getCell(1));
             String modelo = getCellAsString(row.getCell(2));
             String alias = getCellAsString(row.getCell(3));
+            String nombreFlota = getCellAsString(row.getCell(4)); // Nueva columna "Flota"
+
+            // Buscar la flota por nombre
+            Flota flota = null;
+            if (nombreFlota != null && !nombreFlota.isEmpty()) {
+                flota = flotaService.findByNombreFlotaAndEmpresa(nombreFlota, empresa);
+                if (flota == null) {
+                    return ResponseEntity.badRequest().body("Error en la fila " + (i + 1) + ": La flota '" + nombreFlota + "' no existe.");
+                }
+            }
 
             // Crear una instancia de Car y agregarla a la lista
             Car car = new Car();
@@ -322,6 +337,9 @@ public class CarController {
             car.setAlias(alias);
             car.setEmpresa(empresa);
             car.setActivo(true);
+            if (flota != null) {
+                car.setFlota(flota);
+            }
             cars.add(car);
         }
 

@@ -38,6 +38,10 @@ public class FlotaServiceImplement implements FlotaService {
     }
 
     @Override
+    public Flota findByNombreFlotaAndEmpresa(String nombreFlota, Empresa empresa) {return flotaRepository.findByNombreFlotaAndEmpresa(nombreFlota, empresa);
+    }
+
+    @Override
     public void deleteFlota(Long id) {
         flotaRepository.deleteById(id);
     }

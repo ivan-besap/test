@@ -13,31 +13,31 @@ public class TransactionDTO {
 
     private long id;
 
-    @NotNull(message = "El tipo de transacción es obligatorio")
+
     private TransactionType TipoTransaction;
 
-    @NotNull(message = "La descripción es obligatoria")
+
     private String Descripcion;
 
-    @NotNull(message = "La fecha de creación es obligatoria")
+
     private LocalDateTime FechaCreacion;
 
-    @NotNull(message = "La hora de inicio es obligatoria")
+
     private ZonedDateTime HoraInicio;
 
-    @NotNull(message = "La hora de fin es obligatoria")
+
     private ZonedDateTime HoraFin;
 
-    @NotNull(message = "La energía entregada es obligatoria")
+
     private Integer EnergiaEntregada;
 
-    @NotNull(message = "El costo es obligatorio")
+
     private Integer Costo;
 
-    @NotNull(message = "La cuenta es obligatoria")
+
     private long CuentaId;
 
-    @NotNull(message = "El terminal es obligatorio")
+
     private long TerminalId;
 
     private long deviceIdentifierId;
@@ -45,6 +45,10 @@ public class TransactionDTO {
     private Boolean activo;
 
     private Integer transactionId;
+
+    private String chargerPointId;
+
+    private Integer numeroConector;
 
     public TransactionDTO(Transaction Transaccion) {
         this.id = Transaccion.getId();
@@ -60,37 +64,39 @@ public class TransactionDTO {
         this.deviceIdentifierId = Transaccion.getDeviceIdentifier().getId();
         this.activo = Transaccion.getActivo();
         this.transactionId = Transaccion.getTransactionId();
+        this.chargerPointId = Transaccion.getChargerPointId();
+        this.numeroConector = Transaccion.getNumeroConector();
     }
 
     public long getId() {
         return id;
     }
 
-    public @NotNull(message = "El tipo de transacción es obligatorio") TransactionType getTipoTransaction() {
+    public  TransactionType getTipoTransaction() {
         return TipoTransaction;
     }
 
-    public @NotNull(message = "La descripción es obligatoria") String getDescripcion() {
+    public String getDescripcion() {
         return Descripcion;
     }
 
-    public @NotNull(message = "La fecha de creación es obligatoria") LocalDateTime getFechaCreacion() {
+    public  LocalDateTime getFechaCreacion() {
         return FechaCreacion;
     }
 
-    public @NotNull(message = "La hora de inicio es obligatoria") ZonedDateTime getHoraInicio() {
+    public  ZonedDateTime getHoraInicio() {
         return HoraInicio;
     }
 
-    public @NotNull(message = "La hora de fin es obligatoria") ZonedDateTime getHoraFin() {
+    public ZonedDateTime getHoraFin() {
         return HoraFin;
     }
 
-    public @NotNull(message = "La energía entregada es obligatoria") Integer getEnergiaEntregada() {
+    public  Integer getEnergiaEntregada() {
         return EnergiaEntregada;
     }
 
-    public @NotNull(message = "El costo es obligatorio") Integer getCosto() {
+    public  Integer getCosto() {
         return Costo;
     }
 
@@ -114,6 +120,11 @@ public class TransactionDTO {
         return transactionId;
     }
 
+    public String getChargerPointId() {
+        return chargerPointId;
+    }
+    public Integer getNumeroConector() {return numeroConector;}
+
     @Override
     public String toString() {
         return "TransactionDTO{" +
@@ -127,6 +138,8 @@ public class TransactionDTO {
                 ", Costo=" + Costo +
                 ", CuentaId=" + CuentaId +
                 ", TerminalId=" + TerminalId +
+                ", chargerPointId=" + chargerPointId +
+                ", numeroConector=" + numeroConector +
                 '}';
     }
 }

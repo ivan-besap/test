@@ -8,6 +8,7 @@ import com.eVolGreen.eVolGreen.Models.Account.Permission.Permission;
 import com.eVolGreen.eVolGreen.Models.Account.TypeOfAccount.TypeAccounts;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargerManufacturer;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.ChargerModel;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.PerfilCargaCargador;
 import com.eVolGreen.eVolGreen.Models.User.Role;
 import com.eVolGreen.eVolGreen.Repositories.*;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.ChargerManufacturerService;
@@ -24,6 +25,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.net.URI;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @SpringBootApplication
@@ -54,7 +57,7 @@ public class EVolGreenApplication {
 									  ReservationRepository reservationRepository,
 									  PermissionRepository permissionRepository,
 									  LocationRepository locationRepository, ChargerManufacturerService chargerManufacturerService, ChargerModelService chargerModelService,
-									  WebSocketMetricsConfig webSocketMetricsConfig) {
+									  WebSocketMetricsConfig webSocketMetricsConfig, PerfilCargaCargadorRepository perfilCargaCargadorRepository) {
 		return args -> {
 
 
@@ -357,6 +360,20 @@ public class EVolGreenApplication {
 						false,
 						false
 				);
+
+				DateTimeFormatter formatter = DateTimeFormatter.ISO_DATE_TIME;
+
+				PerfilCargaCargador perfil = new PerfilCargaCargador();
+				perfil.setConnectorId(1);
+				perfil.setChargingProfileId(10);
+				perfil.setStackLevel(2);
+				perfil.setChargingProfilePurpose("TxProfile");
+				perfil.setChargingProfileKind("Absolute");
+				perfil.setValidFrom(LocalDateTime.parse("2025-01-01T00:00:00Z", formatter));
+				perfil.setValidTo(LocalDateTime.parse("2025-12-31T00:00:00Z", formatter));
+
+				perfilCargaCargadorRepository.save(perfil);
+				System.out.println("Perfil creado correctamente.");
 
 				account.setActivo(true);
 				accountRepository.save(account);

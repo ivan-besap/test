@@ -63,6 +63,7 @@ import org.springframework.web.socket.WebSocketSession;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
@@ -1551,16 +1552,43 @@ public class OcppController {
                 .distinct()
                 .collect(Collectors.toList());
 
+        // Obtener fecha actual
+        ZonedDateTime now = ZonedDateTime.now();
+        int currentYear = now.getYear();
+
         // Calcular el consumo total de energía combinado
         Integer totalEnergyConsumed = transactions.stream()
-                .filter(transaction -> transaction.getEnergyConsumed() != null)
+                .filter(transaction -> transaction.getEnergyConsumed() != null &&
+                        transaction.getStartTime().getYear() == currentYear) // Filtrar solo transacciones del año actual
                 .mapToInt(TransactionInfo::getEnergyConsumed)
                 .sum();
 
+        // Calcular energía consumida hoy
+        Integer dailyEnergyConsumed = transactions.stream()
+                .filter(transaction -> transaction.getEnergyConsumed() != null &&
+                        transaction.getStartTime().toLocalDate().equals(now.toLocalDate()))
+                .mapToInt(TransactionInfo::getEnergyConsumed)
+                .sum();
+
+        // Clasificar por mes
+        Map<String, Integer> monthlyEnergyConsumed = transactions.stream()
+                .filter(transaction -> transaction.getEnergyConsumed() != null)
+                .collect(Collectors.groupingBy(
+                        transaction -> obtenerMesAnio(transaction.getStartTime()), // Agrupar por "Febrero 2025"
+                        Collectors.summingInt(TransactionInfo::getEnergyConsumed)
+                ));
+
         // Construir la respuesta
-        return new ChargePointsSummaryResponseDTO(empresaId, chargePointIds, totalEnergyConsumed);
+        return new ChargePointsSummaryResponseDTO(empresaId, chargePointIds, totalEnergyConsumed, dailyEnergyConsumed, monthlyEnergyConsumed);
     }
 
+    private String obtenerMesAnio(ZonedDateTime date) {
+        String[] meses = {
+                "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+                "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"
+        };
+        return meses[date.getMonthValue() - 1] + " " + date.getYear(); // Ejemplo: "Febrero 2025"
+    }
 
     @Cacheable("energyConsumedByMonth")
     @GetMapping("/transactionInfo/EnergyForMonths")

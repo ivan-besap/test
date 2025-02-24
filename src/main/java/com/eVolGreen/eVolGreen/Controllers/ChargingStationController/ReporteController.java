@@ -4,6 +4,7 @@ package com.eVolGreen.eVolGreen.Controllers.ChargingStationController;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ReporteListDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ReporteDTO;
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ReporteResponseDTO;
+import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ReporteResumenDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
@@ -82,6 +83,11 @@ public class ReporteController {
     @GetMapping("/cargaCargador")
     public List<ReporteListDTO> getReportesGroupedByCharger() {
         return reporteService.getAllReportesGroupedByCharger();
+    }
+
+    @GetMapping("/resumen-reportes")
+    public ReporteResumenDTO obtenerReporteResumen(@RequestParam Long empresaId) {
+        return reporteService.obtenerReporteResumen(empresaId);
     }
 
 }

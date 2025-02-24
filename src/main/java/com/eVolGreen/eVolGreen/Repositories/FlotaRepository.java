@@ -10,4 +10,6 @@ import java.util.List;
 @Repository
 public interface FlotaRepository extends JpaRepository<Flota, Long> {
     List<Flota> findByEmpresaAndActivoTrue(Empresa empresa);
+
+    Flota findByNombreFlotaAndEmpresa(String nombreFlota, Empresa empresa);
 }

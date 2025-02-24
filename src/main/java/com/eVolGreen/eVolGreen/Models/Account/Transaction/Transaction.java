@@ -2,6 +2,7 @@ package com.eVolGreen.eVolGreen.Models.Account.Transaction;
 
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Car.DeviceIdentifier;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
 import com.fasterxml.jackson.annotation.JsonBackReference;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -22,38 +23,41 @@ public class Transaction {
     @GeneratedValue(strategy = GenerationType.AUTO, generator = "native")
     private long id;
 
-    @NotNull(message = "El tipo de transacción es obligatorio")
+
     private TransactionType tipoTransaction;
 
-    @NotNull(message = "La descripción es obligatoria")
+
     private String descripcion;
 
-    @NotNull(message = "La fecha de creación es obligatoria")
+
     private LocalDateTime fechaCreacion;
 
-    @NotNull(message = "La hora de inicio es obligatoria")
+
     private ZonedDateTime horaInicio;
 
-    @NotNull(message = "La hora de fin es obligatoria")
+
     private ZonedDateTime horaFin;
 
-    @NotNull(message = "La energía entregada es obligatoria")
+
     private Integer energiaEntregada;
 
-    @NotNull(message = "El costo es obligatorio")
+
     private Integer costo;
 
-    @NotNull(message = "La cuenta es obligatoria")
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "account_id")
     @JsonBackReference("Account-Transaction")
     private Account account;
 
-    @NotNull(message = "El terminal es obligatorio")
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "terminal_id")
     @JsonBackReference("Terminal-Transaction")
     private ChargingStation terminal;
+
+    private String chargerPointId;
+    private Integer numeroConector;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "device_identifier_id")
@@ -67,7 +71,7 @@ public class Transaction {
     public Transaction() {
     }
 
-    public Transaction(long id, TransactionType tipoTransaction, String descripcion, LocalDateTime fechaCreacion, ZonedDateTime horaInicio, ZonedDateTime horaFin, Integer energiaEntregada, Integer costo, Account account, ChargingStation terminal, Boolean activo, Integer transactionId) {
+    public Transaction(long id, TransactionType tipoTransaction, String descripcion, LocalDateTime fechaCreacion, ZonedDateTime horaInicio, ZonedDateTime horaFin, Integer energiaEntregada, Integer costo, Account account, ChargingStation terminal, Boolean activo, Integer transactionId, String chargerPointId, Integer numeroConector) {
         this.id = id;
         this.tipoTransaction = tipoTransaction;
         this.descripcion = descripcion;
@@ -80,6 +84,8 @@ public class Transaction {
         this.terminal = terminal;
         this.activo = activo;
         this.transactionId = transactionId;
+        this.chargerPointId = chargerPointId;
+        this.numeroConector = numeroConector;
     }
 
     public long getId() {
@@ -186,6 +192,22 @@ public class Transaction {
         this.transactionId = transactionId;
     }
 
+    public String getChargerPointId() {
+        return chargerPointId;
+    }
+
+    public void setChargerPointId(String chargerPointId) {
+        this.chargerPointId = chargerPointId;
+    }
+
+    public Integer getNumeroConector() {
+        return numeroConector;
+    }
+
+    public void setNumeroConector(Integer numeroConector) {
+        this.numeroConector = numeroConector;
+    }
+
     @Override
     public String toString() {
         return "Transaction{" +
@@ -202,6 +224,8 @@ public class Transaction {
                 ", deviceIdentifier=" + deviceIdentifier +
                 ", activo=" + activo +
                 ", transactionId=" + transactionId +
+                ", chargerPointId=" + chargerPointId +
+                ", numeroConector=" + numeroConector +
                 '}';
     }
 }

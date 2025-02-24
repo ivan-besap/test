@@ -19,4 +19,6 @@ public interface FlotaService {
     List<FlotaDTO> getFlotasDTOByEmpresa(Empresa empresa);
 
     FlotaDTO getFlotaDTO(Long id);
+
+    Flota findByNombreFlotaAndEmpresa(String nombreFlota, Empresa empresa);
 }
