@@ -9,7 +9,11 @@ import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.DatosReportes;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.DatosReportesTiempo;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Reporte;
+import com.eVolGreen.eVolGreen.Repositories.DatosReportesRepository;
+import com.eVolGreen.eVolGreen.Repositories.DatosReportesTiempoRepository;
 import com.eVolGreen.eVolGreen.Repositories.ReporteRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.EmpresaService;
@@ -22,6 +26,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.YearMonth;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -47,6 +52,12 @@ public class ReporteServiceImplement implements ReporteService {
 
     @Autowired
     private AccountService accountService;
+
+    @Autowired
+    private DatosReportesRepository datosReportesRepository;
+
+    @Autowired
+    private DatosReportesTiempoRepository datosReportesTiempoRepository;
 
 
     @Override
@@ -129,13 +140,43 @@ public class ReporteServiceImplement implements ReporteService {
             reporte.setCosto(reporteDTO.getCosto());
             reporte.setEnergia(reporteDTO.getEnergia());
             reporteRepository.save(reporte);
+
+            Long empresaId = reporte.getEmpresa().getId();
+            Long estacionId = reporte.getChargingStation().getId();
+
+            if (reporte.getCosto() > 0) {
+                // Obtenemos el año y mes del inicio de carga
+                ZonedDateTime inicioCarga = reporte.getInicioCarga();
+                int ano = inicioCarga.getYear();
+                int mes = inicioCarga.getMonthValue();
+
+                // Verificamos si ya existe un registro en DatosReportes para el mismo año, mes y empresa
+                Optional<DatosReportes> datosReportesOpt = datosReportesRepository.findByMesAndAnoAndEmpresaIdAndEstacionId(mes, ano, empresaId, estacionId);
+
+                if (datosReportesOpt.isPresent()) {
+                    // Si ya existe, sumamos el costo al ingreso existente
+                    DatosReportes datosReportes = datosReportesOpt.get();
+                    datosReportes.setIngreso(datosReportes.getIngreso() + reporte.getCosto());
+                    datosReportesRepository.save(datosReportes);
+                } else {
+                    // Si no existe, creamos un nuevo registro en DatosReportes
+                    DatosReportes nuevoDatosReportes = new DatosReportes();
+                    nuevoDatosReportes.setMes(mes);
+                    nuevoDatosReportes.setAno(ano);
+                    nuevoDatosReportes.setIngreso(reporte.getCosto());
+                    nuevoDatosReportes.setEmpresaId(empresaId);
+                    nuevoDatosReportes.setEstacionId(reporte.getChargingStation().getId());
+
+                    datosReportesRepository.save(nuevoDatosReportes);
+                }
+            }
             return true;
         }
         return false;
     }
 
     public List<ReporteResponseDTO> getReportesByEmpresa(Long empresaId) {
-        List<Reporte> reportes = reporteRepository.findByEmpresaId(empresaId);
+        List<Reporte> reportes = reporteRepository.findByEmpresaIdAndDeviceIdentifierIsNull(empresaId);
 
         return reportes.stream()
                 .sorted((r1, r2) -> r2.getInicioCarga().compareTo(r1.getInicioCarga())) // Ordenar por inicioCarga (descendente)
@@ -155,57 +196,150 @@ public class ReporteServiceImplement implements ReporteService {
                 .collect(Collectors.toList());
     }
 
+    public List<ReporteResponseDTO> getReportesByEmpresaAndByRfid(Long empresaId) {
+        List<Reporte> reportes = reporteRepository.findByEmpresaIdAndDeviceIdentifierIsNotNull(empresaId);
+
+        return reportes.stream()
+                .sorted((r1, r2) -> r2.getInicioCarga().compareTo(r1.getInicioCarga())) // Ordenar por inicioCarga (descendente)
+                .map(reporte -> {
+                    ReporteResponseDTO dto = new ReporteResponseDTO();
+                    dto.setEstacionDeCarga(reporte.getChargingStation().getNombreTerminal());
+                    dto.setIdCargador(reporte.getCharger().getoCPPid());
+                    dto.setConector(reporte.getConnector().getNConector().toString());
+                    dto.setInicioCarga(reporte.getInicioCarga());
+                    dto.setFinCarga(reporte.getFinCarga());
+                    dto.setUsuario(reporte.getAccount().getNombre() + " " + reporte.getAccount().getApellidoPaterno());
+                    dto.setEnergia(reporte.getEnergia().toString());
+                    dto.setTiempo(reporte.getTiempo());
+                    dto.setCosto(reporte.getCosto());
+
+                    dto.setRfid(reporte.getDeviceIdentifier().getRFID());
+                    if (reporte.getPatenteAuto() != null) {
+                        dto.setAuto(reporte.getPatenteAuto());
+                    } else {
+                        dto.setAuto("la RFID no estaba asignada a un auto");
+                    }
+
+                    return dto;
+                })
+                .collect(Collectors.toList());
+    }
+
     public ReporteResumenDTO obtenerReporteResumen(Long empresaId) {
-        List<Reporte> reportes = reporteRepository.findByEmpresaId(empresaId);
+        // **Fechas relevantes**
+        LocalDate today = LocalDate.now();
+        LocalDate yesterday = today.minusDays(1);
+        LocalDate firstDayOfMonth = today.withDayOfMonth(1);
+        LocalDate firstDayOfLastMonth = firstDayOfMonth.minusMonths(1);
+        LocalDate firstDayOfYear = today.withDayOfYear(1);
+        LocalDate firstDayOfLastYear = firstDayOfYear.minusYears(1);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM yyyy", new Locale("es", "ES"));
         DateTimeFormatter formatterDay = DateTimeFormatter.ofPattern("dd MMM yyyy", new Locale("es", "ES"));
 
+        // **Mapas para acumular datos**
         Map<String, Integer> costosMensuales = new HashMap<>();
         Map<String, Integer> ingresosDiarios = new HashMap<>();
         Map<String, List<Integer>> tiemposDiarios = new HashMap<>();
-        Map<String, List<Integer>> tiemposMensuales = new HashMap<>();
 
         int costoTotalAnual = 0;
-        int tiempoTotalAnual = 0;
-        int cantidadCargasAnual = 0;
-
-        LocalDate today = LocalDate.now();
-        LocalDate yesterday = today.minusDays(1);
-        LocalDate lastMonth = today.minusMonths(1);
-        LocalDate lastYear = today.minusYears(1);
 
         int ingresoHoy = 0, ingresoAyer = 0;
         int ingresoMesActual = 0, ingresoMesPasado = 0;
         int ingresoAnioPasado = 0;
 
+        // **Obtener datos diarios de Reporte**
+        List<Reporte> reportes = reporteRepository.findByEmpresaId(empresaId);
+
         for (Reporte reporte : reportes) {
-            String mesAnio = reporte.getFechaCreacion().format(formatter);
             String diaMesAnio = reporte.getFechaCreacion().format(formatterDay);
             int costo = reporte.getCosto();
             int tiempoSegundos = convertirTiempoASegundos(reporte.getTiempo());
 
-            costosMensuales.put(mesAnio, costosMensuales.getOrDefault(mesAnio, 0) + costo);
             ingresosDiarios.put(diaMesAnio, ingresosDiarios.getOrDefault(diaMesAnio, 0) + costo);
 
             tiemposDiarios.computeIfAbsent(diaMesAnio, k -> new ArrayList<>()).add(tiempoSegundos);
-            tiemposMensuales.computeIfAbsent(mesAnio, k -> new ArrayList<>()).add(tiempoSegundos);
-
-            if (reporte.getFechaCreacion().getYear() == today.getYear()) {
-                costoTotalAnual += costo;
-                tiempoTotalAnual += tiempoSegundos;
-                cantidadCargasAnual++;
-            }
         }
 
-        // **Obtener valores de ingresos**
+        // **Ingresos Diarios**
         ingresoHoy = ingresosDiarios.getOrDefault(today.format(formatterDay), 0);
         ingresoAyer = ingresosDiarios.getOrDefault(yesterday.format(formatterDay), 0);
-        ingresoMesActual = costosMensuales.getOrDefault(today.format(formatter), 0);
-        ingresoMesPasado = costosMensuales.getOrDefault(lastMonth.format(formatter), 0);
-        ingresoAnioPasado = costosMensuales.getOrDefault(lastYear.format(formatter), 0);
 
-        // **Calcular porcentajes de ingresos**
+        // **Ingresos Mensuales y Anuales de DatosReportes**
+        List<DatosReportes> datosMensuales = datosReportesRepository.findByEmpresaIdAndAnoAndMes(empresaId, today.getYear(), today.getMonthValue());
+        ingresoMesActual = datosMensuales.stream().mapToInt(DatosReportes::getIngreso).sum();
+
+        List<DatosReportes> datosMesPasado = datosReportesRepository.findByEmpresaIdAndAnoAndMes(empresaId, firstDayOfLastMonth.getYear(), firstDayOfLastMonth.getMonthValue());
+        ingresoMesPasado = datosMesPasado.stream().mapToInt(DatosReportes::getIngreso).sum();
+
+        List<DatosReportes> datosAnual = datosReportesRepository.findByEmpresaIdAndAno(empresaId, today.getYear());
+        costoTotalAnual = datosAnual.stream().mapToInt(DatosReportes::getIngreso).sum();
+
+        List<DatosReportes> datosAnioPasado = datosReportesRepository.findByEmpresaIdAndAno(empresaId, firstDayOfLastYear.getYear());
+        ingresoAnioPasado = datosAnioPasado.stream().mapToInt(DatosReportes::getIngreso).sum();
+
+        // **Costos Mensuales para el Gráfico**
+        costosMensuales = datosAnual.stream()
+                .collect(Collectors.groupingBy(
+                        dr -> YearMonth.of(dr.getAno(), dr.getMes()).format(formatter),
+                        LinkedHashMap::new,
+                        Collectors.summingInt(DatosReportes::getIngreso)
+                ));
+
+        // **Obtener y Agrupar Datos de Tiempos Mensuales**
+        List<DatosReportesTiempo> tiemposMensualesDatos = datosReportesTiempoRepository.findByEmpresaIdAndAno(empresaId, today.getYear());
+        List<DatosReportesTiempo> tiemposMesPasadoDatos = datosReportesTiempoRepository.findByEmpresaIdAndAnoAndMes(
+                empresaId, firstDayOfLastMonth.getYear(), firstDayOfLastMonth.getMonthValue());
+
+        Map<String, String> tiemposPromediosMesNuevo = tiemposMensualesDatos.stream()
+                .collect(Collectors.toMap(
+                        drt -> YearMonth.of(drt.getAno(), drt.getMes()).format(formatter), // Llave: Mes y Año formateado
+                        DatosReportesTiempo::getTiempo, // Valor: Tiempo en formato HH:mm:ss
+                        this::sumarTiempos, // Utiliza el método sumarTiempos para manejar duplicados
+                        LinkedHashMap::new
+                ));
+
+// **Formatear Tiempos a h m s**
+        tiemposPromediosMesNuevo.replaceAll((key, value) -> convertirSegundosAFormatoTiempo(convertirTiempoASegundos(value)));
+
+        List<DatosReportesTiempo> tiemposAnualesDatos = datosReportesTiempoRepository.findByEmpresaIdAndAno(empresaId, today.getYear());
+        List<DatosReportesTiempo> tiemposAnioPasadoDatos = datosReportesTiempoRepository.findByEmpresaIdAndAno(empresaId, firstDayOfLastYear.getYear());
+
+// **Sumar todos los tiempos anuales y calcular el promedio**
+        int totalSegundosAnuales = tiemposAnualesDatos.stream()
+                .mapToInt(drt -> convertirTiempoASegundos(drt.getTiempo()))
+                .sum();
+
+        int cantidadMesesConDatos = tiemposAnualesDatos.size();
+        int promedioAnualSegundosNuevo = (cantidadMesesConDatos > 0) ? (totalSegundosAnuales / cantidadMesesConDatos) : 0;
+
+// **Convertir el promedio a formato legible**
+        String promedioAnualNuevo = convertirSegundosAFormatoTiempo(promedioAnualSegundosNuevo);
+
+        int totalSegundosAnual = tiemposAnualesDatos.stream()
+                .mapToInt(drt -> convertirTiempoASegundos(drt.getTiempo()))
+                .sum();
+
+        int totalSegundosAnioPasado = tiemposAnioPasadoDatos.stream()
+                .mapToInt(drt -> convertirTiempoASegundos(drt.getTiempo()))
+                .sum();
+
+// **Sumar tiempos mensuales**
+        int totalSegundosMensual = tiemposMensualesDatos.stream()
+                .mapToInt(drt -> convertirTiempoASegundos(drt.getTiempo()))
+                .sum();
+
+        int totalSegundosMesPasado = tiemposMesPasadoDatos.stream()
+                .mapToInt(drt -> convertirTiempoASegundos(drt.getTiempo()))
+                .sum();
+
+        double porcentajeTiempoAnualNuevo = calcularPorcentajeCambio(totalSegundosAnioPasado, totalSegundosAnual);
+
+// **Calcular Porcentaje Mensual**
+        double porcentajeTiempoMensualNuevo = calcularPorcentajeCambio(totalSegundosMesPasado, totalSegundosMensual);
+
+
+        // **Porcentajes de Ingresos**
         double porcentajeIngresoDiario = calcularPorcentajeCambio(ingresoAyer, ingresoHoy);
         double porcentajeIngresoMensual = calcularPorcentajeCambio(ingresoMesPasado, ingresoMesActual);
         double porcentajeIngresoAnual = calcularPorcentajeCambio(ingresoAnioPasado, costoTotalAnual);
@@ -214,32 +348,40 @@ public class ReporteServiceImplement implements ReporteService {
         int promedioDiarioSegundos = calcularPromedioSegundos(tiemposDiarios.getOrDefault(today.format(formatterDay), new ArrayList<>()));
         int promedioAyerSegundos = calcularPromedioSegundos(tiemposDiarios.getOrDefault(yesterday.format(formatterDay), new ArrayList<>()));
 
-        Map<String, String> promedioMensualPorMes = tiemposMensuales.entrySet().stream()
-                .collect(Collectors.toMap(
-                        Map.Entry::getKey,
-                        entry -> calcularPromedioTiempo(entry.getValue())
-                ));
-
-        int promedioMensualSegundos = calcularPromedioSegundos(tiemposMensuales.getOrDefault(today.format(formatter), new ArrayList<>()));
-        int promedioMensualPasadoSegundos = calcularPromedioSegundos(tiemposMensuales.getOrDefault(lastMonth.format(formatter), new ArrayList<>()));
-
-        int promedioAnualSegundos = (cantidadCargasAnual > 0) ? (tiempoTotalAnual / cantidadCargasAnual) : 0;
-        int promedioAnualPasadoSegundos = calcularPromedioSegundos(tiemposMensuales.getOrDefault(lastYear.format(formatter), new ArrayList<>()));
-
-        // **Calcular porcentajes de cambio en tiempos**
+        // **Porcentajes de Cambio en Tiempos**
         double porcentajeTiempoDiario = calcularPorcentajeCambio(promedioAyerSegundos, promedioDiarioSegundos);
-        double porcentajeTiempoMensual = calcularPorcentajeCambio(promedioMensualPasadoSegundos, promedioMensualSegundos);
-        double porcentajeTiempoAnual = calcularPorcentajeCambio(promedioAnualPasadoSegundos, promedioAnualSegundos);
-
+        // **Construir y Retornar DTO**
         return new ReporteResumenDTO(
                 empresaId, costosMensuales, costoTotalAnual, ingresoHoy,
                 porcentajeIngresoDiario, porcentajeIngresoMensual, porcentajeIngresoAnual,
                 calcularPromedioTiempo(List.of(promedioDiarioSegundos)),
-                promedioMensualPorMes,
-                calcularPromedioTiempo(List.of(promedioAnualSegundos)),
-                porcentajeTiempoDiario, porcentajeTiempoMensual, porcentajeTiempoAnual
+                porcentajeTiempoDiario, porcentajeTiempoMensualNuevo, porcentajeTiempoAnualNuevo,
+                tiemposPromediosMesNuevo, promedioAnualNuevo
         );
     }
+
+    // Convierte segundos a formato h m s
+    private String convertirSegundosAFormatoTiempo(int totalSegundos) {
+        int horas = totalSegundos / 3600;
+        int minutos = (totalSegundos % 3600) / 60;
+        int segundos = totalSegundos % 60;
+
+        StringBuilder resultado = new StringBuilder();
+        if (horas > 0) resultado.append(horas).append("h ");
+        if (minutos > 0) resultado.append(minutos).append("m ");
+        if (segundos > 0) resultado.append(segundos).append("s");
+
+        return resultado.toString().trim();
+    }
+
+    // Suma dos tiempos en formato HH:mm:ss
+    private String sumarTiempos(String tiempo1, String tiempo2) {
+        int totalSegundos = convertirTiempoASegundos(tiempo1) + convertirTiempoASegundos(tiempo2);
+        return convertirSegundosAFormatoTiempo(totalSegundos);
+    }
+
+
+
 
     private int calcularPromedioSegundos(List<Integer> tiempos) {
         if (tiempos == null || tiempos.isEmpty()) return 0;

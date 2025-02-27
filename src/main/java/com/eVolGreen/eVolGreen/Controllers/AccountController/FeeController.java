@@ -76,34 +76,34 @@ public class FeeController {
         }
 
 
-        if (feeDTO.getNombreTarifa() == null) {
-            mensaje = "El nombre es necesario";
-            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
-        }
-        if (feeDTO.getFechaInicio() == null) {
-            mensaje = "La Fecha de inicio es necesaria";
-            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
-        }
-        if (feeDTO.getFechaFin() == null) {
-            mensaje = "La Fecha Fin de la tarifa es necesaria";
-            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
-        }
-        if (feeDTO.getHoraInicio() == null) {
-            mensaje = "La Hora de inicio es necesaria";
-            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
-        }
-        if (feeDTO.getHoraFin() == null) {
-            mensaje = "La Hora Fin es necesaria";
-            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
-        }
-        if (feeDTO.getDiasDeLaSemana() == null) {
-            mensaje = "Es necesario marcar al menos un día de la semana";
-            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
-        }
-        if (feeDTO.getPrecioTarifa() == null) {
-            mensaje = "El precio de la tarifa es necesario";
-            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
-        }
+//        if (feeDTO.getNombreTarifa() == null) {
+//            mensaje = "El nombre es necesario";
+//            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+//        }
+//        if (feeDTO.getFechaInicio() == null) {
+//            mensaje = "La Fecha de inicio es necesaria";
+//            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+//        }
+//        if (feeDTO.getFechaFin() == null) {
+//            mensaje = "La Fecha Fin de la tarifa es necesaria";
+//            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+//        }
+//        if (feeDTO.getHoraInicio() == null) {
+//            mensaje = "La Hora de inicio es necesaria";
+//            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+//        }
+//        if (feeDTO.getHoraFin() == null) {
+//            mensaje = "La Hora Fin es necesaria";
+//            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+//        }
+//        if (feeDTO.getDiasDeLaSemana() == null) {
+//            mensaje = "Es necesario marcar al menos un día de la semana";
+//            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+//        }
+//        if (feeDTO.getPrecioTarifa() == null) {
+//            mensaje = "El precio de la tarifa es necesario";
+//            return new ResponseEntity<>(mensaje, HttpStatus.FORBIDDEN);
+//        }
 
 
         Fee nuevaTarifa = new Fee(

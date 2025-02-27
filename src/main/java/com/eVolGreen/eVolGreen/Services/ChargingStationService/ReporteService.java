@@ -15,6 +15,7 @@ public interface ReporteService {
     void deleteReporte(Long id);
 
     List<ReporteResponseDTO> getReportesByEmpresa(Long empresaId);
+    List<ReporteResponseDTO> getReportesByEmpresaAndByRfid(Long empresaId);
 
     Long createReporte(ReporteDTO reporteDTO); // Crear reporte
     boolean updateReporte(Long id, ReporteDTO reporteDTO); // Actualizar reporte

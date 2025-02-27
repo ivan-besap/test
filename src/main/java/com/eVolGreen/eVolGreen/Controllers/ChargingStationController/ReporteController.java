@@ -80,6 +80,34 @@ public class ReporteController {
         }
     }
 
+    @GetMapping("/reportes-cargas-rfid")
+    public ResponseEntity<List<ReporteResponseDTO>> getReportesByEmpresaAndByRfid(Authentication authentication) {
+        try {
+            // Obtener la cuenta del usuario autenticado
+            Optional<Account> accountOptional = accountService.findByEmail(authentication.getName());
+            if (accountOptional.isEmpty()) {
+                // Si la cuenta no existe, devolvemos un error
+                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(null);
+            }
+
+            Account account = accountOptional.get();
+            Empresa empresa = account.getEmpresa();
+
+            if (empresa == null) {
+                // Si la empresa asociada no existe, devolvemos un error
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(null);
+            }
+
+            // Obtener los reportes filtrados por empresa
+            List<ReporteResponseDTO> reportes = reporteService.getReportesByEmpresaAndByRfid(empresa.getId());
+            return ResponseEntity.ok(reportes);
+
+        } catch (Exception e) {
+            // Manejo de errores generales
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(null);
+        }
+    }
+
     @GetMapping("/cargaCargador")
     public List<ReporteListDTO> getReportesGroupedByCharger() {
         return reporteService.getAllReportesGroupedByCharger();

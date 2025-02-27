@@ -11,18 +11,20 @@ public class ReporteResumenDTO {
     private Double porcentajeIngresoMensual;
     private Double porcentajeIngresoAcumulado;
     private String promedioDiario;
-    private Map<String, String> promedioMensualPorMes;
-    private String promedioAnual;
 
     private Double porcentajeTiempoDiario;
     private Double porcentajeTiempoMensual;
     private Double porcentajeTiempoAnual;
 
+    private String promedioAnualNuevo;
+
+    private Map<String, String> tiemposPromediosMesNuevo;
+
     public ReporteResumenDTO(Long empresaId, Map<String, Integer> costosMensuales, int costoTotalAcumulado,
                              int ingresoDiario, double porcentajeIngresoDiario, double porcentajeIngresoMensual,
-                             double porcentajeIngresoAcumulado, String promedioDiario, Map<String, String> promedioMensualPorMes,
-                                String promedioAnual, double porcentajeTiempoDiario, double porcentajeTiempoMensual,
-                             double porcentajeTiempoAnual) {
+                             double porcentajeIngresoAcumulado, String promedioDiario
+                                , double porcentajeTiempoDiario, double porcentajeTiempoMensual,
+                             double porcentajeTiempoAnual, Map<String, String> tiemposPromediosMesNuevo, String promedioAnualNuevo) {
         this.empresaId = empresaId;
         this.costosMensuales = costosMensuales;
         this.costoTotalAcumulado = costoTotalAcumulado;
@@ -31,11 +33,11 @@ public class ReporteResumenDTO {
         this.porcentajeIngresoMensual = porcentajeIngresoMensual;
         this.porcentajeIngresoAcumulado = porcentajeIngresoAcumulado;
         this.promedioDiario = promedioDiario;
-        this.promedioMensualPorMes = promedioMensualPorMes;
-        this.promedioAnual = promedioAnual;
         this.porcentajeTiempoDiario = porcentajeTiempoDiario;
         this.porcentajeTiempoMensual = porcentajeTiempoMensual;
         this.porcentajeTiempoAnual = porcentajeTiempoAnual;
+        this.tiemposPromediosMesNuevo = tiemposPromediosMesNuevo;
+        this.promedioAnualNuevo = promedioAnualNuevo;
     }
 
     public Long getEmpresaId() {
@@ -70,14 +72,6 @@ public class ReporteResumenDTO {
         return promedioDiario;
     }
 
-    public Map<String, String> getPromedioMensualPorMes() {
-        return promedioMensualPorMes;
-    }
-
-    public String getPromedioAnual() {
-        return promedioAnual;
-    }
-
     public Double getPorcentajeTiempoDiario() {
         return porcentajeTiempoDiario;
     }
@@ -88,5 +82,21 @@ public class ReporteResumenDTO {
 
     public Double getPorcentajeTiempoAnual() {
         return porcentajeTiempoAnual;
+    }
+
+    public Map<String, String> getTiemposPromediosMesNuevo() {
+        return tiemposPromediosMesNuevo;
+    }
+
+    public void setTiemposPromediosMesNuevo(Map<String, String> tiemposPromediosMesNuevo) {
+        this.tiemposPromediosMesNuevo = tiemposPromediosMesNuevo;
+    }
+
+    public String getPromedioAnualNuevo() {
+        return promedioAnualNuevo;
+    }
+
+    public void setPromedioAnualNuevo(String promedioAnualNuevo) {
+        this.promedioAnualNuevo = promedioAnualNuevo;
     }
 }

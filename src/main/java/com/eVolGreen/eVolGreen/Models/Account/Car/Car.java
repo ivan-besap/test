@@ -27,7 +27,7 @@ public class Car {
 
     private String modelo;
 
-    @NotNull(message = "El VIN es obligatorio")
+
     private String vin;
 
 

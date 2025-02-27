@@ -1,11 +1,13 @@
 package com.eVolGreen.eVolGreen.Models.ChargingStation;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
 import org.hibernate.annotations.GenericGenerator;
 
 @Entity
-public class DatosReportes {
-
+public class DatosReportesTiempo {
     @Id
     @GenericGenerator(name = "native", strategy = "native")
     @GeneratedValue(strategy = GenerationType.IDENTITY, generator = "native")
@@ -13,20 +15,18 @@ public class DatosReportes {
 
     private int mes;  // Mes en formato numérico (1-12)
     private int ano;  // Año
-    private int ingreso;  // Ingresos acumulados del mes
-
-    private Long estacionId;
+    private String tiempo;  // Ingresos acumulados del mes
     private Long empresaId;
 
     // Constructor vacío
-    public DatosReportes() {}
+    public DatosReportesTiempo
+    () {}
 
     // Constructor con parámetros
-    public DatosReportes(int mes, int ano, int ingreso, Long empresaId, Long estacionId) {
+    public DatosReportesTiempo(int mes, int ano, String tiempo, Long empresaId) {
         this.mes = mes;
         this.ano = ano;
-        this.ingreso = ingreso;
-        this.estacionId = estacionId;
+        this.tiempo = tiempo;
         this.empresaId = empresaId;
     }
 
@@ -40,12 +40,10 @@ public class DatosReportes {
     public int getAno() { return ano; }
     public void setAno(int ano) { this.ano = ano; }
 
-    public int getIngreso() { return ingreso; }
-    public void setIngreso(int ingreso) { this.ingreso = ingreso; }
-
-    public Long getEstacionId() { return estacionId; }
-    public void setEstacionId(Long estacionId) { this.estacionId = estacionId; }
+    public String getTiempo() { return tiempo; }
+    public void setTiempo(String tiempo) { this.tiempo = tiempo; }
 
     public Long getEmpresaId() { return empresaId; }
     public void setEmpresaId(Long empresaId) { this.empresaId = empresaId; }
 }
+

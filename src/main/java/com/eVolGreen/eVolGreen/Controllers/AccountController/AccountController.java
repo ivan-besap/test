@@ -440,12 +440,6 @@ public class AccountController {
         if (employeeDTO.getNombre().isBlank()) {
             return new ResponseEntity<>("El nombre es requerido", HttpStatus.FORBIDDEN);
         }
-        if (employeeDTO.getApellidoPaterno().isBlank()) {
-            return new ResponseEntity<>("El apellido paterno es requerido", HttpStatus.FORBIDDEN);
-        }
-        if (employeeDTO.getApellidoMaterno().isBlank()) {
-            return new ResponseEntity<>("El apellido materno es requerido", HttpStatus.FORBIDDEN);
-        }
         if (employeeDTO.getEmail().isBlank()) {
             return new ResponseEntity<>("El email es requerido", HttpStatus.FORBIDDEN);
         }
@@ -483,12 +477,6 @@ public class AccountController {
     private String validateEmployeeDTO(EmployeeRegisterDTO employeeDTO) {
         if (employeeDTO.getNombre().isBlank()) {
             return "El nombre es requerido";
-        }
-        if (employeeDTO.getApellidoPaterno().isBlank()) {
-            return "El apellido paterno es requerido";
-        }
-        if (employeeDTO.getApellidoMaterno().isBlank()) {
-            return "El apellido materno es requerido";
         }
         if (employeeDTO.getEmail().isBlank()) {
             return "El email es requerido";

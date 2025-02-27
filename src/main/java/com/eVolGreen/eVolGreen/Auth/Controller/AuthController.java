@@ -112,7 +112,7 @@ public class AuthController {
 
         accountService.saveAccount(account);
 
-        String verificationUrl = "http://localhost:8080/api/verify-account?email=" + account.getEmail();
+        String verificationUrl = "http://localhost:8088/api/verify-account?email=" + account.getEmail();
         emailService.sendVerificationEmail(account.getEmail(), verificationUrl);
 
         return ResponseEntity.status(HttpStatus.CREATED).body("Registro exitoso");

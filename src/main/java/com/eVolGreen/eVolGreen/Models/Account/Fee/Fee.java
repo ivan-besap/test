@@ -23,28 +23,27 @@ public class Fee {
     @GeneratedValue(strategy = GenerationType.AUTO, generator = "native")
     private long id;
 
-    @NotNull(message = "El nombre de la tarifa es obligatorio")
+
     private String nombreTarifa;
 
-    @NotNull(message = "La fecha de inicio es obligatoria")
+
     private LocalDate fechaInicio;
 
-    @NotNull(message = "La fecha de fin es obligatoria")
+
     private LocalDate fechaFin;
 
-    @NotNull(message = "La hora de inicio es obligatoria")
+
     private LocalTime horaInicio;
 
-    @NotNull(message = "La hora de fin es obligatoria")
+
     private LocalTime horaFin;
 
-    @NotNull(message = "Los días de la semana son obligatorios")
+
     @ElementCollection
     @CollectionTable(name = "Tarifa_Dias", joinColumns = @JoinColumn(name = "Tarifa_id"))
     @Column(name = "diasDeLaSemana")
     private Set<String> diasDeLaSemana = new HashSet<>();
 
-    @NotNull(message = "El precio de la tarifa es obligatorio")
     private BigDecimal precioTarifa;
 
     @ManyToOne(fetch = FetchType.LAZY)

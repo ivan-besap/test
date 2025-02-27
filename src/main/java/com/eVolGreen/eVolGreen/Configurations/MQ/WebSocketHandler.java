@@ -8,6 +8,8 @@ import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargingStation;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.Connector;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.ConnectorStatus;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.DatosReportesEnergia;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.DatosReportesTiempo;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Reporte;
 import com.eVolGreen.eVolGreen.Models.Ocpp.CargasOcpp;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Evolgreen_Common.*;
@@ -159,6 +161,10 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
     private ReporteRepository reporteRepository;
     @Autowired
     private TransactionRepository transactionRepository;
+    @Autowired
+    private DatosReportesEnergiaRepository datosReportesEnergiaRepository;
+    @Autowired
+    private DatosReportesTiempoRepository datosReportesTiempoRepository;
 
 
 
@@ -1455,11 +1461,13 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             reporte.setDeviceIdentifier(usuario);
             reporte.setActivo(true);
             reporte.setTransactionId(transactionId);
+            reporte.setPatenteAuto(usuario.getAuto().getPatente());
 
             reporteMap.put(transactionId, reporte);
 
             // Guardar el reporte en la base de datos
             reporteRepository.save(reporte);
+
 
             // Configurar los datos de la transacción
             Transaction transaction = new Transaction();
@@ -1610,6 +1618,49 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
                 reporte.setEnergiaEntregada(energySupplied);
                 reporte.setActivo(false);
                 reporteRepository.save(reporte);
+                ZonedDateTime inicioCarga = reporte.getInicioCarga();
+                int mes = inicioCarga.getMonthValue();
+                int ano = inicioCarga.getYear();
+                Long empresaId = reporte.getEmpresa().getId();
+                Integer energiaEntregada = reporte.getEnergiaEntregada();
+                String tiempoActual = reporte.getTiempo();
+                // **Buscar si ya existe un registro de DatosReportesEnergia para este mes, año y empresa**
+                Optional<DatosReportesEnergia> datosReportesEnergiaOpt = datosReportesEnergiaRepository.findByMesAndAnoAndEmpresaId(mes, ano, empresaId);
+                if (datosReportesEnergiaOpt.isPresent()) {
+                    // **Si existe, sumar la energía actual**
+                    DatosReportesEnergia datosReportesEnergia = datosReportesEnergiaOpt.get();
+                    datosReportesEnergia.setEnergia(datosReportesEnergia.getEnergia() + energiaEntregada);
+                    datosReportesEnergiaRepository.save(datosReportesEnergia);
+
+                } else {
+                    // **Si no existe, crear un nuevo registro**
+                    DatosReportesEnergia nuevoDatosReportesEnergia = new DatosReportesEnergia();
+                    nuevoDatosReportesEnergia.setMes(mes);
+                    nuevoDatosReportesEnergia.setAno(ano);
+                    nuevoDatosReportesEnergia.setEnergia(energiaEntregada);
+                    nuevoDatosReportesEnergia.setEmpresaId(empresaId);
+                    datosReportesEnergiaRepository.save(nuevoDatosReportesEnergia);
+                }
+                Optional<DatosReportesTiempo> datosReportesTiempoOpt = datosReportesTiempoRepository.findByMesAndAnoAndEmpresaId(mes, ano, empresaId);
+                if (datosReportesTiempoOpt.isPresent()) {
+                    // **Si existe, sumar el tiempo actual**
+                    DatosReportesTiempo datosReportesTiempo = datosReportesTiempoOpt.get();
+                    String tiempoExistente = datosReportesTiempo.getTiempo();
+                    String tiempoTotal = sumarTiempos(tiempoExistente, tiempoActual);
+
+                    // **Actualizar el tiempo acumulado y guardar**
+                    datosReportesTiempo.setTiempo(tiempoTotal);
+                    datosReportesTiempoRepository.save(datosReportesTiempo);
+
+                } else {
+                    // **Si no existe, crear un nuevo registro**
+                    DatosReportesTiempo nuevoDatosReportesTiempo = new DatosReportesTiempo();
+                    nuevoDatosReportesTiempo.setMes(mes);
+                    nuevoDatosReportesTiempo.setAno(ano);
+                    nuevoDatosReportesTiempo.setTiempo(tiempoActual);
+                    nuevoDatosReportesTiempo.setEmpresaId(empresaId);
+                    datosReportesTiempoRepository.save(nuevoDatosReportesTiempo);
+                }
                 logger.info("Reporte actualizado para el transactionId: {}", stopTransactionRequest.getTransactionId());
             } else {
                 logger.warn("Reporte no encontrado para el transactionId: {}", stopTransactionRequest.getTransactionId());
@@ -3465,6 +3516,30 @@ public class WebSocketHandler extends AbstractWebSocketHandler {
             case Finishing -> ConnectorStatus.FINISHING;
             default -> ConnectorStatus.DISCONNECTED;
         };
+    }
+
+    private int convertirTiempoASegundos(String tiempo) {
+        String[] partes = tiempo.split(":");
+        int horas = Integer.parseInt(partes[0]);
+        int minutos = Integer.parseInt(partes[1]);
+        int segundos = Integer.parseInt(partes[2]);
+
+        return horas * 3600 + minutos * 60 + segundos;
+    }
+
+    // Método para convertir segundos a formato HH:mm:ss
+    private String convertirSegundosAFormatoTiempo(int totalSegundos) {
+        int horas = totalSegundos / 3600;
+        int minutos = (totalSegundos % 3600) / 60;
+        int segundos = totalSegundos % 60;
+
+        return String.format("%02d:%02d:%02d", horas, minutos, segundos);
+    }
+
+    // Método para sumar tiempos en formato HH:mm:ss
+    private String sumarTiempos(String tiempo1, String tiempo2) {
+        int totalSegundos = convertirTiempoASegundos(tiempo1) + convertirTiempoASegundos(tiempo2);
+        return convertirSegundosAFormatoTiempo(totalSegundos);
     }
 
 

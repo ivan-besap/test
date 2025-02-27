@@ -65,6 +65,8 @@ public class Reporte {
     @JsonProperty("transactionId")
     private Integer transactionId;
 
+    private String patenteAuto;
+
     // Getters y Setters
     public Long getId() {
         return id;
@@ -201,5 +203,13 @@ public class Reporte {
 
     public void setTransactionId(Integer transactionId) {
         this.transactionId = transactionId;
+    }
+
+    public String getPatenteAuto() {
+        return patenteAuto;
+    }
+
+    public void setPatenteAuto(String patenteAuto) {
+        this.patenteAuto = patenteAuto;
     }
 }

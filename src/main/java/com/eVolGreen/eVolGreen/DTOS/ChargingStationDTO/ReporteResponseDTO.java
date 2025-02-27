@@ -14,6 +14,9 @@ public class ReporteResponseDTO {
     private String tiempo;
     private Integer costo;
 
+    private String rfid;
+    private String auto;
+
     // Constructor vacío
     public ReporteResponseDTO() {
     }
@@ -21,7 +24,7 @@ public class ReporteResponseDTO {
     // Constructor con parámetros
     public ReporteResponseDTO(String estacionDeCarga, String idCargador, String conector,
                               ZonedDateTime inicioCarga, ZonedDateTime finCarga, String usuario,
-                              String energia, String tiempo, Integer costo) {
+                              String energia, String tiempo, Integer costo, String rfid, String auto) {
         this.estacionDeCarga = estacionDeCarga;
         this.idCargador = idCargador;
         this.conector = conector;
@@ -31,6 +34,8 @@ public class ReporteResponseDTO {
         this.energia = energia;
         this.tiempo = tiempo;
         this.costo = costo;
+        this.rfid = rfid;
+        this.auto = auto;
     }
 
     // Getters y Setters
@@ -105,5 +110,21 @@ public class ReporteResponseDTO {
 
     public void setCosto(Integer costo) {
         this.costo = costo;
+    }
+
+    public String getRfid() {
+        return rfid;
+    }
+
+    public void setRfid(String rfid) {
+        this.rfid = rfid;
+    }
+
+    public String getAuto() {
+        return auto;
+    }
+
+    public void setAuto(String auto) {
+        this.auto = auto;
     }
 }

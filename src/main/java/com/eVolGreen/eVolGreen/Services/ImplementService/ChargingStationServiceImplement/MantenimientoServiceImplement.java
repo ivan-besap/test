@@ -1,14 +1,25 @@
 package com.eVolGreen.eVolGreen.Services.ImplementService.ChargingStationServiceImplement;
 
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.MantenimientoDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Account;
+import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Mantenimiento;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.ChargerStatus;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Connector.ConnectorStatus;
 import com.eVolGreen.eVolGreen.Repositories.ChargerRepository;
+import com.eVolGreen.eVolGreen.Repositories.ConnectorRepository;
 import com.eVolGreen.eVolGreen.Repositories.MantenimientoRepository;
+import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.ChargingStationService.MantenimientoService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Scheduled;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -21,6 +32,13 @@ public class MantenimientoServiceImplement implements MantenimientoService {
 
     @Autowired
     private ChargerRepository chargerRepository;
+
+    @Autowired
+    private ConnectorRepository connectorRepository;
+
+    @Autowired
+    private AccountService accountService;
+
 
     @Override
     public Mantenimiento findById(Long id) {
@@ -99,6 +117,49 @@ public class MantenimientoServiceImplement implements MantenimientoService {
 
     public List<Mantenimiento> findByEmpresa(Long empresaId) {
         return mantenimientoRepository.findByEmpresaId(empresaId);
+    }
+
+    @Scheduled(cron = "0 */3 * * * *")
+    public void verificarMantenimientos() {
+        LocalDate hoy = LocalDate.now();
+        LocalTime horaActual = LocalTime.now();
+
+        // Aquí debes obtener la empresa del usuario actual o configurarla de alguna forma
+
+        // Filtrar solo los mantenimientos de la empresa que tengan cargador asignado
+        List<Mantenimiento> mantenimientos = mantenimientoRepository.findWithCargadorAndConectores();
+
+        for (Mantenimiento mantenimiento : mantenimientos) {
+            Charger cargador = mantenimiento.getCargador();
+
+            if (cargador == null) {
+                continue;
+            }
+
+            if ((hoy.isAfter(mantenimiento.getFechaInicial()) || hoy.isEqual(mantenimiento.getFechaInicial())) &&
+                    (hoy.isBefore(mantenimiento.getFechaFinal()) || hoy.isEqual(mantenimiento.getFechaFinal())) &&
+                    (horaActual.isAfter(mantenimiento.getHorarioInicio()) || horaActual.equals(mantenimiento.getHorarioInicio())) &&
+                    (horaActual.isBefore(mantenimiento.getHorarioFin()) || horaActual.equals(mantenimiento.getHorarioFin()))
+            ) {
+                // Si está en mantenimiento, cambiar el estado a EN_MANTENIMIENTO
+                cargador.setEstadoCargador(ChargerStatus.CONSTRUCTION);
+                cargador.getConectores().forEach(conector -> {
+                    conector.setEstadoConector(ConnectorStatus.DISCONNECTED);
+                    connectorRepository.save(conector);
+                });
+                chargerRepository.save(cargador);
+            } else {
+                cargador.setEstadoCargador(ChargerStatus.ACTIVE);
+                cargador.getConectores().forEach(conector -> {
+                    conector.setEstadoConector(ConnectorStatus.CONNECTED);
+                    connectorRepository.save(conector);
+                });
+                // Desvincular el mantenimiento del cargador
+                mantenimiento.setCargador(null);
+                mantenimientoRepository.save(mantenimiento);
+            }
+            chargerRepository.save(cargador);
+        }
     }
 }
 
