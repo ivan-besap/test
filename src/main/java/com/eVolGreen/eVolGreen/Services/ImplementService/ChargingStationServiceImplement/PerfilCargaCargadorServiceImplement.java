@@ -1,5 +1,6 @@
 package com.eVolGreen.eVolGreen.Services.ImplementService.ChargingStationServiceImplement;
 
+import com.eVolGreen.eVolGreen.Models.Account.Fee.EstadoPerfil;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.PerfilCargaCargador;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.ChargingProfile;
 import com.eVolGreen.eVolGreen.Repositories.ChargerRepository;
@@ -11,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -55,5 +57,27 @@ public class PerfilCargaCargadorServiceImplement implements PerfilCargaCargadorS
         profileToSave.setChargerId(charger.getId());
 
         return perfilCargaCargadorRepository.save(profileToSave);
+    }
+
+    @Override
+    public void save(PerfilCargaCargador perfil) {
+        perfilCargaCargadorRepository.save(perfil);
+    }
+
+    @Override
+    public List<PerfilCargaCargador> findAll() {
+
+        return perfilCargaCargadorRepository.findAll();
+    }
+
+    @Override
+    public PerfilCargaCargador findByChargerIdAndStackLevel(Long id, Integer stackLevel) {
+
+        return perfilCargaCargadorRepository.findByChargerIdAndStackLevel(id, stackLevel);
+    }
+
+    @Override
+    public PerfilCargaCargador findByChargerIdAndEstado(Long chargerId, EstadoPerfil estadoPerfil) {
+        return perfilCargaCargadorRepository.findByChargerIdAndEstado(chargerId, estadoPerfil);
     }
 }

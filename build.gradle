@@ -63,6 +63,7 @@ dependencies {
 
 	// Test
 	testImplementation 'org.springframework.boot:spring-boot-starter-test' // Librerías de testing
+	testImplementation 'com.h2database:h2'
 
 	// Lombok
 	compileOnly 'org.projectlombok:lombok' // Lombok para simplificar código

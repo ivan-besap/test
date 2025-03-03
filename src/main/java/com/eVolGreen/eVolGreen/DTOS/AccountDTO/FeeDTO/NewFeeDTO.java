@@ -1,12 +1,14 @@
 package com.eVolGreen.eVolGreen.DTOS.AccountDTO.FeeDTO;
 
 import com.eVolGreen.eVolGreen.Models.Account.Fee.Fee;
+import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.PerfilCargaCargador;
 
 
 import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.ZonedDateTime;
 import java.util.Set;
 
 public class NewFeeDTO {
@@ -15,16 +17,10 @@ public class NewFeeDTO {
     private String NombreTarifa;
 
     @NotNull(message = "La fecha de inicio es obligatoria")
-    private LocalDate FechaInicio;
+    private ZonedDateTime FechaInicio;
 
     @NotNull(message = "La fecha de fin es obligatoria")
-    private LocalDate FechaFin;
-
-    @NotNull(message = "La hora de inicio es obligatoria")
-    private LocalTime HoraInicio;
-
-    @NotNull(message = "La hora de fin es obligatoria")
-    private LocalTime HoraFin;
+    private ZonedDateTime FechaFin;
 
     @NotNull(message = "Los dias de la semana son obligatorios")
     private Set<String> DiasDeLaSemana;
@@ -38,6 +34,13 @@ public class NewFeeDTO {
 
     private String consumoDeEnergiaAlarma;
 
+    @NotNull(message = "El nombre del cargador es obligatorio")
+    private String nombreCargador; // Nuevo campo obligatorio
+
+    private String nombreConector;
+
+    private Long perfilCarga;
+
     // Constructor por defecto
     public NewFeeDTO() { }
 
@@ -46,13 +49,14 @@ public class NewFeeDTO {
         this.NombreTarifa = Tarifa.getNombreTarifa();
         this.FechaInicio = Tarifa.getFechaInicio();
         this.FechaFin = Tarifa.getFechaFin();
-        this.HoraInicio = Tarifa.getHoraInicio();
-        this.HoraFin = Tarifa.getHoraFin();
         this.DiasDeLaSemana = Tarifa.getDiasDeLaSemana();
         this.PrecioTarifa = Tarifa.getPrecioTarifa();
         this.activo = Tarifa.getActivo();
         this.empresaId = Tarifa.getEmpresa().getId();
         this.consumoDeEnergiaAlarma = Tarifa.getConsumoDeEnergiaAlarma();
+        this.nombreCargador = Tarifa.getNombreCargador();
+        this.nombreConector = Tarifa.getNombreConector();
+        this.perfilCarga = Tarifa.getPerfilCarga().getId();
     }
 
     // Getters
@@ -60,7 +64,7 @@ public class NewFeeDTO {
         return NombreTarifa;
     }
 
-    public LocalDate getFechaInicio() {
+    public ZonedDateTime getFechaInicio() {
         return FechaInicio;
     }
 
@@ -68,16 +72,8 @@ public class NewFeeDTO {
         return activo;
     }
 
-    public LocalDate getFechaFin() {
+    public ZonedDateTime getFechaFin() {
         return FechaFin;
-    }
-
-    public LocalTime getHoraInicio() {
-        return HoraInicio;
-    }
-
-    public LocalTime getHoraFin() {
-        return HoraFin;
     }
 
     public Set<String> getDiasDeLaSemana() {
@@ -97,20 +93,12 @@ public class NewFeeDTO {
         this.NombreTarifa = nombreTarifa;
     }
 
-    public void setFechaInicio(LocalDate fechaInicio) {
+    public void setFechaInicio(ZonedDateTime fechaInicio) {
         this.FechaInicio = fechaInicio;
     }
 
-    public void setFechaFin(LocalDate fechaFin) {
+    public void setFechaFin(ZonedDateTime fechaFin) {
         this.FechaFin = fechaFin;
-    }
-
-    public void setHoraInicio(LocalTime horaInicio) {
-        this.HoraInicio = horaInicio;
-    }
-
-    public void setHoraFin(LocalTime horaFin) {
-        this.HoraFin = horaFin;
     }
 
     public void setDiasDeLaSemana(Set<String> diasDeLaSemana) {
@@ -131,5 +119,17 @@ public class NewFeeDTO {
 
     public void setConsumoDeEnergiaAlarma(String consumoDeEnergiaAlarma) {
         this.consumoDeEnergiaAlarma = consumoDeEnergiaAlarma;
+    }
+
+    public Long getPerfilCarga() {
+        return perfilCarga;
+    }
+
+    public String getNombreCargador() {
+        return nombreCargador;
+    }
+
+    public String getNombreConector() {
+        return nombreConector;
     }
 }

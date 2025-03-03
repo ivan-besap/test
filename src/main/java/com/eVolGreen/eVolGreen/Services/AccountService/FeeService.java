@@ -27,5 +27,5 @@ public interface FeeService {
 
     String validateFeeDTO(FeeDTO feeDTO);
 
-    void saveFee(Fee nuevaTarifa);
+    Fee saveFee(Fee nuevaTarifa);
 }

@@ -22,15 +22,18 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.ComponentScan;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import java.net.URI;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @SpringBootApplication
 @ComponentScan(basePackages = "com.eVolGreen.eVolGreen")
+@EnableTransactionManagement
 @EnableScheduling
 public class EVolGreenApplication {
 

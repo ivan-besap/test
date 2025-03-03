@@ -1,11 +1,9 @@
 package com.eVolGreen.eVolGreen.Services.ImplementService.AccountServiceImplement;
 
 import com.eVolGreen.eVolGreen.DTOS.AccountDTO.FeeDTO.FeeDTO;
-import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ChargerDTO;
 import com.eVolGreen.eVolGreen.Models.Account.Account;
 import com.eVolGreen.eVolGreen.Models.Account.Empresa;
 import com.eVolGreen.eVolGreen.Models.Account.Fee.Fee;
-import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
 import com.eVolGreen.eVolGreen.Repositories.FeeRepository;
 import com.eVolGreen.eVolGreen.Services.AccountService.AccountService;
 import com.eVolGreen.eVolGreen.Services.AccountService.FeeService;
@@ -15,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.ZonedDateTime;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
@@ -76,8 +75,6 @@ public class FeeServiceImplement implements FeeService {
             fee.setNombreTarifa(feeDetails.getNombreTarifa());
             fee.setFechaInicio(feeDetails.getFechaInicio());
             fee.setFechaFin(feeDetails.getFechaFin());
-            fee.setHoraInicio(feeDetails.getHoraInicio());
-            fee.setHoraFin(feeDetails.getHoraFin());
             fee.setDiasDeLaSemana(feeDetails.getDiasDeLaSemana());
             fee.setPrecioTarifa(feeDetails.getPrecioTarifa());
             fee.setEmpresa(feeDetails.getEmpresa());
@@ -97,10 +94,8 @@ public class FeeServiceImplement implements FeeService {
     public Fee convertToEntity(FeeDTO feeDTO) {
         Fee fee = new Fee();
         fee.setNombreTarifa(feeDTO.getNombreTarifa());
-        fee.setFechaInicio(feeDTO.getFechaInicio());
-        fee.setFechaFin(feeDTO.getFechaFin());
-        fee.setHoraInicio(feeDTO.getHoraInicio());
-        fee.setHoraFin(feeDTO.getHoraFin());
+        fee.setFechaInicio(ZonedDateTime.from(feeDTO.getFechaInicio()));
+        fee.setFechaFin(ZonedDateTime.from(feeDTO.getFechaFin()));
         fee.setDiasDeLaSemana(feeDTO.getDiasDeLaSemana());
         fee.setPrecioTarifa(feeDTO.getPrecioTarifa());
         return fee;
@@ -137,11 +132,9 @@ public class FeeServiceImplement implements FeeService {
         return null;
     }
 
-    @Override
-    public void saveFee(Fee nuevaTarifa) {
-
-        feeRepository.save(nuevaTarifa);
-
+    @Transactional
+    public Fee saveFee(Fee nuevaTarifa) {
+        return feeRepository.save(nuevaTarifa);
     }
 
 

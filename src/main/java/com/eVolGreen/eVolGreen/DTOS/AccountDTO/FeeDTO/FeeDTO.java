@@ -7,6 +7,7 @@ import javax.validation.constraints.NotNull;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
+import java.time.chrono.ChronoLocalDate;
 import java.util.Set;
 
 public class FeeDTO {
@@ -48,10 +49,8 @@ public class FeeDTO {
     public FeeDTO(Fee tarifa) {
         id = tarifa.getId();
         nombreTarifa = tarifa.getNombreTarifa();
-        fechaInicio = tarifa.getFechaInicio();
-        fechaFin = tarifa.getFechaFin();
-        horaInicio = tarifa.getHoraInicio();
-        horaFin = tarifa.getHoraFin();
+        fechaInicio = tarifa.getFechaInicio().toLocalDate();
+        fechaFin = tarifa.getFechaFin().toLocalDate();
         diasDeLaSemana = tarifa.getDiasDeLaSemana();
         precioTarifa = tarifa.getPrecioTarifa();
         empresaId = tarifa.getEmpresa().getId();
@@ -64,15 +63,11 @@ public class FeeDTO {
         return id;
     }
 
-    public Boolean getActivo() {
-        return activo;
-    }
-
     public String getNombreTarifa() {
         return nombreTarifa;
     }
 
-    public LocalDate getFechaInicio() {
+    public ChronoLocalDate getFechaInicio() {
         return fechaInicio;
     }
 
@@ -96,33 +91,19 @@ public class FeeDTO {
         return precioTarifa;
     }
 
+    public String getNombreConector() {
+        return nombreConector;
+    }
+
+    public String getNombreCargador() {
+        return nombreCargador;
+    }
 
     public long getEmpresaId() {
         return empresaId;
     }
 
-    public String getNombreConector() {
-        return nombreConector;
-    }
-    public String getNombreCargador() {
-        return nombreCargador;
-    }
-
-    @Override
-    public String toString() {
-        return "FeeDTO{" +
-                "id=" + id +
-                ", nombreTarifa='" + nombreTarifa + '\'' +
-                ", fechaInicio=" + fechaInicio +
-                ", fechaFin=" + fechaFin +
-                ", horaInicio=" + horaInicio +
-                ", horaFin=" + horaFin +
-                ", diasDeLaSemana=" + diasDeLaSemana +
-                ", precioTarifa=" + precioTarifa +
-                ", empresaId=" + empresaId +
-                ", activo=" + activo +
-                ", nombreConector=" + nombreConector +
-                ", nombreCargador=" + nombreCargador +
-                '}';
+    public Boolean getActivo() {
+        return activo;
     }
 }

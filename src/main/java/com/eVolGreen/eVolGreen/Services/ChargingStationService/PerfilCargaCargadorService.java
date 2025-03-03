@@ -1,6 +1,7 @@
 package com.eVolGreen.eVolGreen.Services.ChargingStationService;
 
 import com.eVolGreen.eVolGreen.DTOS.ChargingStationDTO.ChargerDTO.ReporteListDTO;
+import com.eVolGreen.eVolGreen.Models.Account.Fee.EstadoPerfil;
 import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.PerfilCargaCargador;
 
 import java.util.List;
@@ -13,4 +14,12 @@ public interface PerfilCargaCargadorService {
 
     // Guardar o actualizar un perfil de carga
     PerfilCargaCargador saveOrUpdateProfile(Long chargerId, PerfilCargaCargador perfilCargaCargador);
+
+    void save(PerfilCargaCargador perfil);
+
+    List<PerfilCargaCargador> findAll();
+
+    PerfilCargaCargador findByChargerIdAndStackLevel(Long id, Integer stackLevel);
+
+    PerfilCargaCargador findByChargerIdAndEstado(Long chargerId, EstadoPerfil estadoPerfil);
 }

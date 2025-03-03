@@ -1,10 +1,11 @@
 package com.eVolGreen.eVolGreen.Models.ChargingStation.Charger;
 
-import com.eVolGreen.eVolGreen.Models.ChargingStation.Charger.Charger;
+import com.eVolGreen.eVolGreen.Models.Account.Fee.EstadoPerfil;
+import com.eVolGreen.eVolGreen.Models.Account.Fee.Fee;
+import com.fasterxml.jackson.annotation.JsonBackReference;
 import jakarta.persistence.*;
 import org.hibernate.annotations.GenericGenerator;
 
-import javax.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 
 @Entity
@@ -57,6 +58,18 @@ public class PerfilCargaCargador {
 
     private Long chargerId;
 
+    // Campos para persistencia para Tarifa
+    @Enumerated(EnumType.STRING)
+    private EstadoPerfil estado; // PENDIENTE, ACTIVO, FINALIZADO
+
+    @OneToOne(mappedBy = "perfilCarga")
+    @JoinColumn(name = "tarifa_id",referencedColumnName = "id")
+    @JsonBackReference
+    private Fee tarifa; // Relación inversa con Tarifa
+
+    public PerfilCargaCargador() {
+    }
+
     // Getters y Setters
     public Long getId() { return id; }
 
@@ -107,5 +120,25 @@ public class PerfilCargaCargador {
 
     public Long getChargerId() { return chargerId; }
     public void setChargerId(Long chargerId) { this.chargerId = chargerId; } {
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public EstadoPerfil getEstado() {
+        return estado;
+    }
+
+    public void setEstado(EstadoPerfil estado) {
+        this.estado = estado;
+    }
+
+    public Fee getTarifa() {
+        return tarifa;
+    }
+
+    public void setTarifa(Fee tarifa) {
+        this.tarifa = tarifa;
     }
 }
