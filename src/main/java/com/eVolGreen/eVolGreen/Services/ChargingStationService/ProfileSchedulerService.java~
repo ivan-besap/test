@@ -15,6 +15,7 @@ import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.Core.Requests.Utils.Ch
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirmations.Enums.ChargingProfileStatus;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Confirmations.SetChargingProfileConfirmation;
 import com.eVolGreen.eVolGreen.Models.Ocpp.Ocpp1_6.Models.SmartCharging.Request.SetChargingProfileRequest;
+import org.hibernate.Hibernate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,7 +58,7 @@ public class ProfileSchedulerService {
     @PostConstruct
     public void scheduleInitialProfileCheck() {
         if (!Arrays.asList(env.getActiveProfiles()).contains("test")) {
-            long delay = 5 * 60 * 1000; // 5 minutos
+            long delay = 2 * 60 * 1000; // 5 minutos
             scheduler.schedule(this::initializePendingProfiles, delay, TimeUnit.MILLISECONDS);
             logger.info("Programada la revisión inicial de perfiles para dentro de 5 minutos.");
         } else {
@@ -68,7 +69,7 @@ public class ProfileSchedulerService {
     @Transactional
     public void initializePendingProfiles() {
         logger.info("Iniciando revisión de perfiles pendientes y activos...");
-        List<PerfilCargaCargador> perfiles = perfilCargaRepository.findAllWithFeeAndDays(); // Usar la nueva consulta
+        List<PerfilCargaCargador> perfiles = perfilCargaRepository.findAll();
         ZonedDateTime ahora = ZonedDateTime.now(ZoneId.systemDefault());
 
         if (perfiles.isEmpty()) {
@@ -82,6 +83,8 @@ public class ProfileSchedulerService {
             try {
                 Fee tarifa = perfil.getTarifa();
                 if (tarifa != null) {
+                    // Forzar la inicialización de diasDeLaSemana dentro de la transacción
+                    Hibernate.initialize(tarifa.getDiasDeLaSemana());
                     logger.debug("Perfil ID " + perfil.getId() + " tiene tarifa con días: " + tarifa.getDiasDeLaSemana());
                 } else {
                     logger.warn("Perfil ID " + perfil.getId() + " no tiene tarifa asociada.");

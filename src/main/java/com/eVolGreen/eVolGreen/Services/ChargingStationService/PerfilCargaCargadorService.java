@@ -19,7 +19,15 @@ public interface PerfilCargaCargadorService {
 
     List<PerfilCargaCargador> findAll();
 
-    PerfilCargaCargador findByChargerIdAndStackLevel(Long id, Integer stackLevel);
-
     PerfilCargaCargador findByChargerIdAndEstado(Long chargerId, EstadoPerfil estadoPerfil);
+
+    List<PerfilCargaCargador> findAllByChargerIdAndEstado(Long chargerId, EstadoPerfil estadoPerfil);
+
+    List<PerfilCargaCargador> findAllWithFeeAndDays();
+
+    Optional<PerfilCargaCargador> findDefaultActiveProfileByChargerIdAndDay(Long chargerId);
+
+    PerfilCargaCargador findByChargerIdAndStackLevel(Long chargerId, Integer stackLevel);
+
+    Optional<PerfilCargaCargador> findTopByChargerIdAndStackLevel(Long chargerId, Integer stackLevel);
 }

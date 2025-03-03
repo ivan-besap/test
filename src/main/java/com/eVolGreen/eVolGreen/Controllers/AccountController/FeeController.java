@@ -62,7 +62,7 @@ public class FeeController {
     private AccountService accountService;
 
     @Autowired
-    private PerfilCargaCargadorService perfilCargaRepository;
+    private PerfilCargaCargadorService perfilCargaService; // Cambié perfilCargaRepository por perfilCargaService para consistencia
 
     @Autowired
     private ChargerService chargerService;
@@ -122,7 +122,7 @@ public class FeeController {
         Fee tarifaRequest = request.getTarifa();
         PerfilCargaCargador perfilRequest = request.getPerfilCarga();
 
-        // Validaciones básicas
+        // Validaciones básicas (mantén las existentes)
         if (tarifaRequest == null || perfilRequest == null) {
             mensaje = "Tanto la tarifa como el perfil de carga son obligatorios";
             return new ResponseEntity<>(mensaje, HttpStatus.BAD_REQUEST);
@@ -206,6 +206,15 @@ public class FeeController {
         nuevaTarifa.setPerfilCarga(perfil);
         perfil.setTarifa(nuevaTarifa);
 
+        // Desactivar el perfil por defecto antes de aplicar el perfil temporal
+        PerfilCargaCargador perfilPorDefecto = perfilCargaService.findDefaultActiveProfileByChargerIdAndDay(charger.getId())
+                .orElse(null);
+        if (perfilPorDefecto != null && perfilPorDefecto.getEstado() == EstadoPerfil.ACTIVO) {
+            logger.info("Desactivando perfil por defecto ID: " + perfilPorDefecto.getId() + " para cargador " + charger.getoCPPid());
+            perfilPorDefecto.setEstado(EstadoPerfil.PENDIENTE); // O FINALIZADO, según tu lógica
+            perfilCargaService.save(perfilPorDefecto);
+        }
+
         ZonedDateTime ahora = ZonedDateTime.now(nuevaTarifa.getFechaInicio().getZone());
         ZonedDateTime inicio = nuevaTarifa.getFechaInicio();
         boolean dayMatches = nuevaTarifa.getDiasDeLaSemana().contains(ahora.getDayOfWeek().toString());
@@ -218,7 +227,7 @@ public class FeeController {
                 if (confirmation != null && confirmation.getStatus() == ChargingProfileStatus.Accepted) {
                     Fee tarifaGuardada = feeService.saveFee(nuevaTarifa);
                     perfil.setEstado(EstadoPerfil.ACTIVO);
-                    perfilCargaRepository.save(perfil);
+                    perfilCargaService.save(perfil);
                     logger.info("Tarifa guardada con ID: " + tarifaGuardada.getId() + " y perfil aplicado exitosamente");
                     if (tarifaGuardada.getFechaFin() != null) {
                         scheduleDefaultProfileRestoration(charger, tarifaGuardada.getFechaFin(), perfil);
@@ -244,7 +253,7 @@ public class FeeController {
                     if (confirmation != null && confirmation.getStatus() == ChargingProfileStatus.Accepted) {
                         Fee tarifaGuardada = feeService.saveFee(nuevaTarifa);
                         perfil.setEstado(EstadoPerfil.ACTIVO);
-                        perfilCargaRepository.save(perfil);
+                        perfilCargaService.save(perfil);
                         logger.info("Tarifa guardada con ID: " + tarifaGuardada.getId() + " y perfil aplicado exitosamente");
                         if (tarifaGuardada.getFechaFin() != null) {
                             scheduleDefaultProfileRestoration(charger, tarifaGuardada.getFechaFin(), perfil);
@@ -274,11 +283,11 @@ public class FeeController {
 
     private void applyChargingProfile(Charger charger, PerfilCargaCargador perfil) {
         // Buscar y desactivar cualquier perfil activo existente
-        PerfilCargaCargador perfilActivoActual = perfilCargaRepository.findByChargerIdAndEstado(charger.getId(), EstadoPerfil.ACTIVO);
+        PerfilCargaCargador perfilActivoActual = perfilCargaService.findByChargerIdAndEstado(charger.getId(), EstadoPerfil.ACTIVO);
         if (perfilActivoActual != null && !perfilActivoActual.getId().equals(perfil.getId())) {
             logger.info("Desactivando perfil activo actual ID: " + perfilActivoActual.getId() + " para cargador " + charger.getoCPPid());
-            perfilActivoActual.setEstado(EstadoPerfil.PENDIENTE);
-            perfilCargaRepository.save(perfilActivoActual);
+            perfilActivoActual.setEstado(EstadoPerfil.PENDIENTE); // O FINALIZADO, según tu lógica
+            perfilCargaService.save(perfilActivoActual);
         } else {
             logger.debug("No se encontró perfil activo actual o es el mismo perfil para cargador " + charger.getoCPPid());
         }
@@ -293,7 +302,7 @@ public class FeeController {
             SetChargingProfileConfirmation confirmation = (SetChargingProfileConfirmation) ocppResponse.getBody();
             if (confirmation != null && confirmation.getStatus() == ChargingProfileStatus.Accepted) {
                 perfil.setEstado(EstadoPerfil.ACTIVO);
-                perfilCargaRepository.save(perfil);
+                perfilCargaService.save(perfil);
                 logger.info("Perfil aplicado exitosamente al cargador " + charger.getoCPPid() + ", ID: " + perfil.getId());
             } else {
                 logger.warn("Perfil rechazado por el cargador " + charger.getoCPPid() + ": " + (confirmation != null ? confirmation.getStatus() : "Sin estado"));
@@ -312,7 +321,7 @@ public class FeeController {
             // Finalizar el perfil temporal
             if (perfilTemporal != null) {
                 perfilTemporal.setEstado(EstadoPerfil.FINALIZADO);
-                perfilCargaRepository.save(perfilTemporal);
+                perfilCargaService.save(perfilTemporal);
                 logger.info("Perfil temporal ID: " + perfilTemporal.getId() + " finalizado para cargador " + charger.getoCPPid());
             }
             // Restaurar el perfil por defecto
@@ -322,14 +331,24 @@ public class FeeController {
     }
 
     private void restoreDefaultProfile(Charger charger) {
-        PerfilCargaCargador defaultProfile = perfilCargaRepository.findByChargerIdAndStackLevel(charger.getId(), 0);
+        PerfilCargaCargador defaultProfile = perfilCargaService.findDefaultActiveProfileByChargerIdAndDay(charger.getId())
+                .orElseGet(() -> {
+                    // Si no hay perfil activo válido, busca uno por defecto con stackLevel = 0
+                    return (PerfilCargaCargador) perfilCargaService.findTopByChargerIdAndStackLevel(charger.getId(), 0)
+                            .orElse(null);
+                });
         if (defaultProfile != null) {
             ZonedDateTime ahora = ZonedDateTime.now(ZoneId.systemDefault());
             Fee tarifaDefault = defaultProfile.getTarifa();
-            logger.info("Restaurando perfil por defecto ID: " + defaultProfile.getId() + " para cargador " + charger.getoCPPid());
-            defaultProfile.setEstado(EstadoPerfil.ACTIVO);
-            perfilCargaRepository.save(defaultProfile);
-            applyChargingProfile(charger, defaultProfile); // Enviar al cargador
+            if (tarifaDefault != null && tarifaDefault.estaVigente(ahora)) {
+                logger.info("Restaurando perfil por defecto ID: " + defaultProfile.getId() + " para cargador " + charger.getoCPPid());
+                defaultProfile.setEstado(EstadoPerfil.ACTIVO);
+                perfilCargaService.save(defaultProfile);
+                // Enviar explícitamente el perfil por defecto al cargador via OCPP
+                applyChargingProfile(charger, defaultProfile);
+            } else {
+                logger.warn("El perfil por defecto ID " + defaultProfile.getId() + " no está vigente en " + ahora);
+            }
         } else {
             logger.warn("No se encontró un perfil por defecto (stackLevel=0) para el cargador " + charger.getoCPPid());
         }
